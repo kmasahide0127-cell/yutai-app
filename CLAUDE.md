@@ -23,26 +23,27 @@
 - Tailwind CSS
 - shadcn/ui (UIコンポーネント)
 - Recharts (グラフ・チャート)
-- Zustand (軽量ステート管理)
+- Zustand + persist middleware (状態管理 + localStorage永続化)
+- Dexie.js (IndexedDBのラッパー、大容量データ用)
 - Lucide Icons
 
-### バックエンド
-- Next.js API Routes
-- Supabase (PostgreSQL + Auth + Realtime + Storage)
-- Claude API (Sonnet 4.6 メイン、Opus 4.7 は複雑分析のみ)
+### データ永続化(クライアントサイド完結)
+- **localStorage**: 設定、ウォッチリスト等の軽量データ
+- **IndexedDB (Dexie.js)**: 保有履歴、優待受領記録等の大容量データ
+- サーバーサイドDBは使用しない(運用コストゼロ、プライバシー設計)
+
+### 外部データ取得
+- GitHub Actions で定期実行(無料枠で十分)
+- 株価・優待データをJSONとしてビルド時またはVercel上に静的配信
+- ユーザー側はfetchで取得するだけ(読み取り専用)
 
 ### データ処理(Pythonバッチ)
 - pandas, requests, BeautifulSoup
 - yfinance / EDINET API
-- APScheduler
-- Supabase Python SDK
+- GitHub Actions (スケジューリング)
 
 ### インフラ
-- Vercel (Next.jsホスティング)
-- Railway or Fly.io (Pythonバッチ)
-- Resend (メール)
-- LINE Notify (LINE通知)
-- Stripe (決済)
+- Vercel (Next.jsホスティング + 静的JSON配信)
 - Sentry (エラー監視)
 
 ## ファイル構成
@@ -50,11 +51,12 @@
 - `src/app/`: ページ(App Router)
 - `src/components/`: 共通コンポーネント
 - `src/components/ui/`: shadcn/ui コンポーネント
-- `src/lib/`: ロジック、ユーティリティ、Supabaseクライアント
+- `src/lib/`: ロジック、ユーティリティ
+- `src/store/`: Zustandストア(+ persist設定)
 - `src/types/`: TypeScript型定義
 - `src/hooks/`: カスタムフック
-- `python/`: データ処理バッチ(Pythonコード)
-- `supabase/`: マイグレーション、スキーマ定義
+- `python/`: 外部データ収集バッチ(GitHub Actions実行)
+- `public/data/`: 静的配信する優待・株価JSONデータ
 
 ## コーディングルール
 
@@ -71,8 +73,8 @@
 - ダークモード対応を最初から意識(dark: プレフィックス)
 
 ### React/Next.js
-- Server Components を基本、必要な箇所のみ "use client"
-- データ取得はServer Componentsで実施、APIルートは最小限
+- ユーザーデータはクライアント側で完結するため、ストア操作は "use client" コンポーネントで行う
+- 静的データ(優待マスタ等)の取得はServer Componentsで実施
 - フォームはuseState + Server Action または React Hook Form
 - エラーバウンダリを適切に配置
 
@@ -97,10 +99,15 @@
 - 利用規約に「投資判断はユーザー自身の責任」を必ず明記
 
 ### データ取り扱い
-- ユーザーの財務データは原則ローカル(Supabaseに保存する場合もRLS必須)
-- Row Level Security(RLS)を全テーブルで有効化
+- ユーザーデータ(保有銘柄、ウォッチリスト、生活情報、設定)はすべてクライアント側に保存
+- サーバーにユーザーデータは送信しない(プライバシー設計)
 - 機密情報を含むデータはコミットしない(.env.localで管理)
-- 個人情報は最小限のみ収集
+- データのエクスポート/インポート機能(JSON)で機種変更・バックアップに対応
+
+### 認証
+- ユーザー認証は不要
+- 各端末で独立してデータを保持
+- 端末間同期は明示的なエクスポート/インポートのみ
 
 ### 通知設計
 - 通知は重要度フィルタを必ず設ける(通知疲れ対策)
@@ -120,8 +127,13 @@
 - レイヤー設計: 初心者向け表示と詳細表示を切り替え可能に
 - 信号機式アイコン(青/黄/赤)で直感的に状態を伝える
 - 行動経済学的なフレーミングを意識(ゲイン提示、損失回避の打破)
-- スマホ優先(PWA対応必須)
+- スマホ優先(PWA対応必須、オフラインでも基本機能は動作)
 - ダークモード対応
+
+## 将来のオプション機能(MVP後)
+
+- **Claude API**: 銘柄解釈・生活マッチング強化などプレミアム機能。ユーザーが任意でAPIキーを入力して使用
+- **通知配信**: LINE Notify等をユーザーが任意で設定して使用
 
 ## 開発進行ペース
 
