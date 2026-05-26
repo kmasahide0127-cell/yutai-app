@@ -13,7 +13,7 @@ export default function Home() {
         <p className="text-xl text-muted-foreground max-w-sm">
           あなたの生活に合う株主優待を見つけます
         </p>
-        <Link href="/lifestyle" className={buttonVariants({ size: "lg" })}>
+        <Link href="/onboarding" className={buttonVariants({ size: "lg" })}>
           始める
         </Link>
       </main>
