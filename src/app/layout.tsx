@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "優待アプリ",
-  description: "あなたの生活に合う株主優待を見つける生活逆引き型マッチングアプリ",
+  title: "優待アプリ(ベータ版) - 生活逆引き型 株主優待マッチング",
+  description: "あなたの毎月の出費から、それを削減できる株主優待を提案。生活逆引き型の優待マッチングアプリ(ベータ版・個人開発)。",
 };
 
 export default function RootLayout({
