@@ -99,6 +99,9 @@ export default async function ResultsPage({
             <p className="text-xs text-muted-foreground">
               必要投資額の合計: 約{Math.round(totalInvestment / 10000)}万円
             </p>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              優待情報の取得日: 2026年5月27日 | 全銘柄共通
+            </p>
           </div>
         )}
 
@@ -167,6 +170,9 @@ export default async function ResultsPage({
                           </dd>
                         </div>
                       </dl>
+                      <p className="text-xs text-muted-foreground">
+                        ※ 優待情報取得日: {yutai.lastVerified} | 最新情報は企業IRページで要確認
+                      </p>
                     </CardContent>
                   </Card>
                 </li>
@@ -175,7 +181,7 @@ export default async function ResultsPage({
           </ul>
         )}
 
-        <div className="pb-8">
+        <div className="pb-4">
           <Link
             href="/onboarding"
             className={cn(
@@ -186,6 +192,22 @@ export default async function ResultsPage({
             条件を変える
           </Link>
         </div>
+
+        <footer className="mb-6 text-center text-xs text-muted-foreground">
+          <div className="space-x-4">
+            <Link href="/terms" className="hover:underline">利用規約</Link>
+            <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
+            <a
+              href="https://github.com/kmasahide0127-cell/yutai-app/issues"
+              className="hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              お問い合わせ
+            </a>
+          </div>
+          <p className="mt-2">© 2026 優待アプリ(ベータ版) | データ取得日: 2026年5月27日</p>
+        </footer>
       </div>
     </div>
   );

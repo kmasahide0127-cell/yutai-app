@@ -53,7 +53,10 @@ export default function PrivacyPage() {
             </p>
           </div>
 
-          <p className="text-xs text-muted-foreground mt-8">最終更新日: 2026年5月27日</p>
+          <p className="text-xs text-muted-foreground mt-8">
+            ポリシー制定日: 2026年5月27日<br />
+            最終更新日: 2026年5月27日
+          </p>
         </section>
       </div>
     </div>
