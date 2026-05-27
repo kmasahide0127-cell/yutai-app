@@ -369,6 +369,9 @@ export const YUTAI_LIST: Yutai[] = [
   { id: "2730_c", code: "8160", name: "木曽路", brands: ["木曽路", "ふぐ料理"], categories: ["外食"], lifestyleTags: ["記念日外食", "和食好き"], minShares: 100, approxInvestment: 250000, annualValue: 1600, yieldPercent: 0.6, description: "1,600円相当の食事優待券", rightsMonths: [3, 9], dataQuality: A, lastVerified: D },
   { id: "8194_b", code: "8267_b2", name: "イオン九州", brands: ["イオン", "マックスバリュ九州"], categories: ["小売"], lifestyleTags: ["日用品まとめ買い", "九州住み"], minShares: 100, approxInvestment: 250000, annualValue: 2000, yieldPercent: 0.8, description: "2,000円相当のイオングループ商品券", rightsMonths: [2], dataQuality: A, lastVerified: D },
 
+  // ---- IT・金融サービス ----
+  { id: "3994", code: "3994", name: "マネーフォワード", brands: ["マネーフォワード", "マネーフォワードME", "MoneyForward", "Money Forward", "マネフォ", "マネーフォワード クラウド"], categories: ["IT", "金融", "サービス"], lifestyleTags: ["家計簿", "投資する", "ガジェット好き", "資産管理", "確定申告"], minShares: 100, approxInvestment: 430000, annualValue: 6000, yieldPercent: 1.4, description: "100株でマネーフォワードMEプレミアムサービス半年分クーポン×2(年間6,000円相当)。200株以上で資産形成アドバンスコース、300株以上でクラウド確定申告も追加(半年以上継続保有が条件、2026年11月基準日以降)", rightsMonths: [5, 11], dataQuality: V, lastVerified: D },
+
   // 注: J-Quants/TDnet 自動取得基盤構築後にさらに拡張予定
 ];
 

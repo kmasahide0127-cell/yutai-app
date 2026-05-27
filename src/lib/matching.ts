@@ -254,6 +254,8 @@ export function matchYutaiByExpense(
   const results: MatchResultV2[] = [];
 
   for (const yutai of yutaiList) {
+    if (yutai.annualValue <= 0) continue;
+
     if (
       lifestyle.maxInvestment &&
       yutai.approxInvestment > lifestyle.maxInvestment

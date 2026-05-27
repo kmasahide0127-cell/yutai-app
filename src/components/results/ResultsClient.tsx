@@ -51,13 +51,19 @@ export function ResultsClient({ results, totalSavings, totalInvestment }: Props)
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [brandSearch, setBrandSearch] = useState("");
 
+  // annualValue === 0 の銘柄はサーバー側でも除外済みだが、念のため二重フィルタ
+  const validResults = useMemo(
+    () => results.filter((r) => r.yutai.annualValue > 0),
+    [results]
+  );
+
   const allBrands = useMemo(() => {
     const set = new Set<string>();
-    for (const r of results) {
+    for (const r of validResults) {
       for (const b of r.yutai.brands) set.add(b);
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ja"));
-  }, [results]);
+  }, [validResults]);
 
   const filteredBrands = useMemo(
     () =>
@@ -68,15 +74,15 @@ export function ResultsClient({ results, totalSavings, totalInvestment }: Props)
   );
 
   const displayResults = useMemo(() => {
-    if (selectedBrands.length === 0) return results;
-    const matching = results.filter((r) =>
+    if (selectedBrands.length === 0) return validResults;
+    const matching = validResults.filter((r) =>
       r.yutai.brands.some((b) => selectedBrands.includes(b))
     );
-    const others = results.filter(
+    const others = validResults.filter(
       (r) => !r.yutai.brands.some((b) => selectedBrands.includes(b))
     );
     return [...matching, ...others];
-  }, [results, selectedBrands]);
+  }, [validResults, selectedBrands]);
 
   const toggleBrand = (brand: string) =>
     setSelectedBrands((prev) =>
@@ -85,13 +91,13 @@ export function ResultsClient({ results, totalSavings, totalInvestment }: Props)
 
   const matchingCount =
     selectedBrands.length > 0
-      ? results.filter((r) => r.yutai.brands.some((b) => selectedBrands.includes(b))).length
+      ? validResults.filter((r) => r.yutai.brands.some((b) => selectedBrands.includes(b))).length
       : null;
 
   return (
     <div className="space-y-6">
       {/* 合計サマリー */}
-      {results.length > 0 && (
+      {validResults.length > 0 && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">
             推奨優待で削減できる見込み額
@@ -109,7 +115,7 @@ export function ResultsClient({ results, totalSavings, totalInvestment }: Props)
       )}
 
       {/* ブランド絞り込み */}
-      {results.length > 0 && allBrands.length > 0 && (
+      {validResults.length > 0 && allBrands.length > 0 && (
         <details className="overflow-hidden rounded-xl border border-border">
           <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-medium hover:bg-muted/50">
             <span className="text-sm">
@@ -161,7 +167,7 @@ export function ResultsClient({ results, totalSavings, totalInvestment }: Props)
       )}
 
       {/* 結果リスト */}
-      {results.length === 0 ? (
+      {validResults.length === 0 ? (
         <div className="space-y-2 rounded-xl border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">
             該当する優待が見つかりませんでした。条件を変えて再検索してみてください。
