@@ -31,12 +31,6 @@ export default async function ResultsPage({
     YUTAI_LIST
   );
 
-  const totalSavings = results.reduce((sum, r) => sum + r.annualSavings, 0);
-  const totalInvestment = results.reduce(
-    (sum, r) => sum + r.yutai.approxInvestment,
-    0
-  );
-
   return (
     <div className="min-h-screen bg-background text-foreground py-8 px-4">
       <div className="mx-auto max-w-2xl space-y-6">
@@ -49,11 +43,7 @@ export default async function ResultsPage({
           ) : null}
         </header>
 
-        <ResultsClient
-          results={results}
-          totalSavings={totalSavings}
-          totalInvestment={totalInvestment}
-        />
+        <ResultsClient results={results} />
       </div>
     </div>
   );

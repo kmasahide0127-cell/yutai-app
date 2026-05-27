@@ -14,25 +14,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import type { MatchResultV2 } from "@/lib/matching";
 
-function scoreLabel(score: number): { text: string; className: string } {
-  if (score >= 70)
-    return {
-      text: `${score}点`,
-      className:
-        "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    };
-  if (score >= 40)
-    return {
-      text: `${score}点`,
-      className:
-        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    };
-  return {
-    text: `${score}点`,
-    className: "bg-muted text-muted-foreground",
-  };
-}
-
 function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
 }
@@ -43,11 +24,9 @@ function formatRightsMonths(months: number[]): string {
 
 type Props = {
   results: MatchResultV2[];
-  totalSavings: number;
-  totalInvestment: number;
 };
 
-export function ResultsClient({ results, totalSavings, totalInvestment }: Props) {
+export function ResultsClient({ results }: Props) {
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [brandSearch, setBrandSearch] = useState("");
 
@@ -55,6 +34,16 @@ export function ResultsClient({ results, totalSavings, totalInvestment }: Props)
   const validResults = useMemo(
     () => results.filter((r) => r.yutai.annualValue > 0),
     [results]
+  );
+
+  // props に依存せず validResults から直接集計することで 0 円銘柄を確実に除外
+  const totalSavings = useMemo(
+    () => validResults.reduce((sum, r) => sum + r.annualSavings, 0),
+    [validResults]
+  );
+  const totalInvestment = useMemo(
+    () => validResults.reduce((sum, r) => sum + r.yutai.approxInvestment, 0),
+    [validResults]
   );
 
   const allBrands = useMemo(() => {
@@ -175,8 +164,7 @@ export function ResultsClient({ results, totalSavings, totalInvestment }: Props)
         </div>
       ) : (
         <ul className="space-y-4">
-          {displayResults.map(({ yutai, score, matchReason, annualSavings }, idx) => {
-            const badge = scoreLabel(score);
+          {displayResults.map(({ yutai, matchReason, annualSavings }, idx) => {
             const isBoosted =
               selectedBrands.length > 0 &&
               yutai.brands.some((b) => selectedBrands.includes(b));
@@ -195,29 +183,20 @@ export function ResultsClient({ results, totalSavings, totalInvestment }: Props)
                 )}
                 <Card className={isBoosted ? "ring-1 ring-primary/30" : undefined}>
                   <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <CardTitle>{yutai.name}</CardTitle>
-                          {yutai.dataQuality === "verified" ? (
-                            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                              ✓ 検証済み(
-                              {yutai.lastVerified.replace(/-/g, "/").slice(2)}
-                              時点)
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                              ⚠ 参考情報
-                            </span>
-                          )}
-                        </div>
-                        <CardDescription>証券コード {yutai.code}</CardDescription>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}
-                      >
-                        {badge.text}
-                      </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CardTitle>{yutai.name}</CardTitle>
+                      {yutai.dataQuality === "verified" ? (
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                          ✓ 検証済み(
+                          {yutai.lastVerified.replace(/-/g, "/").slice(2)}
+                          時点)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          ⚠ 参考情報
+                        </span>
+                      )}
+                      <CardDescription className="w-full">証券コード {yutai.code}</CardDescription>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
