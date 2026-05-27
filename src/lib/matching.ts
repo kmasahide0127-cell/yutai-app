@@ -264,30 +264,33 @@ export function matchYutaiByExpense(
     }
 
     const matchedExpenses: ExpenseCategory[] = [];
-    let score = 0;
+    let hasCatMatch = false;
+    let hasTagMatch = false;
 
     for (const expense of lifestyle.expenseCategories) {
       const mapping = expenseToYutaiMatch[expense];
-      const catMatch = yutai.categories.some((c) =>
-        mapping.categories.includes(c)
-      );
-      const tagMatch = yutai.lifestyleTags.some((t) =>
-        mapping.tags.includes(t)
-      );
+      const catMatch = yutai.categories.some((c) => mapping.categories.includes(c));
+      const tagMatch = yutai.lifestyleTags.some((t) => mapping.tags.includes(t));
       if (catMatch || tagMatch) {
         matchedExpenses.push(expense);
-        score += catMatch ? 30 : 0;
-        score += tagMatch ? 15 : 0;
+        if (catMatch) hasCatMatch = true;
+        if (tagMatch) hasTagMatch = true;
       }
     }
 
-    const matchedBrands = yutai.brands.filter((b) =>
-      lifestyle.brands.includes(b)
-    );
-    score += matchedBrands.length * 30;
+    const matchedBrands = yutai.brands.filter((b) => lifestyle.brands.includes(b));
 
-    if (score === 0) continue;
-    if (score > 100) score = 100;
+    if (!hasCatMatch && !hasTagMatch && matchedBrands.length === 0) continue;
+
+    // スコアリング: 年間優待価値の高さと投資しやすさを最重視
+    let score = Math.min(yutai.annualValue / 500, 60); // 30,000円で60点満点
+    if (yutai.approxInvestment <= 100000) score += 20;
+    else if (yutai.approxInvestment <= 300000) score += 15;
+    else if (yutai.approxInvestment <= 500000) score += 10;
+    else if (yutai.approxInvestment <= 1000000) score += 5;
+    if (hasCatMatch) score += 20;
+    if (hasTagMatch) score += 10;
+    score += matchedBrands.length * 10;
 
     results.push({
       yutai,

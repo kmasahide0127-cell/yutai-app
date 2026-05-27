@@ -6,7 +6,6 @@ import { YUTAI_LIST } from "@/lib/yutai-data";
 import { ResultsClient } from "@/components/results/ResultsClient";
 
 type SearchParams = Promise<{
-  brands?: string;
   expenses?: string;
   maxInvestment?: string;
 }>;
@@ -16,10 +15,7 @@ export default async function ResultsPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const {
-    expenses: expensesParam,
-    maxInvestment: maxParam,
-  } = await searchParams;
+  const { expenses: expensesParam, maxInvestment: maxParam } = await searchParams;
 
   const expenseCategories = (
     expensesParam?.split(",").filter(Boolean) ?? []
@@ -34,16 +30,14 @@ export default async function ResultsPage({
   return (
     <div className="min-h-screen bg-background text-foreground py-8 px-4">
       <div className="mx-auto max-w-2xl space-y-6">
-        <header className="space-y-1">
+        <header>
           <h1 className="text-2xl font-bold">あなたの生活にマッチした優待</h1>
-          {results.length > 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {results.length}件がマッチしました
-            </p>
-          ) : null}
         </header>
 
-        <ResultsClient results={results} />
+        <ResultsClient
+          results={results}
+          expenseCategoryCount={expenseCategories.length}
+        />
       </div>
     </div>
   );

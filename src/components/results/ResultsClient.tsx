@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,87 +9,56 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { MatchResultV2 } from "@/lib/matching";
 
 function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
 }
 
-function formatRightsMonths(months: number[]): string {
-  return months.map((m) => `${m}月`).join("・");
-}
-
 type Props = {
   results: MatchResultV2[];
+  expenseCategoryCount: number;
 };
 
-export function ResultsClient({ results }: Props) {
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [brandSearch, setBrandSearch] = useState("");
-
-  // annualValue === 0 の銘柄はサーバー側でも除外済みだが、念のため二重フィルタ
+export function ResultsClient({ results, expenseCategoryCount }: Props) {
+  // annualValue === 0 の銘柄はサーバー側でも除外済みだが念のため二重フィルタ
   const validResults = useMemo(
     () => results.filter((r) => r.yutai.annualValue > 0),
     [results]
   );
 
-  // props に依存せず validResults から直接集計することで 0 円銘柄を確実に除外
+  // カテゴリ数に応じた表示上限(各カテゴリ×perCategoryLimit、最大20件)
+  const displayLimit = useMemo(() => {
+    const perCategoryLimit =
+      expenseCategoryCount <= 1 ? 5 :
+      expenseCategoryCount === 2 ? 4 :
+      expenseCategoryCount <= 5 ? 3 : 2;
+    return Math.min(perCategoryLimit * Math.max(1, expenseCategoryCount), 20);
+  }, [expenseCategoryCount]);
+
+  const displayResults = useMemo(
+    () => validResults.slice(0, displayLimit),
+    [validResults, displayLimit]
+  );
+
+  // サマリーは表示銘柄のみで集計(全マッチ銘柄ではない)
   const totalSavings = useMemo(
-    () => validResults.reduce((sum, r) => sum + r.annualSavings, 0),
-    [validResults]
+    () => displayResults.reduce((sum, r) => sum + r.annualSavings, 0),
+    [displayResults]
   );
   const totalInvestment = useMemo(
-    () => validResults.reduce((sum, r) => sum + r.yutai.approxInvestment, 0),
-    [validResults]
+    () => displayResults.reduce((sum, r) => sum + r.yutai.approxInvestment, 0),
+    [displayResults]
   );
-
-  const allBrands = useMemo(() => {
-    const set = new Set<string>();
-    for (const r of validResults) {
-      for (const b of r.yutai.brands) set.add(b);
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ja"));
-  }, [validResults]);
-
-  const filteredBrands = useMemo(
-    () =>
-      brandSearch.trim()
-        ? allBrands.filter((b) => b.includes(brandSearch.trim()))
-        : allBrands,
-    [allBrands, brandSearch]
-  );
-
-  const displayResults = useMemo(() => {
-    if (selectedBrands.length === 0) return validResults;
-    const matching = validResults.filter((r) =>
-      r.yutai.brands.some((b) => selectedBrands.includes(b))
-    );
-    const others = validResults.filter(
-      (r) => !r.yutai.brands.some((b) => selectedBrands.includes(b))
-    );
-    return [...matching, ...others];
-  }, [validResults, selectedBrands]);
-
-  const toggleBrand = (brand: string) =>
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
-    );
-
-  const matchingCount =
-    selectedBrands.length > 0
-      ? validResults.filter((r) => r.yutai.brands.some((b) => selectedBrands.includes(b))).length
-      : null;
 
   return (
     <div className="space-y-6">
       {/* 合計サマリー */}
-      {validResults.length > 0 && (
+      {displayResults.length > 0 && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">
-            推奨優待で削減できる見込み額
+            厳選{displayResults.length}銘柄で削減できる見込み額
           </p>
           <p className="text-3xl font-bold text-primary">
             年間 {formatYen(totalSavings)}
@@ -103,145 +72,76 @@ export function ResultsClient({ results }: Props) {
         </div>
       )}
 
-      {/* ブランド絞り込み */}
-      {validResults.length > 0 && allBrands.length > 0 && (
-        <details className="overflow-hidden rounded-xl border border-border">
-          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-medium hover:bg-muted/50">
-            <span className="text-sm">
-              ブランドで絞り込む
-              {selectedBrands.length > 0 && (
-                <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                  {selectedBrands.length}件選択中
-                  {matchingCount !== null && ` · ${matchingCount}銘柄がトップに`}
-                </span>
-              )}
-            </span>
-            <span className="text-xs text-muted-foreground">▼</span>
-          </summary>
-          <div className="border-t border-border p-4 space-y-3">
-            <input
-              type="text"
-              placeholder="ブランド名で検索..."
-              value={brandSearch}
-              onChange={(e) => setBrandSearch(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            {selectedBrands.length > 0 && (
-              <button
-                onClick={() => setSelectedBrands([])}
-                className="text-xs text-muted-foreground hover:underline"
-              >
-                選択をクリア
-              </button>
-            )}
-            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-              {filteredBrands.map((brand) => (
-                <label
-                  key={brand}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
-                >
-                  <Checkbox
-                    checked={selectedBrands.includes(brand)}
-                    onCheckedChange={() => toggleBrand(brand)}
-                  />
-                  <span className="text-xs leading-tight">{brand}</span>
-                </label>
-              ))}
-            </div>
-            {filteredBrands.length === 0 && (
-              <p className="text-xs text-muted-foreground">「{brandSearch}」に一致するブランドがありません</p>
-            )}
-          </div>
-        </details>
-      )}
-
       {/* 結果リスト */}
-      {validResults.length === 0 ? (
-        <div className="space-y-2 rounded-xl border border-border bg-card p-8 text-center">
+      {displayResults.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">
             該当する優待が見つかりませんでした。条件を変えて再検索してみてください。
           </p>
         </div>
       ) : (
         <ul className="space-y-4">
-          {displayResults.map(({ yutai, matchReason, annualSavings }, idx) => {
-            const isBoosted =
-              selectedBrands.length > 0 &&
-              yutai.brands.some((b) => selectedBrands.includes(b));
-            const isDivider =
-              selectedBrands.length > 0 &&
-              matchingCount !== null &&
-              idx === matchingCount;
-            return (
-              <li key={yutai.id}>
-                {isDivider && (
-                  <div className="flex items-center gap-2 py-2">
-                    <hr className="flex-1 border-border" />
-                    <span className="text-xs text-muted-foreground">その他の銘柄</span>
-                    <hr className="flex-1 border-border" />
-                  </div>
-                )}
-                <Card className={isBoosted ? "ring-1 ring-primary/30" : undefined}>
-                  <CardHeader>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <CardTitle>{yutai.name}</CardTitle>
-                      {yutai.dataQuality === "verified" ? (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                          ✓ 検証済み(
-                          {yutai.lastVerified.replace(/-/g, "/").slice(2)}
-                          時点)
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          ⚠ 参考情報
-                        </span>
-                      )}
-                      <CardDescription className="w-full">証券コード {yutai.code}</CardDescription>
+          {displayResults.map(({ yutai, matchReason, annualSavings }, idx) => (
+            <li key={yutai.id}>
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                      {idx + 1}
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">{matchReason}</p>
-                    <p className="text-sm">{yutai.description}</p>
-                    <div className="rounded-lg bg-primary/5 px-4 py-3">
-                      <p className="text-xs text-muted-foreground">年間出費削減見込み</p>
-                      <p className="text-xl font-bold text-primary">
-                        {formatYen(annualSavings)}
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-lg leading-snug">{yutai.name}</CardTitle>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        証券コード {yutai.code}
+                        {" · "}
+                        {yutai.dataQuality === "verified" ? (
+                          <span className="text-green-600 dark:text-green-400">
+                            ✓ 検証済み({yutai.lastVerified.replace(/-/g, "/").slice(2)}時点)
+                          </span>
+                        ) : (
+                          <span>⚠ 参考情報</span>
+                        )}
                       </p>
                     </div>
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
-                      <div>
-                        <dt className="text-xs text-muted-foreground">必要投資額</dt>
-                        <dd className="font-medium">{formatYen(yutai.approxInvestment)}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-muted-foreground">優待利回り</dt>
-                        <dd className="font-medium">{yutai.yieldPercent}%</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-muted-foreground">権利確定月</dt>
-                        <dd className="font-medium">
-                          {formatRightsMonths(yutai.rightsMonths)}
-                        </dd>
-                      </div>
-                    </dl>
-                    <p className="text-xs text-muted-foreground">
-                      ※ 優待情報取得日: {yutai.lastVerified} | 最新情報は企業IRページで要確認
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-lg bg-primary/10 px-4 py-4 text-center">
+                    <p className="text-xs text-muted-foreground">年間出費削減見込み</p>
+                    <p className="text-3xl font-bold text-primary">
+                      {formatYen(annualSavings)}
                     </p>
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">必要投資額</p>
+                      <p className="font-semibold">{formatYen(yutai.approxInvestment)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">優待利回り</p>
+                      <p className="font-semibold">{yutai.yieldPercent}%</p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground">{matchReason}</p>
+                  <p className="text-sm">{yutai.description}</p>
+
+                  <div className="flex justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+                    <span>権利確定: {yutai.rightsMonths.map((m) => `${m}月`).join("・")}</span>
+                    <span>取得日: {yutai.lastVerified}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </li>
+          ))}
         </ul>
       )}
 
       <div className="pb-4">
         <Link
           href="/onboarding"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "lg" }),
-            "w-full"
-          )}
+          className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
         >
           条件を変える
         </Link>
