@@ -46,7 +46,7 @@ export function NavigationButtons({
           </Button>
         )}
 
-        {currentStep === 5 && resultsHref ? (
+        {currentStep === 4 && resultsHref ? (
           <Button size="lg" className="flex-1" onClick={handleResults}>
             結果を見る
           </Button>

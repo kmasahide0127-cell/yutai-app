@@ -1,18 +1,9 @@
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import {
   matchYutaiByExpense,
   type ExpenseCategory,
 } from "@/lib/matching";
 import { YUTAI_LIST } from "@/lib/yutai-data";
+import { ResultsClient } from "@/components/results/ResultsClient";
 
 type SearchParams = Promise<{
   brands?: string;
@@ -20,52 +11,23 @@ type SearchParams = Promise<{
   maxInvestment?: string;
 }>;
 
-function scoreLabel(score: number): { text: string; className: string } {
-  if (score >= 70)
-    return {
-      text: `${score}点`,
-      className:
-        "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    };
-  if (score >= 40)
-    return {
-      text: `${score}点`,
-      className:
-        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    };
-  return {
-    text: `${score}点`,
-    className: "bg-muted text-muted-foreground",
-  };
-}
-
-function formatYen(amount: number): string {
-  return amount.toLocaleString("ja-JP") + "円";
-}
-
-function formatRightsMonths(months: number[]): string {
-  return months.map((m) => `${m}月`).join("・");
-}
-
 export default async function ResultsPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
   const {
-    brands: brandsParam,
     expenses: expensesParam,
     maxInvestment: maxParam,
   } = await searchParams;
 
-  const brands = brandsParam?.split(",").filter(Boolean) ?? [];
   const expenseCategories = (
     expensesParam?.split(",").filter(Boolean) ?? []
   ) as ExpenseCategory[];
   const maxInvestment = maxParam ? parseInt(maxParam, 10) : undefined;
 
   const results = matchYutaiByExpense(
-    { expenseCategories, brands, maxInvestment },
+    { expenseCategories, brands: [], maxInvestment },
     YUTAI_LIST
   );
 
@@ -87,127 +49,11 @@ export default async function ResultsPage({
           ) : null}
         </header>
 
-        {/* 合計サマリー */}
-        {results.length > 0 && (
-          <div className="space-y-2 rounded-xl border border-border bg-card p-5">
-            <p className="text-sm text-muted-foreground">
-              推奨優待で削減できる見込み額
-            </p>
-            <p className="text-3xl font-bold text-primary">
-              年間 {formatYen(totalSavings)}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              必要投資額の合計: 約{Math.round(totalInvestment / 10000)}万円
-            </p>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              優待情報の取得日: 2026年5月27日 | 全銘柄共通
-            </p>
-          </div>
-        )}
-
-        {results.length === 0 ? (
-          <div className="space-y-2 rounded-xl border border-border bg-card p-8 text-center">
-            <p className="text-muted-foreground">
-              該当する優待が見つかりませんでした。条件を変えて再検索してみてください。
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-4">
-            {results.map(({ yutai, score, matchReason, annualSavings }) => {
-              const badge = scoreLabel(score);
-              return (
-                <li key={yutai.id}>
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <CardTitle>{yutai.name}</CardTitle>
-                            {yutai.dataQuality === "verified" ? (
-                              <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                ✓ 検証済み(
-                                {yutai.lastVerified.replace(/-/g, "/").slice(2)}
-                                時点)
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                                ⚠ 参考情報
-                              </span>
-                            )}
-                          </div>
-                          <CardDescription>証券コード {yutai.code}</CardDescription>
-                        </div>
-                        <span
-                          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}
-                        >
-                          {badge.text}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground">{matchReason}</p>
-                      <p className="text-sm">{yutai.description}</p>
-                      {/* 年間削減額を強調表示 */}
-                      <div className="rounded-lg bg-primary/5 px-4 py-3">
-                        <p className="text-xs text-muted-foreground">年間出費削減見込み</p>
-                        <p className="text-xl font-bold text-primary">
-                          {formatYen(annualSavings)}
-                        </p>
-                      </div>
-                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
-                        <div>
-                          <dt className="text-xs text-muted-foreground">必要投資額</dt>
-                          <dd className="font-medium">{formatYen(yutai.approxInvestment)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs text-muted-foreground">優待利回り</dt>
-                          <dd className="font-medium">{yutai.yieldPercent}%</dd>
-                        </div>
-                        <div>
-                          <dt className="text-xs text-muted-foreground">権利確定月</dt>
-                          <dd className="font-medium">
-                            {formatRightsMonths(yutai.rightsMonths)}
-                          </dd>
-                        </div>
-                      </dl>
-                      <p className="text-xs text-muted-foreground">
-                        ※ 優待情報取得日: {yutai.lastVerified} | 最新情報は企業IRページで要確認
-                      </p>
-                    </CardContent>
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-
-        <div className="pb-4">
-          <Link
-            href="/onboarding"
-            className={cn(
-              buttonVariants({ variant: "outline", size: "lg" }),
-              "w-full"
-            )}
-          >
-            条件を変える
-          </Link>
-        </div>
-
-        <footer className="mb-6 text-center text-xs text-muted-foreground">
-          <div className="space-x-4">
-            <Link href="/terms" className="hover:underline">利用規約</Link>
-            <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
-            <a
-              href="https://github.com/kmasahide0127-cell/yutai-app/issues"
-              className="hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              お問い合わせ
-            </a>
-          </div>
-          <p className="mt-2">© 2026 優待アプリ(ベータ版) | データ取得日: 2026年5月27日</p>
-        </footer>
+        <ResultsClient
+          results={results}
+          totalSavings={totalSavings}
+          totalInvestment={totalInvestment}
+        />
       </div>
     </div>
   );
