@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { ResetLink } from "@/components/ResetLink";
+import { DATA_LAST_UPDATED, VERIFIED_COUNT, TOTAL_COUNT } from "@/lib/yutai-data";
+
+function formatDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-");
+  return `${y}年${parseInt(m)}月${parseInt(d)}日`;
+}
 
 export default function Home() {
   return (
@@ -19,6 +25,10 @@ export default function Home() {
             始める
           </Link>
           <ResetLink />
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            データ最終更新: {formatDate(DATA_LAST_UPDATED)}<br />
+            全{TOTAL_COUNT}銘柄（検証済み {VERIFIED_COUNT}銘柄）
+          </p>
         </div>
       </main>
     </div>

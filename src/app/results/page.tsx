@@ -85,8 +85,19 @@ export default async function ResultsPage({
                   <Card>
                     <CardHeader>
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <CardTitle>{yutai.name}</CardTitle>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <CardTitle>{yutai.name}</CardTitle>
+                            {yutai.dataQuality === "verified" ? (
+                              <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                ✓ 検証済み({yutai.lastVerified.replace(/-/g, "/").slice(2)}時点)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                ⚠ 参考情報
+                              </span>
+                            )}
+                          </div>
                           <CardDescription>証券コード {yutai.code}</CardDescription>
                         </div>
                         <span
