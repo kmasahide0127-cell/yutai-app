@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import { ResetLink } from "@/components/ResetLink";
 
 export default function Home() {
   return (
@@ -13,9 +14,12 @@ export default function Home() {
         <p className="text-xl text-muted-foreground max-w-sm">
           あなたの生活に合う株主優待を見つけます
         </p>
-        <Link href="/onboarding" className={buttonVariants({ size: "lg" })}>
-          始める
-        </Link>
+        <div className="flex flex-col items-center gap-3">
+          <Link href="/onboarding" className={buttonVariants({ size: "lg" })}>
+            始める
+          </Link>
+          <ResetLink />
+        </div>
       </main>
     </div>
   );

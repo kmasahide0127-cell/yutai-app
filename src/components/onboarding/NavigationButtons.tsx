@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useOnboardingStore } from "@/store/onboarding-store";
 
 type NavigationButtonsProps = {
   currentStep: number;
@@ -17,6 +16,7 @@ export function NavigationButtons({
   resultsHref,
 }: NavigationButtonsProps) {
   const router = useRouter();
+  const reset = useOnboardingStore((s) => s.reset);
 
   const handleBack = () => {
     router.push(`/onboarding?step=${currentStep - 1}`);
@@ -24,6 +24,12 @@ export function NavigationButtons({
 
   const handleNext = () => {
     router.push(`/onboarding?step=${currentStep + 1}`);
+  };
+
+  const handleResults = () => {
+    if (!resultsHref) return;
+    reset();
+    router.push(resultsHref);
   };
 
   return (
@@ -41,12 +47,9 @@ export function NavigationButtons({
         )}
 
         {currentStep === 5 && resultsHref ? (
-          <Link
-            href={resultsHref}
-            className={cn(buttonVariants({ size: "lg" }), "flex-1")}
-          >
+          <Button size="lg" className="flex-1" onClick={handleResults}>
             結果を見る
-          </Link>
+          </Button>
         ) : (
           <Button
             size="lg"
