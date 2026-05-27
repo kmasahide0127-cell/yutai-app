@@ -3,17 +3,20 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Card,
+  CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
 } from "@/components/ui/card";
-import { matchYutai } from "@/lib/matching";
+import {
+  matchYutaiByExpense,
+  type ExpenseCategory,
+} from "@/lib/matching";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 
 type SearchParams = Promise<{
   brands?: string;
-  tags?: string;
+  expenses?: string;
   maxInvestment?: string;
 }>;
 
@@ -49,14 +52,28 @@ export default async function ResultsPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const { brands: brandsParam, tags: tagsParam, maxInvestment: maxParam } =
-    await searchParams;
+  const {
+    brands: brandsParam,
+    expenses: expensesParam,
+    maxInvestment: maxParam,
+  } = await searchParams;
 
   const brands = brandsParam?.split(",").filter(Boolean) ?? [];
-  const lifestyleTags = tagsParam?.split(",").filter(Boolean) ?? [];
+  const expenseCategories = (
+    expensesParam?.split(",").filter(Boolean) ?? []
+  ) as ExpenseCategory[];
   const maxInvestment = maxParam ? parseInt(maxParam, 10) : undefined;
 
-  const results = matchYutai({ brands, lifestyleTags, maxInvestment }, YUTAI_LIST);
+  const results = matchYutaiByExpense(
+    { expenseCategories, brands, maxInvestment },
+    YUTAI_LIST
+  );
+
+  const totalSavings = results.reduce((sum, r) => sum + r.annualSavings, 0);
+  const totalInvestment = results.reduce(
+    (sum, r) => sum + r.yutai.approxInvestment,
+    0
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground py-8 px-4">
@@ -70,15 +87,30 @@ export default async function ResultsPage({
           ) : null}
         </header>
 
+        {/* 合計サマリー */}
+        {results.length > 0 && (
+          <div className="space-y-2 rounded-xl border border-border bg-card p-5">
+            <p className="text-sm text-muted-foreground">
+              推奨優待で削減できる見込み額
+            </p>
+            <p className="text-3xl font-bold text-primary">
+              年間 {formatYen(totalSavings)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              必要投資額の合計: 約{Math.round(totalInvestment / 10000)}万円
+            </p>
+          </div>
+        )}
+
         {results.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center space-y-2">
+          <div className="space-y-2 rounded-xl border border-border bg-card p-8 text-center">
             <p className="text-muted-foreground">
               該当する優待が見つかりませんでした。条件を変えて再検索してみてください。
             </p>
           </div>
         ) : (
           <ul className="space-y-4">
-            {results.map(({ yutai, score, matchReason }) => {
+            {results.map(({ yutai, score, matchReason, annualSavings }) => {
               const badge = scoreLabel(score);
               return (
                 <li key={yutai.id}>
@@ -86,11 +118,13 @@ export default async function ResultsPage({
                     <CardHeader>
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex flex-wrap items-center gap-2">
                             <CardTitle>{yutai.name}</CardTitle>
                             {yutai.dataQuality === "verified" ? (
                               <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                ✓ 検証済み({yutai.lastVerified.replace(/-/g, "/").slice(2)}時点)
+                                ✓ 検証済み(
+                                {yutai.lastVerified.replace(/-/g, "/").slice(2)}
+                                時点)
                               </span>
                             ) : (
                               <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -108,15 +142,16 @@ export default async function ResultsPage({
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        {matchReason}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{matchReason}</p>
                       <p className="text-sm">{yutai.description}</p>
-                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
-                        <div>
-                          <dt className="text-xs text-muted-foreground">年間優待価値</dt>
-                          <dd className="font-medium">{formatYen(yutai.annualValue)}</dd>
-                        </div>
+                      {/* 年間削減額を強調表示 */}
+                      <div className="rounded-lg bg-primary/5 px-4 py-3">
+                        <p className="text-xs text-muted-foreground">年間出費削減見込み</p>
+                        <p className="text-xl font-bold text-primary">
+                          {formatYen(annualSavings)}
+                        </p>
+                      </div>
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
                         <div>
                           <dt className="text-xs text-muted-foreground">必要投資額</dt>
                           <dd className="font-medium">{formatYen(yutai.approxInvestment)}</dd>
@@ -142,7 +177,7 @@ export default async function ResultsPage({
 
         <div className="pb-8">
           <Link
-            href="/lifestyle"
+            href="/onboarding"
             className={cn(
               buttonVariants({ variant: "outline", size: "lg" }),
               "w-full"

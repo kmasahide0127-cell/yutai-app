@@ -126,6 +126,180 @@ export function groupBrandsByCategory(yutaiList: Yutai[]): Record<string, string
   return result;
 }
 
+export type ExpenseCategory =
+  | "食費(外食・自炊・カフェ)"
+  | "通信費(スマホ・ネット)"
+  | "交通費(電車・新幹線・飛行機)"
+  | "車関連費(ガソリン・駐車場・整備)"
+  | "電気・ガス代"
+  | "子育て・教育費"
+  | "ファッション・美容"
+  | "旅行・レジャー"
+  | "エンタメ(映画・テーマパーク・サブスク)"
+  | "健康・スポーツ(ジム・サプリ)"
+  | "日用品(ドラッグストア・スーパー)"
+  | "趣味(ガジェット・読書・ペット)"
+  | "ネットショッピング(楽天・Yahoo!等)";
+
+export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  "食費(外食・自炊・カフェ)",
+  "通信費(スマホ・ネット)",
+  "交通費(電車・新幹線・飛行機)",
+  "車関連費(ガソリン・駐車場・整備)",
+  "電気・ガス代",
+  "子育て・教育費",
+  "ファッション・美容",
+  "旅行・レジャー",
+  "エンタメ(映画・テーマパーク・サブスク)",
+  "健康・スポーツ(ジム・サプリ)",
+  "日用品(ドラッグストア・スーパー)",
+  "趣味(ガジェット・読書・ペット)",
+  "ネットショッピング(楽天・Yahoo!等)",
+];
+
+export const expenseToYutaiMatch: Record<
+  ExpenseCategory,
+  { categories: string[]; tags: string[] }
+> = {
+  "食費(外食・自炊・カフェ)": {
+    categories: ["外食", "カフェ", "食品"],
+    tags: ["外食月3回以上", "自炊する", "ファミリー外食", "カフェよく利用", "一人ランチ"],
+  },
+  "通信費(スマホ・ネット)": {
+    categories: ["通信"],
+    tags: ["通信費を抑えたい"],
+  },
+  "交通費(電車・新幹線・飛行機)": {
+    categories: ["交通", "航空"],
+    tags: ["電車通勤", "新幹線通勤", "出張多い", "国内旅行派", "海外旅行派"],
+  },
+  "車関連費(ガソリン・駐車場・整備)": {
+    categories: ["自動車"],
+    tags: ["車所有", "ドライブ好き"],
+  },
+  "電気・ガス代": {
+    categories: ["公益"],
+    tags: [],
+  },
+  "子育て・教育費": {
+    categories: ["教育", "エンタメ"],
+    tags: ["子育て中", "教育熱心", "ファミリー"],
+  },
+  "ファッション・美容": {
+    categories: ["ファッション"],
+    tags: ["ファッション好き", "ビジネスカジュアル", "コーディネートこだわり", "美容ケア"],
+  },
+  "旅行・レジャー": {
+    categories: ["旅行", "ホテル", "リゾート"],
+    tags: ["国内旅行派", "海外旅行派", "リゾート好き", "温泉好き"],
+  },
+  "エンタメ(映画・テーマパーク・サブスク)": {
+    categories: ["エンタメ"],
+    tags: ["映画よく見る", "テーマパーク好き", "デート"],
+  },
+  "健康・スポーツ(ジム・サプリ)": {
+    categories: ["スポーツ", "アウトドア", "医療", "ドラッグストア"],
+    tags: ["スポーツする", "健康意識高い", "ゴルフ好き", "キャンプ好き"],
+  },
+  "日用品(ドラッグストア・スーパー)": {
+    categories: ["日用品", "ドラッグストア", "小売"],
+    tags: ["日用品まとめ買い", "コスパ志向"],
+  },
+  "趣味(ガジェット・読書・ペット)": {
+    categories: ["家電", "雑貨"],
+    tags: ["ガジェット好き", "ペット飼育", "家電購入予定"],
+  },
+  "ネットショッピング(楽天・Yahoo!等)": {
+    categories: ["EC"],
+    tags: ["ネットショッピング多用", "楽天経済圏", "PayPayユーザー"],
+  },
+};
+
+export type UserExpenseLifestyle = {
+  expenseCategories: ExpenseCategory[];
+  brands: string[];
+  maxInvestment?: number;
+};
+
+export type MatchResultV2 = {
+  yutai: Yutai;
+  score: number;
+  matchedExpenseCategories: ExpenseCategory[];
+  matchedBrands: string[];
+  annualSavings: number;
+  matchReason: string;
+};
+
+function generateExpenseMatchReason(
+  expenses: ExpenseCategory[],
+  brands: string[],
+  yutai: Yutai
+): string {
+  const expenseText =
+    expenses.length > 0
+      ? `あなたの「${expenses.join("・")}」を削減`
+      : "";
+  const brandText =
+    brands.length > 0
+      ? `あなたが使う『${brands.join("』『")}』に対応`
+      : "";
+  if (expenseText && brandText) return `${expenseText}。${brandText}`;
+  return expenseText || brandText || `${yutai.name}の優待`;
+}
+
+export function matchYutaiByExpense(
+  lifestyle: UserExpenseLifestyle,
+  yutaiList: Yutai[]
+): MatchResultV2[] {
+  const results: MatchResultV2[] = [];
+
+  for (const yutai of yutaiList) {
+    if (
+      lifestyle.maxInvestment &&
+      yutai.approxInvestment > lifestyle.maxInvestment
+    ) {
+      continue;
+    }
+
+    const matchedExpenses: ExpenseCategory[] = [];
+    let score = 0;
+
+    for (const expense of lifestyle.expenseCategories) {
+      const mapping = expenseToYutaiMatch[expense];
+      const catMatch = yutai.categories.some((c) =>
+        mapping.categories.includes(c)
+      );
+      const tagMatch = yutai.lifestyleTags.some((t) =>
+        mapping.tags.includes(t)
+      );
+      if (catMatch || tagMatch) {
+        matchedExpenses.push(expense);
+        score += catMatch ? 30 : 0;
+        score += tagMatch ? 15 : 0;
+      }
+    }
+
+    const matchedBrands = yutai.brands.filter((b) =>
+      lifestyle.brands.includes(b)
+    );
+    score += matchedBrands.length * 30;
+
+    if (score === 0) continue;
+    if (score > 100) score = 100;
+
+    results.push({
+      yutai,
+      score,
+      matchedExpenseCategories: matchedExpenses,
+      matchedBrands,
+      annualSavings: yutai.annualValue,
+      matchReason: generateExpenseMatchReason(matchedExpenses, matchedBrands, yutai),
+    });
+  }
+
+  return results.sort((a, b) => b.score - a.score);
+}
+
 // ── 使用例 ──────────────────────────────────────────────────────
 //
 // 例1: 楽天ユーザー → 楽天グループだけマッチ

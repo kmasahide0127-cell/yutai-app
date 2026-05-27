@@ -4,6 +4,7 @@ import { Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,7 +14,12 @@ import {
 import { ProgressBar } from "@/components/onboarding/ProgressBar";
 import { NavigationButtons } from "@/components/onboarding/NavigationButtons";
 import { useOnboardingStore } from "@/store/onboarding-store";
-import { getAllBrands, getBrandRelevanceScore, groupBrandsByCategory } from "@/lib/matching";
+import {
+  getAllBrands,
+  getBrandRelevanceScore,
+  groupBrandsByCategory,
+  EXPENSE_CATEGORIES,
+} from "@/lib/matching";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { cn } from "@/lib/utils";
 
@@ -30,17 +36,6 @@ const INTERESTS = [
   "子育て・ファミリー",
 ];
 
-const SITUATIONS = [
-  "固定費を抑えたい",
-  "一人暮らし",
-  "共働き",
-  "子育て中",
-  "車を持っている",
-  "ペットを飼っている",
-  "持ち家",
-  "在宅勤務多め",
-];
-
 const INVESTMENT_OPTIONS: { label: string; value: string }[] = [
   { label: "10万円以下", value: "100000" },
   { label: "30万円以下", value: "300000" },
@@ -49,47 +44,14 @@ const INVESTMENT_OPTIONS: { label: string; value: string }[] = [
   { label: "上限なし", value: "unlimited" },
 ];
 
-// オンボーディングの選択値を YUTAI_LIST の lifestyleTags にマッピング
-const INTEREST_TAG_MAP: Record<string, string[]> = {
-  "ガジェット・テクノロジー": ["ネットショッピング派", "キャッシュレス派"],
-  "旅行・お出かけ": ["国内旅行派", "旅行好き", "飛行機利用頻度高"],
-  "ファッション": ["ファッション好き", "セレクトショップ派"],
-  "食事・グルメ": ["外食月3回以上", "カフェ派", "コーヒー好き"],
-  "エンタメ(映画・テーマパーク)": ["映画好き", "エンタメ好き", "テーマパーク好き"],
-  "健康・スポーツ": ["スポーツ用品購入頻度高", "スポーツ好き", "美容・健康意識高"],
-  "生活雑貨・日用品": ["ドラッグストア高頻度利用", "スーパー利用頻度高"],
-  "子育て・ファミリー": ["子育て中", "ファミリー外食"],
-};
-
-const SITUATION_TAG_MAP: Record<string, string[]> = {
-  "固定費を抑えたい": ["コスパ重視"],
-  "一人暮らし": [],
-  "共働き": [],
-  "子育て中": ["子育て中", "ファミリー外食"],
-  "車を持っている": ["車所有", "ガソリン給油頻度高"],
-  "ペットを飼っている": [],
-  "持ち家": [],
-  "在宅勤務多め": ["在宅ワーク"],
-};
-
 function buildResultsUrl(
   brands: string[],
-  interests: string[],
-  lifestyleTags: string[],
+  expenseCategories: string[],
   maxInvestment: number | null
 ): string {
-  const yutaiTags = new Set<string>();
-  for (const interest of interests) {
-    for (const tag of INTEREST_TAG_MAP[interest] ?? []) yutaiTags.add(tag);
-  }
-  for (const situation of lifestyleTags) {
-    for (const tag of SITUATION_TAG_MAP[situation] ?? []) yutaiTags.add(tag);
-  }
-
   const params = new URLSearchParams();
   if (brands.length > 0) params.set("brands", brands.join(","));
-  const tagsArr = Array.from(yutaiTags);
-  if (tagsArr.length > 0) params.set("tags", tagsArr.join(","));
+  if (expenseCategories.length > 0) params.set("expenses", expenseCategories.join(","));
   if (maxInvestment !== null) params.set("maxInvestment", String(maxInvestment));
   return `/results?${params.toString()}`;
 }
@@ -105,25 +67,36 @@ function OnboardingContent() {
 
   const {
     interests,
-    lifestyleTags,
+    expenseCategories,
     brands,
     maxInvestment,
     setInterests,
-    setLifestyleTags,
+    setExpenseCategories,
     setBrands,
     setMaxInvestment,
   } = useOnboardingStore();
 
   const investmentStr = maxInvestment === null ? "unlimited" : String(maxInvestment);
 
-  // Step3用: ブランドをスコアで2グループに分ける
+  const handleInvestmentChange = (val: string) => {
+    setMaxInvestment(val === "unlimited" ? null : parseInt(val, 10));
+  };
+
+  const isNextDisabled = currentStep === 1 && interests.length === 0;
+
+  const resultsHref =
+    currentStep === 5
+      ? buildResultsUrl(brands, expenseCategories, maxInvestment)
+      : undefined;
+
+  // Step3用: 興味ベースでブランドをスコアリングして2グループに分ける
   const brandScores = useMemo(() => {
     const scores: Record<string, number> = {};
     for (const brand of ALL_BRANDS) {
-      scores[brand] = getBrandRelevanceScore(brand, interests, lifestyleTags, YUTAI_LIST);
+      scores[brand] = getBrandRelevanceScore(brand, interests, [], YUTAI_LIST);
     }
     return scores;
-  }, [interests, lifestyleTags]);
+  }, [interests]);
 
   const recommendedBrands = useMemo(
     () =>
@@ -143,17 +116,6 @@ function OnboardingContent() {
     }
     return result;
   }, [brandScores]);
-
-  const handleInvestmentChange = (val: string) => {
-    setMaxInvestment(val === "unlimited" ? null : parseInt(val, 10));
-  };
-
-  const isNextDisabled = currentStep === 1 && interests.length === 0;
-
-  const resultsHref =
-    currentStep === 5
-      ? buildResultsUrl(brands, interests, lifestyleTags, maxInvestment)
-      : undefined;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -186,22 +148,26 @@ function OnboardingContent() {
             </section>
           )}
 
-          {/* Step 2: ライフスタイル */}
+          {/* Step 2: 出費カテゴリ */}
           {currentStep === 2 && (
             <section className="space-y-4">
               <div className="space-y-1">
-                <h2 className="text-xl font-bold">あなたの状況は?</h2>
-                <p className="text-sm text-muted-foreground">複数選択可・任意</p>
+                <h2 className="text-xl font-bold">あなたが毎月出費しているものは?</h2>
+                <p className="text-sm text-muted-foreground">
+                  該当する出費カテゴリを選んでください。優待でこの出費をカバーする銘柄を提案します。
+                </p>
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {SITUATIONS.map((item) => (
+                {EXPENSE_CATEGORIES.map((item) => (
                   <label
                     key={item}
                     className="flex cursor-pointer items-center gap-3 rounded-lg border border-border px-4 py-3.5 transition-colors hover:bg-muted/50"
                   >
                     <Checkbox
-                      checked={lifestyleTags.includes(item)}
-                      onCheckedChange={() => setLifestyleTags(toggle(lifestyleTags, item))}
+                      checked={expenseCategories.includes(item)}
+                      onCheckedChange={() =>
+                        setExpenseCategories(toggle(expenseCategories, item))
+                      }
                     />
                     <span className="text-sm font-medium">{item}</span>
                   </label>
@@ -216,6 +182,24 @@ function OnboardingContent() {
               <div className="space-y-1">
                 <h2 className="text-xl font-bold">よく使うサービス・お店は?</h2>
                 <p className="text-sm text-muted-foreground">複数選択可・任意</p>
+              </div>
+
+              {/* スキップ推奨バナー */}
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-accent/40 bg-accent/5 px-4 py-3">
+                <p className="text-sm text-muted-foreground">
+                  ブランドを指定しなくても、出費カテゴリだけで提案できます
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    setBrands([]);
+                    router.push("/onboarding?step=4");
+                  }}
+                >
+                  スキップ
+                </Button>
               </div>
 
               {/* あなたへのおすすめ */}
@@ -279,7 +263,7 @@ function OnboardingContent() {
                 ))}
               </div>
 
-              {/* スキップ */}
+              {/* テキストリンクスキップ */}
               <div className="pt-2 text-center">
                 <button
                   onClick={() => {
@@ -288,7 +272,7 @@ function OnboardingContent() {
                   }}
                   className="text-sm text-muted-foreground hover:underline"
                 >
-                  使うブランドはない / 興味とライフスタイルだけで提案して
+                  使うブランドはない / 出費カテゴリだけで提案して
                 </button>
               </div>
             </section>
@@ -371,7 +355,7 @@ function OnboardingContent() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>ライフスタイル</CardTitle>
+                    <CardTitle>主な出費</CardTitle>
                     <button
                       onClick={() => router.push("/onboarding?step=2")}
                       className="text-xs text-accent hover:underline"
@@ -381,9 +365,9 @@ function OnboardingContent() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {lifestyleTags.length > 0 ? (
+                  {expenseCategories.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                      {lifestyleTags.map((t) => (
+                      {expenseCategories.map((t) => (
                         <span
                           key={t}
                           className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"

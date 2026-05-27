@@ -6,12 +6,12 @@ import { persist, createJSONStorage } from "zustand/middleware";
 type OnboardingState = {
   currentStep: number;
   interests: string[];
-  lifestyleTags: string[];
+  expenseCategories: string[];
   brands: string[];
   maxInvestment: number | null;
   setCurrentStep: (step: number) => void;
   setInterests: (interests: string[]) => void;
-  setLifestyleTags: (tags: string[]) => void;
+  setExpenseCategories: (categories: string[]) => void;
   setBrands: (brands: string[]) => void;
   setMaxInvestment: (amount: number | null) => void;
   reset: () => void;
@@ -20,7 +20,7 @@ type OnboardingState = {
 const initialState = {
   currentStep: 1,
   interests: [],
-  lifestyleTags: [],
+  expenseCategories: [],
   brands: [],
   maxInvestment: null,
 };
@@ -31,7 +31,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       ...initialState,
       setCurrentStep: (currentStep) => set({ currentStep }),
       setInterests: (interests) => set({ interests }),
-      setLifestyleTags: (lifestyleTags) => set({ lifestyleTags }),
+      setExpenseCategories: (expenseCategories) => set({ expenseCategories }),
       setBrands: (brands) => set({ brands }),
       setMaxInvestment: (maxInvestment) => set({ maxInvestment }),
       reset: () => set(initialState),
