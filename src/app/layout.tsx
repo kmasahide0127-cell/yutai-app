@@ -59,6 +59,9 @@ export const metadata: Metadata = {
     title: "優待アプリ(ベータ版)",
     description: "あなたの毎月の出費から、それを削減できる株主優待を提案。",
   },
+  verification: {
+    google: "jgPNNlbtlPcjWgzk15apXH7E7YspulIJawV0VuxF7g0",
+  },
 };
 
 export const viewport: Viewport = {
