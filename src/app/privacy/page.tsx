@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
+
+export const metadata: Metadata = {
+  title: "プライバシーポリシー",
+  description: "優待アプリ(ベータ版)のプライバシーポリシー。すべてのデータはお使いのブラウザのみで保存されます。",
+  alternates: {
+    canonical: "/privacy",
+  },
+};
 
 export default function PrivacyPage() {
   return (

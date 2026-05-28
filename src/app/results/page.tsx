@@ -1,4 +1,17 @@
+import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
+
+export const metadata: Metadata = {
+  title: "あなたにマッチする優待",
+  description: "毎月の出費から、削減できる株主優待を提案。あなたのライフスタイルにぴったりの優待が見つかります。",
+  alternates: {
+    canonical: "/results",
+  },
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
 import {
   matchYutaiByExpenseGrouped,
   buildCalendarPackage,

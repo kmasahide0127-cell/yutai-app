@@ -13,8 +13,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "優待アプリ(ベータ版) - 生活逆引き型 株主優待マッチング",
+  metadataBase: new URL("https://yutai-app-lyart.vercel.app"),
+  title: {
+    default: "優待アプリ(ベータ版) - 生活逆引き型 株主優待マッチング",
+    template: "%s | 優待アプリ",
+  },
   description: "あなたの毎月の出費から、それを削減できる株主優待を提案。生活逆引き型の優待マッチングアプリ(ベータ版・個人開発・データ取得日2026年5月27日)。",
+  keywords: [
+    "株主優待",
+    "優待",
+    "節約",
+    "投資",
+    "生活費",
+    "出費削減",
+    "ライフスタイル",
+    "個人投資家",
+    "優待検索",
+  ],
+  authors: [{ name: "雅英" }],
+  creator: "雅英",
+  alternates: {
+    canonical: "/",
+  },
   applicationName: "優待アプリ",
   appleWebApp: {
     capable: true,
@@ -63,6 +83,32 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "優待アプリ",
+              description: "毎月の出費から、それを削減できる株主優待を提案する生活逆引き型マッチングアプリ",
+              url: "https://yutai-app-lyart.vercel.app",
+              applicationCategory: "FinanceApplication",
+              operatingSystem: "Web",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "JPY",
+              },
+              author: {
+                "@type": "Person",
+                name: "雅英",
+              },
+              inLanguage: "ja-JP",
+              datePublished: "2026-05-27",
+              dateModified: "2026-05-28",
+            }),
+          }}
+        />
         {children}
       </body>
     </html>
