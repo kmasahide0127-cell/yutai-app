@@ -38,6 +38,7 @@ export const useOnboardingStore = create<OnboardingState>()(
     }),
     {
       name: "yutai-onboarding",
+      version: 2, // 出費カテゴリ再設計(v1→v2)で旧localStorageを自動破棄
       storage: createJSONStorage(() =>
         typeof window !== "undefined"
           ? localStorage
