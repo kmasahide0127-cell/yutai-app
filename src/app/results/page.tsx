@@ -1,6 +1,7 @@
 import {
-  matchYutaiByExpense,
+  matchYutaiByExpenseGrouped,
   type ExpenseCategory,
+  type CategoryGroup,
 } from "@/lib/matching";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { ResultsClient } from "@/components/results/ResultsClient";
@@ -22,10 +23,16 @@ export default async function ResultsPage({
   ) as ExpenseCategory[];
   const maxInvestment = maxParam ? parseInt(maxParam, 10) : undefined;
 
-  const results = matchYutaiByExpense(
+  const groupedMap = matchYutaiByExpenseGrouped(
     { expenseCategories, brands: [], maxInvestment },
     YUTAI_LIST
   );
+
+  // Map → 配列変換(Server→Client propsはシリアライズ可能な型のみ)
+  const groupedResults: CategoryGroup[] = expenseCategories.map((cat) => ({
+    category: cat,
+    results: groupedMap.get(cat) ?? [],
+  }));
 
   return (
     <div className="min-h-screen bg-background text-foreground py-8 px-4">
@@ -35,7 +42,7 @@ export default async function ResultsPage({
         </header>
 
         <ResultsClient
-          results={results}
+          groupedResults={groupedResults}
           expenseCategoryCount={expenseCategories.length}
         />
       </div>

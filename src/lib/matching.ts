@@ -305,6 +305,60 @@ export function matchYutaiByExpense(
   return results.sort((a, b) => b.score - a.score);
 }
 
+export type CategoryGroup = {
+  category: ExpenseCategory;
+  results: MatchResultV2[];
+};
+
+// 出費カテゴリ別にマッチング結果をグループ化。
+// 各カテゴリで独立してランキングするため、低優待価値の銘柄も
+// 関連カテゴリで確実に上位表示される。
+export function matchYutaiByExpenseGrouped(
+  lifestyle: UserExpenseLifestyle,
+  yutaiList: Yutai[]
+): Map<ExpenseCategory, MatchResultV2[]> {
+  const result = new Map<ExpenseCategory, MatchResultV2[]>();
+
+  for (const expense of lifestyle.expenseCategories) {
+    const mapping = expenseToYutaiMatch[expense];
+    const matched: MatchResultV2[] = [];
+
+    for (const yutai of yutaiList) {
+      if (yutai.annualValue <= 0) continue;
+      if (lifestyle.maxInvestment && yutai.approxInvestment > lifestyle.maxInvestment) continue;
+
+      const catMatch = yutai.categories.some((c) => mapping.categories.includes(c));
+      const tagMatch = yutai.lifestyleTags.some((t) => mapping.tags.includes(t));
+
+      if (!catMatch && !tagMatch) continue;
+
+      // カテゴリ内スコア: マッチ精度優先、次に優待価値と投資しやすさ
+      let score = 0;
+      if (catMatch) score += 40;
+      if (tagMatch) score += 20;
+      score += Math.min(yutai.annualValue / 1000, 30);
+      if (yutai.approxInvestment <= 100000) score += 10;
+      else if (yutai.approxInvestment <= 300000) score += 7;
+      else if (yutai.approxInvestment <= 500000) score += 5;
+      else if (yutai.approxInvestment <= 1000000) score += 2;
+
+      matched.push({
+        yutai,
+        score,
+        matchedExpenseCategories: [expense],
+        matchedBrands: [],
+        annualSavings: yutai.annualValue,
+        matchReason: generateExpenseMatchReason([expense], [], yutai),
+      });
+    }
+
+    matched.sort((a, b) => b.score - a.score);
+    result.set(expense, matched);
+  }
+
+  return result;
+}
+
 // ── 使用例 ──────────────────────────────────────────────────────
 //
 // 例1: 楽天ユーザー → 楽天グループだけマッチ
