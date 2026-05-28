@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { CategoryGroup, CalendarPackage } from "@/lib/matching";
+import {
+  buildBudgetPackage,
+  type CategoryGroup,
+  type CalendarPackage,
+  type BudgetPackage,
+  type UserExpenseLifestyle,
+} from "@/lib/matching";
+import type { Yutai } from "@/lib/yutai-data";
 
 function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
@@ -20,9 +27,19 @@ type Props = {
   groupedResults: CategoryGroup[];
   expenseCategoryCount: number;
   calendarPackage: CalendarPackage;
+  initialBudgetPackage: BudgetPackage;
+  budgetCandidates: Yutai[];
+  lifestyle: UserExpenseLifestyle;
 };
 
-export function ResultsClient({ groupedResults, expenseCategoryCount, calendarPackage }: Props) {
+export function ResultsClient({
+  groupedResults,
+  expenseCategoryCount,
+  calendarPackage,
+  initialBudgetPackage,
+  budgetCandidates,
+  lifestyle,
+}: Props) {
   const perCategoryLimit = useMemo(() => {
     if (expenseCategoryCount <= 1) return 8;
     if (expenseCategoryCount === 2) return 5;
@@ -53,6 +70,16 @@ export function ResultsClient({ groupedResults, expenseCategoryCount, calendarPa
   const calendarYield =
     calendarPackage.totalInvestment > 0
       ? ((calendarPackage.totalAnnualValue / calendarPackage.totalInvestment) * 100).toFixed(1)
+      : "0.0";
+
+  const [budget, setBudget] = useState(initialBudgetPackage.budget);
+  const budgetPackage = useMemo(() => {
+    if (budget === initialBudgetPackage.budget) return initialBudgetPackage;
+    return buildBudgetPackage(lifestyle, budgetCandidates, budget);
+  }, [budget, initialBudgetPackage, lifestyle, budgetCandidates]);
+  const budgetYield =
+    budgetPackage.totalInvestment > 0
+      ? ((budgetPackage.totalAnnualValue / budgetPackage.totalInvestment) * 100).toFixed(1)
       : "0.0";
 
   return (
@@ -141,6 +168,100 @@ export function ResultsClient({ groupedResults, expenseCategoryCount, calendarPa
 
           <p className="mt-3 text-xs text-muted-foreground">
             ※ 権利確定月は2026年5月27日時点の情報。実際の優待発送は各企業の方針により異なります。
+          </p>
+        </section>
+      )}
+
+      {/* ── 予算別おすすめパッケージ ── */}
+      {budgetCandidates.length > 0 && (
+        <section className="rounded-xl border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/20 p-4">
+          <div className="mb-4">
+            <h2 className="flex items-center gap-2 text-xl font-bold">
+              💰 予算別おすすめパッケージ
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              投資予算を動かして、コスパ最大の組み合わせをシミュレーション
+            </p>
+          </div>
+
+          {/* スライダー */}
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">投資予算</span>
+              <span className="text-lg font-bold">{formatYen(budget)}</span>
+            </div>
+            <input
+              type="range"
+              min={100000}
+              max={3000000}
+              step={50000}
+              value={budget}
+              onChange={(e) => setBudget(Number(e.target.value))}
+              className="w-full accent-amber-500"
+            />
+            <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+              <span>10万円</span>
+              <span>300万円</span>
+            </div>
+          </div>
+
+          {/* パッケージサマリー */}
+          <div className="mb-4 grid grid-cols-3 gap-3 rounded-lg bg-background p-3">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">使用額</p>
+              <p className="text-base font-bold">{formatYen(budgetPackage.totalInvestment)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">年間優待価値</p>
+              <p className="text-base font-bold text-amber-600 dark:text-amber-400">
+                {formatYen(budgetPackage.totalAnnualValue)}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">優待利回り</p>
+              <p className="text-base font-bold">{budgetYield}%</p>
+            </div>
+          </div>
+
+          {/* 銘柄リスト */}
+          {budgetPackage.selectedYutai.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-4">
+              この予算に合う銘柄がありません。予算を増やしてみてください。
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {budgetPackage.selectedYutai.map(({ yutai, annualSavings }, idx) => (
+                <li
+                  key={yutai.id}
+                  className="flex items-center gap-3 rounded-lg bg-background px-3 py-2"
+                >
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
+                    {idx + 1}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {yutai.name}
+                      <span className="ml-1 text-xs text-muted-foreground">({yutai.code})</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      投資額 {formatYen(yutai.approxInvestment)} · 利回り {yutai.yieldPercent}%
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                    {formatYen(Math.round(annualSavings))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {budgetPackage.unusedBudget > 0 && budgetPackage.selectedYutai.length > 0 && (
+            <p className="mt-3 text-xs text-muted-foreground text-right">
+              残り予算: {formatYen(budgetPackage.unusedBudget)}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            ※ コスパ(優待価値÷投資額)が高い順に予算内で最大10銘柄を選択。投資判断はご自身でご確認ください。
           </p>
         </section>
       )}

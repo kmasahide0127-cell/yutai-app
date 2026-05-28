@@ -459,6 +459,78 @@ export function buildCalendarPackage(
   return { totalAnnualValue, totalInvestment, monthEntries, uncoveredMonths, selectedYutai };
 }
 
+// ── 予算別おすすめパッケージ ────────────────────────────────────────
+
+/** ライフスタイルにマッチする候補銘柄を返す(予算フィルタなし・重複排除済み) */
+export function filterCandidatesForBudget(
+  lifestyle: UserExpenseLifestyle,
+  yutaiList: Yutai[]
+): Yutai[] {
+  const seenIds = new Set<string>();
+  const candidates: Yutai[] = [];
+
+  for (const expense of lifestyle.expenseCategories) {
+    const mapping = expenseToYutaiMatch[expense as ExpenseCategory];
+    if (!mapping) continue;
+
+    for (const yutai of yutaiList) {
+      if (seenIds.has(yutai.id)) continue;
+      if (yutai.annualValue <= 0) continue;
+
+      const catMatch = yutai.categories.some((c) => mapping.categories.includes(c));
+      const tagMatch = yutai.lifestyleTags.some((t) => mapping.tags.includes(t));
+      if (!catMatch && !tagMatch) continue;
+
+      candidates.push(yutai);
+      seenIds.add(yutai.id);
+    }
+  }
+
+  return candidates;
+}
+
+export type BudgetPackage = {
+  budget: number;
+  totalInvestment: number;
+  totalAnnualValue: number;
+  selectedYutai: { yutai: Yutai; annualSavings: number }[];
+  unusedBudget: number;
+};
+
+/** 予算内でコスパ最大となる銘柄の組み合わせをGreedy法で返す(最大10銘柄) */
+export function buildBudgetPackage(
+  _lifestyle: UserExpenseLifestyle,
+  candidates: Yutai[],
+  budget: number
+): BudgetPackage {
+  const MAX_STOCKS = 10;
+
+  // コスパ(年間優待価値 / 投資額)でソート
+  const sorted = candidates
+    .filter((y) => y.approxInvestment <= budget && y.approxInvestment > 0)
+    .sort((a, b) => b.annualValue / b.approxInvestment - a.annualValue / a.approxInvestment);
+
+  let totalInvestment = 0;
+  const selected: { yutai: Yutai; annualSavings: number }[] = [];
+
+  for (const yutai of sorted) {
+    if (selected.length >= MAX_STOCKS) break;
+    if (totalInvestment + yutai.approxInvestment > budget) continue;
+    totalInvestment += yutai.approxInvestment;
+    selected.push({ yutai, annualSavings: yutai.annualValue });
+  }
+
+  const totalAnnualValue = selected.reduce((sum, s) => sum + s.annualSavings, 0);
+
+  return {
+    budget,
+    totalInvestment,
+    totalAnnualValue,
+    selectedYutai: selected,
+    unusedBudget: budget - totalInvestment,
+  };
+}
+
 // ── 使用例 ──────────────────────────────────────────────────────
 //
 // 例1: 楽天ユーザー → 楽天グループだけマッチ
