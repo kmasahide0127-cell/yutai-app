@@ -33,8 +33,11 @@ export function NavigationButtons({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/80 px-4 py-3 safe-bottom backdrop-blur-sm">
-      <div className="mx-auto flex max-w-2xl gap-3">
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur-sm">
+      <div
+        className="mx-auto flex max-w-2xl items-center gap-3 px-4 pt-3 sm:pt-4"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+      >
         {currentStep > 1 && (
           <Button
             variant="outline"

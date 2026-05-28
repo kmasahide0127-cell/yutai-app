@@ -80,7 +80,7 @@ function OnboardingContent() {
     <div className="min-h-screen bg-background text-foreground">
       <ProgressBar currentStep={currentStep} />
 
-      <div className="px-4 py-8 pb-24">
+      <div className="px-4 py-8 pb-32">
         <div className="mx-auto max-w-2xl space-y-6">
 
           {/* Step 1: 興味 */}
