@@ -5,13 +5,13 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 type OnboardingState = {
   currentStep: number;
-  interests: string[];
   expenseCategories: string[];
+  householdSize: number;
   brands: string[];
   maxInvestment: number | null;
   setCurrentStep: (step: number) => void;
-  setInterests: (interests: string[]) => void;
   setExpenseCategories: (categories: string[]) => void;
+  setHouseholdSize: (n: number) => void;
   setBrands: (brands: string[]) => void;
   setMaxInvestment: (amount: number | null) => void;
   reset: () => void;
@@ -19,8 +19,8 @@ type OnboardingState = {
 
 const initialState = {
   currentStep: 1,
-  interests: [],
   expenseCategories: [],
+  householdSize: 1,
   brands: [],
   maxInvestment: null,
 };
@@ -30,15 +30,15 @@ export const useOnboardingStore = create<OnboardingState>()(
     (set) => ({
       ...initialState,
       setCurrentStep: (currentStep) => set({ currentStep }),
-      setInterests: (interests) => set({ interests }),
       setExpenseCategories: (expenseCategories) => set({ expenseCategories }),
+      setHouseholdSize: (householdSize) => set({ householdSize }),
       setBrands: (brands) => set({ brands }),
       setMaxInvestment: (maxInvestment) => set({ maxInvestment }),
       reset: () => set(initialState),
     }),
     {
       name: "yutai-onboarding",
-      version: 2, // 出費カテゴリ再設計(v1→v2)で旧localStorageを自動破棄
+      version: 3, // 興味ステップ削除→世帯人数追加(v2→v3)で旧localStorageを自動破棄
       storage: createJSONStorage(() =>
         typeof window !== "undefined"
           ? localStorage

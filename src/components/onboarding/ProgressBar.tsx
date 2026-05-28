@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Home, Wallet, CircleCheck } from "lucide-react";
+import { Receipt, Users, Wallet, CircleCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type StepMeta = {
@@ -10,8 +10,8 @@ type StepMeta = {
 };
 
 const STEPS: StepMeta[] = [
-  { icon: Heart, label: "興味", step: 1 },
-  { icon: Home, label: "出費", step: 2 },
+  { icon: Receipt, label: "出費", step: 1 },
+  { icon: Users, label: "世帯", step: 2 },
   { icon: Wallet, label: "投資額", step: 3 },
   { icon: CircleCheck, label: "確認", step: 4 },
 ];

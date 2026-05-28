@@ -16,15 +16,11 @@ import { useOnboardingStore } from "@/store/onboarding-store";
 import { EXPENSE_CATEGORIES } from "@/lib/matching";
 import { cn } from "@/lib/utils";
 
-const INTERESTS = [
-  "ガジェット・テクノロジー",
-  "旅行・お出かけ",
-  "ファッション",
-  "食事・グルメ",
-  "エンタメ(映画・テーマパーク)",
-  "健康・スポーツ",
-  "生活雑貨・日用品",
-  "子育て・ファミリー",
+const HOUSEHOLD_OPTIONS: { label: string; value: number }[] = [
+  { label: "1人(単身)", value: 1 },
+  { label: "2人", value: 2 },
+  { label: "3人", value: 3 },
+  { label: "4人以上", value: 4 },
 ];
 
 const INVESTMENT_OPTIONS: { label: string; value: string }[] = [
@@ -49,17 +45,24 @@ function toggle(list: string[], item: string): string[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
 
+const HOUSEHOLD_LABELS: Record<number, string> = {
+  1: "1人(単身)",
+  2: "2人",
+  3: "3人",
+  4: "4人以上",
+};
+
 function OnboardingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentStep = Math.max(1, Math.min(4, parseInt(searchParams.get("step") ?? "1", 10)));
 
   const {
-    interests,
     expenseCategories,
+    householdSize,
     maxInvestment,
-    setInterests,
     setExpenseCategories,
+    setHouseholdSize,
     setMaxInvestment,
   } = useOnboardingStore();
 
@@ -68,8 +71,6 @@ function OnboardingContent() {
   const handleInvestmentChange = (val: string) => {
     setMaxInvestment(val === "unlimited" ? null : parseInt(val, 10));
   };
-
-  const isNextDisabled = currentStep === 1 && interests.length === 0;
 
   const resultsHref =
     currentStep === 4
@@ -83,32 +84,8 @@ function OnboardingContent() {
       <div className="px-4 py-8 pb-32">
         <div className="mx-auto max-w-2xl space-y-6">
 
-          {/* Step 1: 興味 */}
+          {/* Step 1: 出費カテゴリ */}
           {currentStep === 1 && (
-            <section className="space-y-4">
-              <div className="space-y-1">
-                <h2 className="text-xl font-bold">何に興味がありますか?</h2>
-                <p className="text-sm text-muted-foreground">複数選択可・1つ以上必須</p>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {INTERESTS.map((item) => (
-                  <label
-                    key={item}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg border border-border px-4 py-3.5 transition-colors hover:bg-muted/50"
-                  >
-                    <Checkbox
-                      checked={interests.includes(item)}
-                      onCheckedChange={() => setInterests(toggle(interests, item))}
-                    />
-                    <span className="text-sm font-medium">{item}</span>
-                  </label>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Step 2: 出費カテゴリ */}
-          {currentStep === 2 && (
             <section className="space-y-4">
               <div className="space-y-1">
                 <h2 className="text-xl font-bold">あなたが毎月出費しているものは?</h2>
@@ -135,6 +112,41 @@ function OnboardingContent() {
             </section>
           )}
 
+          {/* Step 2: 世帯人数 */}
+          {currentStep === 2 && (
+            <section className="space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold">あなたの世帯は何人ですか?</h2>
+                <p className="text-sm text-muted-foreground">
+                  ご家族の人数によって、優待を最大限活用する方法が変わります(後で家族分散の試算に使います)
+                </p>
+              </div>
+              <RadioGroup
+                value={String(householdSize)}
+                onValueChange={(val) => setHouseholdSize(parseInt(val, 10))}
+              >
+                {HOUSEHOLD_OPTIONS.map(({ label, value }) => (
+                  <div
+                    key={value}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-4 transition-colors",
+                      householdSize === value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/50"
+                    )}
+                    onClick={() => setHouseholdSize(value)}
+                  >
+                    <RadioGroupItem
+                      value={String(value)}
+                      className="pointer-events-none"
+                    />
+                    <span className="text-sm font-medium">{label}</span>
+                  </div>
+                ))}
+              </RadioGroup>
+            </section>
+          )}
+
           {/* Step 3: 投資額 */}
           {currentStep === 3 && (
             <section className="space-y-4">
@@ -142,7 +154,6 @@ function OnboardingContent() {
                 <h2 className="text-xl font-bold">投資可能な金額は?</h2>
                 <p className="text-sm text-muted-foreground">1つ選択してください</p>
               </div>
-              {/* RadioGroup で value 管理、行全体をクリック可能にするため RadioGroupItem は pointer-events-none */}
               <RadioGroup
                 value={investmentStr}
                 onValueChange={handleInvestmentChange}
@@ -182,39 +193,9 @@ function OnboardingContent() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>興味・関心</CardTitle>
-                    <button
-                      onClick={() => router.push("/onboarding?step=1")}
-                      className="text-xs text-accent hover:underline"
-                    >
-                      修正
-                    </button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {interests.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {interests.map((i) => (
-                        <span
-                          key={i}
-                          className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                        >
-                          {i}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">未選択</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
                     <CardTitle>主な出費</CardTitle>
                     <button
-                      onClick={() => router.push("/onboarding?step=2")}
+                      onClick={() => router.push("/onboarding?step=1")}
                       className="text-xs text-accent hover:underline"
                     >
                       修正
@@ -236,6 +217,25 @@ function OnboardingContent() {
                   ) : (
                     <p className="text-sm text-muted-foreground">未選択</p>
                   )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>世帯人数</CardTitle>
+                    <button
+                      onClick={() => router.push("/onboarding?step=2")}
+                      className="text-xs text-accent hover:underline"
+                    >
+                      修正
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm font-medium">
+                    {HOUSEHOLD_LABELS[householdSize] ?? `${householdSize}人`}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -266,7 +266,7 @@ function OnboardingContent() {
 
       <NavigationButtons
         currentStep={currentStep}
-        isNextDisabled={isNextDisabled}
+        isNextDisabled={false}
         resultsHref={resultsHref}
       />
     </div>
