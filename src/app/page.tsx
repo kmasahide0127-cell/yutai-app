@@ -12,7 +12,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* メインコンテンツ */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <div className="flex-1 w-full flex flex-col items-center justify-center px-4 py-12">
         <header className="mb-6 text-center">
           <h1 className="text-4xl font-bold tracking-tight">優待アプリ</h1>
           <p className="text-sm text-muted-foreground mt-1">ベータ版</p>

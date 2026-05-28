@@ -124,7 +124,7 @@ export function ResultsClient({
   const shareUrl = "https://yutai-app-lyart.vercel.app";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 min-w-0">
       {/* ── 年間優待カレンダーパッケージ ── */}
       {calendarPackage.selectedYutai.length > 0 && (
         <section className="rounded-xl border-2 border-primary bg-primary/5 p-4">

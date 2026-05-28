@@ -64,8 +64,8 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
-  const buttonClass = "flex flex-col items-center gap-1.5 rounded-lg p-2 min-h-[80px] transition-all active:scale-95 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
-  const iconWrapClass = "flex h-14 w-14 items-center justify-center rounded-2xl text-white shrink-0";
+  const buttonClass = "flex flex-col items-center gap-1.5 rounded-lg p-1.5 sm:p-2 min-h-[80px] transition-all active:scale-95 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  const iconWrapClass = "flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-white shrink-0";
   const labelClass = "text-[10px] font-medium whitespace-nowrap";
 
   return (
@@ -78,7 +78,7 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
       </div>
 
       {/* SNSアイコン群 - 公式ロゴカラー */}
-      <div className="grid grid-cols-5 gap-1">
+      <div className="grid grid-cols-5 gap-0.5 xs:gap-1 sm:gap-2">
         {/* LINE */}
         <button onClick={openLINE} className={buttonClass} aria-label="LINEで送る">
           <div className={iconWrapClass} style={{ backgroundColor: "#06C755" }}>
