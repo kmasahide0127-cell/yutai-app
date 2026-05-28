@@ -15,12 +15,25 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
 
   const handleCopy = async (text: string, setStateFn: (v: boolean) => void) => {
     try {
-      await navigator.clipboard.writeText(text);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // フォールバック: execCommand(古いブラウザ・http環境)
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
       setStateFn(true);
       setTimeout(() => setStateFn(false), 2000);
     } catch (err) {
       console.error("コピー失敗:", err);
-      alert("コピーに失敗しました。お使いのブラウザがクリップボードAPIに対応していない可能性があります。");
+      alert("コピーに失敗しました。長押しでテキストを選択してください。");
     }
   };
 
@@ -29,15 +42,15 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
   const textWithUrl = encodeURIComponent(shareTextShort + "\n" + shareUrl);
 
   const openLINE = () => {
-    window.open(`https://line.me/R/msg/text/?${textWithUrl}`, "_blank");
+    window.open(`https://line.me/R/msg/text/?${textWithUrl}`, "_blank", "noopener,noreferrer");
   };
 
   const openX = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "noopener,noreferrer");
   };
 
   const openFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, "_blank");
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, "_blank", "noopener,noreferrer");
   };
 
   const openInstagram = async () => {
@@ -51,6 +64,10 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
+  const buttonClass = "flex flex-col items-center gap-1.5 rounded-lg p-2 min-h-[80px] transition-all active:scale-95 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  const iconWrapClass = "flex h-14 w-14 items-center justify-center rounded-2xl text-white shrink-0";
+  const labelClass = "text-[10px] font-medium whitespace-nowrap";
+
   return (
     <section className="rounded-xl border border-border bg-card p-4 space-y-4">
       <div>
@@ -61,56 +78,45 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
       </div>
 
       {/* SNSアイコン群 - 公式ロゴカラー */}
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-5 gap-1">
         {/* LINE */}
-        <button
-          onClick={openLINE}
-          className="flex flex-col items-center gap-1.5 rounded-lg p-2 hover:bg-muted/50 transition-colors"
-          aria-label="LINEで送る"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#06C755] text-white">
+        <button onClick={openLINE} className={buttonClass} aria-label="LINEで送る">
+          <div className={iconWrapClass} style={{ backgroundColor: "#06C755" }}>
             <svg viewBox="0 0 36 36" fill="currentColor" className="w-8 h-8">
               <path d="M30.95 14.5c0-5.84-5.86-10.6-13.05-10.6S4.85 8.66 4.85 14.5c0 5.24 4.65 9.62 10.93 10.45.43.09 1 .28 1.15.65.13.34.09.86.04 1.2 0 0-.15.93-.19 1.13-.06.34-.27 1.32 1.16.72 1.43-.6 7.7-4.53 10.51-7.76C30.39 18.78 30.95 16.71 30.95 14.5z M12 11.5h1.5v6H17v1.5h-5v-7.5z M19 11.5h1.5v7.5H19v-7.5z M27.5 11.5H29v1.5h-3.5v1.5h3v1.5h-3v1.5H29V19h-5v-7.5h3.5z M23 11.5h1.5l-3 7.5h-1.5l-3-7.5h1.5l1.75 4.5z"/>
             </svg>
           </div>
-          <span className="text-[10px] font-medium">LINE</span>
+          <span className={labelClass}>LINE</span>
         </button>
 
         {/* X (Twitter) */}
-        <button
-          onClick={openX}
-          className="flex flex-col items-center gap-1.5 rounded-lg p-2 hover:bg-muted/50 transition-colors"
-          aria-label="Xで投稿"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black dark:bg-white">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-white dark:text-black">
+        <button onClick={openX} className={buttonClass} aria-label="Xで投稿">
+          <div className={iconWrapClass} style={{ backgroundColor: "#000000" }}>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>
           </div>
-          <span className="text-[10px] font-medium">X</span>
+          <span className={labelClass}>X</span>
         </button>
 
         {/* Facebook */}
-        <button
-          onClick={openFacebook}
-          className="flex flex-col items-center gap-1.5 rounded-lg p-2 hover:bg-muted/50 transition-colors"
-          aria-label="Facebookで共有"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1877F2] text-white">
+        <button onClick={openFacebook} className={buttonClass} aria-label="Facebookで共有">
+          <div className={iconWrapClass} style={{ backgroundColor: "#1877F2" }}>
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
             </svg>
           </div>
-          <span className="text-[10px] font-medium">Facebook</span>
+          <span className={labelClass}>Facebook</span>
         </button>
 
-        {/* Instagram */}
-        <button
-          onClick={openInstagram}
-          className="flex flex-col items-center gap-1.5 rounded-lg p-2 hover:bg-muted/50 transition-colors"
-          aria-label="Instagramへ(テキストをコピーします)"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#feda75] via-[#fa7e1e] via-[30%] via-[#d62976] via-[60%] to-[#962fbf] text-white">
+        {/* Instagram - グラデーションをインラインstyleで明示 */}
+        <button onClick={openInstagram} className={buttonClass} aria-label="Instagramへ(テキストをコピー)">
+          <div
+            className={iconWrapClass}
+            style={{
+              background: "linear-gradient(135deg, #feda75 0%, #fa7e1e 25%, #d62976 50%, #962fbf 75%, #4f5bd5 100%)"
+            }}
+          >
             {igCopied ? (
               <Check className="w-7 h-7" />
             ) : (
@@ -119,19 +125,15 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
               </svg>
             )}
           </div>
-          <span className="text-[10px] font-medium">{igCopied ? "コピー済" : "Instagram"}</span>
+          <span className={labelClass}>{igCopied ? "コピー済" : "Instagram"}</span>
         </button>
 
         {/* メール */}
-        <button
-          onClick={openEmail}
-          className="flex flex-col items-center gap-1.5 rounded-lg p-2 hover:bg-muted/50 transition-colors"
-          aria-label="メールで送る"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted-foreground text-background">
+        <button onClick={openEmail} className={buttonClass} aria-label="メールで送る">
+          <div className={iconWrapClass} style={{ backgroundColor: "#737373" }}>
             <Mail className="w-7 h-7" />
           </div>
-          <span className="text-[10px] font-medium">メール</span>
+          <span className={labelClass}>メール</span>
         </button>
       </div>
 
@@ -139,23 +141,23 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
       <div className="pt-3 border-t border-border">
         <button
           onClick={() => handleCopy(shareText, setCopied)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm hover:bg-muted/50 transition-colors"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 py-3 text-sm transition-all active:scale-[0.98] hover:bg-muted/50 min-h-[44px]"
         >
           {copied ? (
             <>
-              <Check className="w-4 h-4 text-green-600" />
+              <Check className="w-4 h-4 text-green-600 shrink-0" />
               <span>コピー済み</span>
             </>
           ) : (
             <>
-              <Copy className="w-4 h-4" />
+              <Copy className="w-4 h-4 shrink-0" />
               <span>テキストをコピー(メモ・他アプリ用)</span>
             </>
           )}
         </button>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
+      <p className="text-xs text-muted-foreground text-center leading-relaxed">
         💡 スクショで保存して家計簿アプリに貼り付けるのもおすすめ
       </p>
     </section>

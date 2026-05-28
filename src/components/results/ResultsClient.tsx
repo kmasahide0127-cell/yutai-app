@@ -147,15 +147,15 @@ export function ResultsClient({
           <div className="mb-4 grid grid-cols-3 gap-3 rounded-lg bg-background p-3">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">必要投資額</p>
-              <p className="text-base font-bold">{formatYen(calendarPackage.totalInvestment)}</p>
+              <p className="text-base font-bold tabular-nums">{formatYen(calendarPackage.totalInvestment)}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">年間優待価値</p>
-              <p className="text-base font-bold text-primary">{formatYen(calendarPackage.totalAnnualValue)}</p>
+              <p className="text-base font-bold text-primary tabular-nums">{formatYen(calendarPackage.totalAnnualValue)}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">合計利回り</p>
-              <p className="text-base font-bold">{calendarYield}%</p>
+              <p className="text-base font-bold tabular-nums">{calendarYield}%</p>
             </div>
           </div>
 
@@ -194,7 +194,7 @@ export function ResultsClient({
                                 ({entry.yutai.code})
                               </span>
                             </span>
-                            <span className="shrink-0 font-semibold text-primary">
+                            <span className="shrink-0 font-semibold text-primary tabular-nums">
                               {formatYen(Math.round(entry.annualValue))}
                             </span>
                           </div>
@@ -229,7 +229,7 @@ export function ResultsClient({
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="text-muted-foreground">投資予算</span>
-              <span className="text-lg font-bold">{formatYen(budget)}</span>
+              <span className="text-lg font-bold tabular-nums">{formatYen(budget)}</span>
             </div>
             <input
               type="range"
@@ -250,17 +250,17 @@ export function ResultsClient({
           <div className="mb-4 grid grid-cols-3 gap-3 rounded-lg bg-background p-3">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">使用額</p>
-              <p className="text-base font-bold">{formatYen(budgetPackage.totalInvestment)}</p>
+              <p className="text-base font-bold tabular-nums">{formatYen(budgetPackage.totalInvestment)}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">年間優待価値</p>
-              <p className="text-base font-bold text-amber-600 dark:text-amber-400">
+              <p className="text-base font-bold text-amber-600 dark:text-amber-400 tabular-nums">
                 {formatYen(budgetPackage.totalAnnualValue)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">優待利回り</p>
-              <p className="text-base font-bold">{budgetYield}%</p>
+              <p className="text-base font-bold tabular-nums">{budgetYield}%</p>
             </div>
           </div>
 
@@ -288,7 +288,7 @@ export function ResultsClient({
                       投資額 {formatYen(yutai.approxInvestment)} · 利回り {yutai.yieldPercent}%
                     </p>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                  <span className="shrink-0 text-sm font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
                     {formatYen(Math.round(annualSavings))}
                   </span>
                 </li>
@@ -313,7 +313,7 @@ export function ResultsClient({
           <p className="text-sm text-muted-foreground">
             厳選{totalUnique}銘柄で削減できる見込み額
           </p>
-          <p className="text-3xl font-bold text-primary">
+          <p className="text-3xl font-bold text-primary tabular-nums">
             年間 {formatYen(totalSavings)}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -377,7 +377,7 @@ export function ResultsClient({
                     <CardContent className="space-y-4">
                       <div className="rounded-lg bg-primary/10 px-4 py-4 text-center">
                         <p className="text-xs text-muted-foreground">年間出費削減見込み</p>
-                        <p className="text-3xl font-bold text-primary">
+                        <p className="text-3xl font-bold text-primary tabular-nums">
                           {formatYen(annualSavings)}
                         </p>
                       </div>
@@ -385,11 +385,11 @@ export function ResultsClient({
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <p className="text-xs text-muted-foreground">必要投資額</p>
-                          <p className="font-semibold">{formatYen(yutai.approxInvestment)}</p>
+                          <p className="font-semibold tabular-nums">{formatYen(yutai.approxInvestment)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">優待利回り</p>
-                          <p className="font-semibold">{yutai.yieldPercent}%</p>
+                          <p className="font-semibold tabular-nums">{yutai.yieldPercent}%</p>
                         </div>
                       </div>
 

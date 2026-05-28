@@ -132,3 +132,68 @@
     @apply font-sans;
   }
 }
+
+/* ── クロスブラウザ・クロスOS 対応 ── */
+
+/* iOSで横幅ズレ防止 */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* iOS Safari の慣性スクロール */
+body {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* タップ時のハイライト色を透過 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ボタン・リンクのタップ遅延を解消 */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* iOS Safari でinput時の自動ズーム防止(font-size 16px以上) */
+input[type="range"],
+input[type="text"],
+input[type="email"],
+input[type="number"],
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* iOS Safari のデフォルトボタンスタイル除去 */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: transparent;
+}
+
+/* セーフエリア(iPhoneノッチ対応) */
+.safe-top    { padding-top:    env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-left   { padding-left:   env(safe-area-inset-left); }
+.safe-right  { padding-right:  env(safe-area-inset-right); }
+
+/* 数字を等幅表示(金額の桁ズレ防止) */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* グラデーションSVGのレンダリング最適化 */
+svg {
+  shape-rendering: geometricPrecision;
+}
+
+/* スクロールバーの統一(Webkitベース) */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+  opacity: 0.3;
+}
