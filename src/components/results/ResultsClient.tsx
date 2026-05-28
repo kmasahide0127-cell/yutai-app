@@ -2,15 +2,15 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Share2 } from "lucide-react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ShareSection } from "./ShareSection";
 import {
   buildBudgetPackage,
   type CategoryGroup,
@@ -73,7 +73,6 @@ export function ResultsClient({
       ? ((calendarPackage.totalAnnualValue / calendarPackage.totalInvestment) * 100).toFixed(1)
       : "0.0";
 
-  const [copied, setCopied] = useState(false);
   const [budget, setBudget] = useState(initialBudgetPackage.budget);
   const budgetPackage = useMemo(() => {
     if (budget === initialBudgetPackage.budget) return initialBudgetPackage;
@@ -84,7 +83,7 @@ export function ResultsClient({
       ? ((budgetPackage.totalAnnualValue / budgetPackage.totalInvestment) * 100).toFixed(1)
       : "0.0";
 
-  function generateShareText(): string {
+  const shareText = (() => {
     const lines: string[] = [];
     lines.push("🎁 優待アプリで見つけた私の優待ポートフォリオ");
     lines.push("");
@@ -110,36 +109,19 @@ export function ResultsClient({
     lines.push("あなたも生活スタイルから優待を見つけませんか?");
     lines.push("https://yutai-app-lyart.vercel.app");
     return lines.join("\n");
-  }
+  })();
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(generateShareText());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("コピー失敗:", err);
+  const shareTextShort = (() => {
+    if (calendarPackage.selectedYutai.length > 0) {
+      return `🎁 優待アプリで年間${formatYen(calendarPackage.totalAnnualValue)}削減見込みの優待ポートフォリオを見つけました!\n生活スタイルから優待が見つかるアプリです。`;
     }
-  };
+    if (budgetPackage.selectedYutai.length > 0) {
+      return `🎁 優待アプリで予算${formatYen(budget)}・利回り${budgetYield}%のおすすめパッケージを発見!\n生活スタイルから優待が見つかるアプリです。`;
+    }
+    return "🎁 優待アプリで自分にぴったりの株主優待を見つけました!";
+  })();
 
-  const handleShareTwitter = () => {
-    const text = encodeURIComponent(
-      `🎁 優待アプリで見つけた私の年間優待ポートフォリオ\n` +
-      `年間${formatYen(calendarPackage.totalAnnualValue)}削減の見込み(${calendarPackage.selectedYutai.length}銘柄)\n` +
-      `あなたも試してみませんか?`
-    );
-    const url = encodeURIComponent("https://yutai-app-lyart.vercel.app");
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
-  };
-
-  const handleShareLINE = () => {
-    const text = encodeURIComponent(
-      `🎁 優待アプリで見つけた私の優待ポートフォリオ\n` +
-      `年間${formatYen(calendarPackage.totalAnnualValue)}削減の見込み\n` +
-      `https://yutai-app-lyart.vercel.app`
-    );
-    window.open(`https://line.me/R/msg/text/?${text}`, "_blank");
-  };
+  const shareUrl = "https://yutai-app-lyart.vercel.app";
 
   return (
     <div className="space-y-8">
@@ -429,35 +411,11 @@ export function ResultsClient({
 
       {/* ── シェア・コピーボタン ── */}
       {(calendarPackage.selectedYutai.length > 0 || budgetPackage.selectedYutai.length > 0) && (
-        <section className="rounded-xl border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold mb-3">この結果を保存・シェアする</h3>
-          <div className="grid grid-cols-3 gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-green-600" />
-                  <span className="text-xs">コピー済</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span className="text-xs">テキスト</span>
-                </>
-              )}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleShareTwitter} className="gap-1.5">
-              <Share2 className="w-3.5 h-3.5" />
-              <span className="text-xs">X (Twitter)</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleShareLINE} className="gap-1.5">
-              <Share2 className="w-3.5 h-3.5" />
-              <span className="text-xs">LINE</span>
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            💡 スクショで保存して家計簿アプリのメモに貼り付けるのもおすすめ
-          </p>
-        </section>
+        <ShareSection
+          shareText={shareText}
+          shareTextShort={shareTextShort}
+          shareUrl={shareUrl}
+        />
       )}
 
       <div className="pb-4">
