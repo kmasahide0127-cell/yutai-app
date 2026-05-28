@@ -14,18 +14,17 @@ J-Quants API V2 を使って株式データ(銘柄一覧・株価・財務・配
 cd scripts
 pip install -r requirements.txt
 
-# 2. プロジェクトルートに .env を作成
-cd ..
+# 2. scripts/.env を作成(コミットされない)
 cp .env.example .env
 # .env を開いて JQUANTS_API_KEY に実際のキーを設定
 ```
 
-`.env` の内容:
+`scripts/.env` の内容:
 ```
 JQUANTS_API_KEY=取得したAPIキーをここに貼る
 ```
 
-> **注意**: `.env` は `.gitignore` に含まれています。絶対にコミットしないでください。
+> **注意**: `scripts/.env` は `.gitignore` に含まれています。絶対にコミットしないでください。
 
 ## 各スクリプトの実行
 
