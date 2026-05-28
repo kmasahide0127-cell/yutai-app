@@ -1,3 +1,4 @@
+import { AppHeader } from "@/components/AppHeader";
 import {
   matchYutaiByExpenseGrouped,
   buildCalendarPackage,
@@ -45,8 +46,9 @@ export default async function ResultsPage({
   }));
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-8 px-4">
-      <div className="mx-auto max-w-2xl space-y-6">
+    <div className="min-h-screen bg-background text-foreground">
+      <AppHeader />
+      <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
         <header>
           <h1 className="text-2xl font-bold">あなたの生活にマッチした優待</h1>
         </header>

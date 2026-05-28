@@ -1,11 +1,11 @@
-import Link from "next/link";
+import { AppHeader } from "@/components/AppHeader";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <Link href="/" className="text-sm text-muted-foreground hover:underline">← トップに戻る</Link>
-        <h1 className="text-2xl font-bold mt-4 mb-6">プライバシーポリシー</h1>
+    <div className="min-h-screen bg-background text-foreground">
+      <AppHeader />
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">プライバシーポリシー</h1>
 
         <section className="space-y-6 text-sm leading-relaxed">
           <div>
