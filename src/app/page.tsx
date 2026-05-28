@@ -11,20 +11,6 @@ function formatDate(dateStr: string): string {
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* 免責バナー */}
-      <div className="w-full bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 px-4 py-3 text-sm">
-        <div className="max-w-2xl mx-auto text-amber-900 dark:text-amber-200">
-          <p className="font-semibold mb-2">⚠ ベータ版です</p>
-          <ul className="text-xs space-y-1 list-disc list-inside">
-            <li>本サイトは個人開発のテスト版です</li>
-            <li><strong>掲載している優待情報は2026年5月27日時点のもの</strong>です。優待制度は予告なく変更・廃止される場合があります</li>
-            <li>実際の優待については各企業のIRページで最新情報を必ずご確認ください</li>
-            <li>本サイトは投資助言ではありません、投資判断は自己責任でお願いします</li>
-            <li>本サイトの情報による損害について、運営者は一切責任を負いません</li>
-          </ul>
-        </div>
-      </div>
-
       {/* メインコンテンツ */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <header className="mb-6 text-center">
@@ -50,7 +36,11 @@ export default function Home() {
       </div>
 
       {/* フッター */}
-      <footer className="mb-6 text-center text-xs text-muted-foreground">
+      <footer className="mt-12 mb-6 text-center text-xs text-muted-foreground space-y-3 max-w-2xl mx-auto px-4">
+        <p className="leading-relaxed">
+          本サイトは個人開発のベータ版です。優待情報は2026年5月27日時点のもので、最新でない可能性があります。
+          投資判断はご自身の責任でお願いします。詳細は<Link href="/terms" className="underline">利用規約</Link>をご確認ください。
+        </p>
         <div className="space-x-4">
           <Link href="/terms" className="hover:underline">利用規約</Link>
           <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
@@ -63,7 +53,7 @@ export default function Home() {
             お問い合わせ
           </a>
         </div>
-        <p className="mt-2">© 2026 優待アプリ(ベータ版) | データ取得日: 2026年5月27日</p>
+        <p>© 2026 優待アプリ(ベータ版) | データ取得日: 2026年5月27日</p>
       </footer>
     </div>
   );
