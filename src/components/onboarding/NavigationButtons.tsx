@@ -33,7 +33,7 @@ export function NavigationButtons({
   };
 
   return (
-    <div className="sticky bottom-0 z-20 border-t border-border bg-background/80 px-4 py-3 backdrop-blur-sm">
+    <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/80 px-4 py-3 safe-bottom backdrop-blur-sm">
       <div className="mx-auto flex max-w-2xl gap-3">
         {currentStep > 1 && (
           <Button
