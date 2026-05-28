@@ -29,6 +29,7 @@ import { ResultsClient } from "@/components/results/ResultsClient";
 type SearchParams = Promise<{
   expenses?: string;
   maxInvestment?: string;
+  household?: string;
 }>;
 
 export default async function ResultsPage({
@@ -36,12 +37,13 @@ export default async function ResultsPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const { expenses: expensesParam, maxInvestment: maxParam } = await searchParams;
+  const { expenses: expensesParam, maxInvestment: maxParam, household: householdParam } = await searchParams;
 
   const expenseCategories = (
     expensesParam?.split(",").filter(Boolean) ?? []
   ) as ExpenseCategory[];
   const maxInvestment = maxParam ? parseInt(maxParam, 10) : undefined;
+  const householdSize = householdParam ? Math.max(1, parseInt(householdParam, 10)) : 1;
 
   const lifestyle: UserExpenseLifestyle = { expenseCategories, brands: [], maxInvestment };
 
@@ -73,6 +75,7 @@ export default async function ResultsPage({
           initialBudgetPackage={initialBudgetPackage}
           budgetCandidates={budgetCandidates}
           lifestyle={lifestyle}
+          householdSize={householdSize}
         />
       </div>
     </div>

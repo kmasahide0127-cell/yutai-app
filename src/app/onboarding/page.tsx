@@ -33,11 +33,13 @@ const INVESTMENT_OPTIONS: { label: string; value: string }[] = [
 
 function buildResultsUrl(
   expenseCategories: string[],
-  maxInvestment: number | null
+  maxInvestment: number | null,
+  householdSize: number
 ): string {
   const params = new URLSearchParams();
   if (expenseCategories.length > 0) params.set("expenses", expenseCategories.join(","));
   if (maxInvestment !== null) params.set("maxInvestment", String(maxInvestment));
+  if (householdSize > 1) params.set("household", String(householdSize));
   return `/results?${params.toString()}`;
 }
 
@@ -74,7 +76,7 @@ function OnboardingContent() {
 
   const resultsHref =
     currentStep === 4
-      ? buildResultsUrl(expenseCategories, maxInvestment)
+      ? buildResultsUrl(expenseCategories, maxInvestment, householdSize)
       : undefined;
 
   return (

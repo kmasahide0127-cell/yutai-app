@@ -13,6 +13,7 @@ import {
 import { ShareSection } from "./ShareSection";
 import {
   buildBudgetPackage,
+  simulateFamilyShare,
   type CategoryGroup,
   type CalendarPackage,
   type BudgetPackage,
@@ -24,6 +25,31 @@ function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
 }
 
+function FamilyShareBox({ yutai, householdSize }: { yutai: Yutai; householdSize: number }) {
+  const sim = simulateFamilyShare(yutai, householdSize);
+  if (sim.type === "individual") {
+    return (
+      <div className="rounded-lg bg-primary/10 border border-primary/20 p-2.5">
+        <p className="text-xs font-medium text-primary">👥 家族分散シミュレーション</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {householdSize}名義で取得すると年間{formatYen(sim.totalAnnualValue)}分の優待に
+        </p>
+        <p className="text-xs text-muted-foreground">
+          ※必要投資額: 合計{formatYen(sim.totalInvestment)}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-lg bg-muted/50 border border-border p-2.5">
+      <p className="text-xs font-medium text-foreground">🏠 世帯共有型</p>
+      <p className="text-xs text-muted-foreground mt-1">
+        1名義で家族{householdSize}人がこの優待を使えます
+      </p>
+    </div>
+  );
+}
+
 type Props = {
   groupedResults: CategoryGroup[];
   expenseCategoryCount: number;
@@ -31,6 +57,7 @@ type Props = {
   initialBudgetPackage: BudgetPackage;
   budgetCandidates: Yutai[];
   lifestyle: UserExpenseLifestyle;
+  householdSize: number;
 };
 
 export function ResultsClient({
@@ -40,6 +67,7 @@ export function ResultsClient({
   initialBudgetPackage,
   budgetCandidates,
   lifestyle,
+  householdSize,
 }: Props) {
   const perCategoryLimit = useMemo(() => {
     if (expenseCategoryCount <= 1) return 8;
@@ -349,7 +377,7 @@ export function ResultsClient({
               </p>
             </div>
 
-            <ul className="space-y-3">
+            <ul className="space-y-3" aria-label={`${category}の優待銘柄`}>
               {topResults.map(({ yutai, matchReason, annualSavings }, idx) => (
                 <li key={yutai.id}>
                   <Card>
@@ -382,6 +410,10 @@ export function ResultsClient({
                         </p>
                       </div>
 
+                      {householdSize >= 2 && (
+                        <FamilyShareBox yutai={yutai} householdSize={householdSize} />
+                      )}
+
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <p className="text-xs text-muted-foreground">必要投資額</p>
@@ -405,6 +437,12 @@ export function ResultsClient({
                 </li>
               ))}
             </ul>
+
+            {householdSize >= 2 && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                ※家族分散は各自の投資判断と合意のもとで行ってください。優待の利用可否は各企業の規約をご確認ください。
+              </p>
+            )}
           </section>
         );
       })}

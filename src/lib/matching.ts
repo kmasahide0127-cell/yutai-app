@@ -604,6 +604,52 @@ export function getRelatedYutai(
     .slice(0, limit);
 }
 
+// ── 家族分散シミュレーション ────────────────────────────────────────
+
+export type FamilyShareType = "individual" | "shared";
+
+// 個人消費型: 各自の契約や口座に紐づくため、家族人数分の名義が必要
+const INDIVIDUAL_CATEGORIES = new Set([
+  "通信", "航空", "交通", "EC", "サービス", "IT", "金融",
+]);
+
+export function getFamilyShareType(yutai: Yutai): FamilyShareType {
+  return yutai.categories.some((c) => INDIVIDUAL_CATEGORIES.has(c))
+    ? "individual"
+    : "shared";
+}
+
+export type FamilyShareSimulation = {
+  type: FamilyShareType;
+  householdSize: number;
+  totalAnnualValue: number;
+  totalInvestment: number;
+  sharesNeeded: number;
+};
+
+export function simulateFamilyShare(
+  yutai: Yutai,
+  householdSize: number
+): FamilyShareSimulation {
+  const type = getFamilyShareType(yutai);
+  if (type === "individual") {
+    return {
+      type,
+      householdSize,
+      totalAnnualValue: yutai.annualValue * householdSize,
+      totalInvestment: yutai.approxInvestment * householdSize,
+      sharesNeeded: householdSize,
+    };
+  }
+  return {
+    type,
+    householdSize,
+    totalAnnualValue: yutai.annualValue,
+    totalInvestment: yutai.approxInvestment,
+    sharesNeeded: 1,
+  };
+}
+
 // ── 使用例 ──────────────────────────────────────────────────────
 //
 // 例1: 楽天ユーザー → 楽天グループだけマッチ
