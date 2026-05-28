@@ -1,10 +1,11 @@
 import { MetadataRoute } from "next";
+import { YUTAI_LIST } from "@/lib/yutai-data";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://yutai-app-lyart.vercel.app";
   const now = new Date();
 
-  return [
+  const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified: now,
@@ -16,6 +17,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/stocks`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/terms`,
@@ -30,4 +37,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
   ];
+
+  const stockPages: MetadataRoute.Sitemap = YUTAI_LIST.filter(
+    (y) => y.annualValue > 0
+  ).map((yutai) => ({
+    url: `${baseUrl}/stocks/${yutai.code}`,
+    lastModified: yutai.lastVerified ? new Date(yutai.lastVerified) : now,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return [...staticPages, ...stockPages];
 }

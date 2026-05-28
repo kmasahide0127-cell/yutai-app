@@ -42,6 +42,7 @@ export default function Home() {
           投資判断はご自身の責任でお願いします。詳細は<Link href="/terms" className="underline">利用規約</Link>をご確認ください。
         </p>
         <div className="space-x-4">
+          <Link href="/stocks" className="hover:underline">銘柄一覧</Link>
           <Link href="/terms" className="hover:underline">利用規約</Link>
           <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
           <a

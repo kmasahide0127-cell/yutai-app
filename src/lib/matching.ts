@@ -531,6 +531,36 @@ export function buildBudgetPackage(
   };
 }
 
+// ── 銘柄個別ページ用ユーティリティ ───────────────────────────────
+
+/** 銘柄から該当する出費カテゴリを逆引きする */
+export function getMatchingExpenseCategoriesForYutai(yutai: Yutai): ExpenseCategory[] {
+  const matched: ExpenseCategory[] = [];
+  for (const expense of EXPENSE_CATEGORIES) {
+    const mapping = expenseToYutaiMatch[expense];
+    if (!mapping) continue;
+    const catMatch = yutai.categories.some((c) => mapping.categories.includes(c));
+    const tagMatch = yutai.lifestyleTags.some((t) => mapping.tags.includes(t));
+    if (catMatch || tagMatch) {
+      matched.push(expense);
+    }
+  }
+  return matched;
+}
+
+/** 同じカテゴリを持つ関連銘柄を取得(自分自身を除く、上位N件) */
+export function getRelatedYutai(
+  currentYutai: Yutai,
+  yutaiList: Yutai[],
+  limit: number = 5
+): Yutai[] {
+  return yutaiList
+    .filter((y) => y.id !== currentYutai.id && y.annualValue > 0)
+    .filter((y) => y.categories.some((c) => currentYutai.categories.includes(c)))
+    .sort((a, b) => b.annualValue - a.annualValue)
+    .slice(0, limit);
+}
+
 // ── 使用例 ──────────────────────────────────────────────────────
 //
 // 例1: 楽天ユーザー → 楽天グループだけマッチ
