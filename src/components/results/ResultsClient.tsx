@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { CategoryGroup } from "@/lib/matching";
+import type { CategoryGroup, CalendarPackage } from "@/lib/matching";
 
 function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
@@ -19,9 +19,10 @@ function formatYen(amount: number): string {
 type Props = {
   groupedResults: CategoryGroup[];
   expenseCategoryCount: number;
+  calendarPackage: CalendarPackage;
 };
 
-export function ResultsClient({ groupedResults, expenseCategoryCount }: Props) {
+export function ResultsClient({ groupedResults, expenseCategoryCount, calendarPackage }: Props) {
   const perCategoryLimit = useMemo(() => {
     if (expenseCategoryCount <= 1) return 8;
     if (expenseCategoryCount === 2) return 5;
@@ -49,9 +50,102 @@ export function ResultsClient({ groupedResults, expenseCategoryCount }: Props) {
     return { totalSavings: savings, totalInvestment: investment, totalUnique: seen.size };
   }, [groupedResults, perCategoryLimit]);
 
+  const calendarYield =
+    calendarPackage.totalInvestment > 0
+      ? ((calendarPackage.totalAnnualValue / calendarPackage.totalInvestment) * 100).toFixed(1)
+      : "0.0";
+
   return (
     <div className="space-y-8">
-      {/* 合計サマリー */}
+      {/* ── 年間優待カレンダーパッケージ ── */}
+      {calendarPackage.selectedYutai.length > 0 && (
+        <section className="rounded-xl border-2 border-primary bg-primary/5 p-4">
+          <div className="mb-4">
+            <h2 className="flex items-center gap-2 text-xl font-bold">
+              📅 年間優待カレンダー
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              権利確定月が分散するように選んだ {calendarPackage.selectedYutai.length} 銘柄。
+              年間を通じて優待が届くパッケージです。
+            </p>
+            {calendarPackage.selectedYutai.length <= 3 && (
+              <p className="mt-2 text-xs text-accent font-medium">
+                💡 もっとカテゴリを選ぶと年間カレンダーが充実します
+              </p>
+            )}
+          </div>
+
+          {/* パッケージサマリー */}
+          <div className="mb-4 grid grid-cols-3 gap-3 rounded-lg bg-background p-3">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">必要投資額</p>
+              <p className="text-base font-bold">{formatYen(calendarPackage.totalInvestment)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">年間優待価値</p>
+              <p className="text-base font-bold text-primary">{formatYen(calendarPackage.totalAnnualValue)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">合計利回り</p>
+              <p className="text-base font-bold">{calendarYield}%</p>
+            </div>
+          </div>
+
+          {/* 月別カレンダー */}
+          <div className="space-y-1.5">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
+              const entries = calendarPackage.monthEntries.filter((e) => e.month === month);
+              const isEmpty = entries.length === 0;
+
+              return (
+                <div
+                  key={month}
+                  className={cn(
+                    "flex items-start gap-3 rounded-lg px-3 py-2",
+                    isEmpty ? "bg-muted/30" : "bg-background"
+                  )}
+                >
+                  <div className="w-8 shrink-0 text-center">
+                    <p className={cn("text-sm font-medium", isEmpty && "text-muted-foreground")}>
+                      {month}月
+                    </p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {isEmpty ? (
+                      <p className="text-xs italic text-muted-foreground">権利確定なし</p>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {entries.map((entry, idx) => (
+                          <div
+                            key={`${entry.yutai.id}-${idx}`}
+                            className="flex items-center justify-between gap-2 text-sm"
+                          >
+                            <span className="truncate font-medium">
+                              {entry.yutai.name}
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                ({entry.yutai.code})
+                              </span>
+                            </span>
+                            <span className="shrink-0 font-semibold text-primary">
+                              {formatYen(Math.round(entry.annualValue))}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            ※ 権利確定月は2026年5月27日時点の情報。実際の優待発送は各企業の方針により異なります。
+          </p>
+        </section>
+      )}
+
+      {/* ── カテゴリ別サマリー ── */}
       {hasAnyResults && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">
@@ -69,16 +163,16 @@ export function ResultsClient({ groupedResults, expenseCategoryCount }: Props) {
         </div>
       )}
 
-      {/* 全カテゴリ該当なし */}
-      {!hasAnyResults && (
+      {/* ── 全カテゴリ該当なし ── */}
+      {!hasAnyResults && calendarPackage.selectedYutai.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">
-            選んだ出費カテゴリに該当する優待銘柄が見つかりませんでした。条件を変えて再検索してみてください。
+            選んだ出費カテゴリに該当する優待銘柄が見つかりませんでした。他のカテゴリも試してみてください。
           </p>
         </div>
       )}
 
-      {/* カテゴリ別セクション */}
+      {/* ── カテゴリ別セクション ── */}
       {groupedResults.map(({ category, results }) => {
         if (results.length === 0) return null;
         const topResults = results.slice(0, perCategoryLimit);

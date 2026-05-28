@@ -1,7 +1,9 @@
 import {
   matchYutaiByExpenseGrouped,
+  buildCalendarPackage,
   type ExpenseCategory,
   type CategoryGroup,
+  type CalendarPackage,
 } from "@/lib/matching";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { ResultsClient } from "@/components/results/ResultsClient";
@@ -23,10 +25,10 @@ export default async function ResultsPage({
   ) as ExpenseCategory[];
   const maxInvestment = maxParam ? parseInt(maxParam, 10) : undefined;
 
-  const groupedMap = matchYutaiByExpenseGrouped(
-    { expenseCategories, brands: [], maxInvestment },
-    YUTAI_LIST
-  );
+  const lifestyle = { expenseCategories, brands: [], maxInvestment };
+
+  const groupedMap = matchYutaiByExpenseGrouped(lifestyle, YUTAI_LIST);
+  const calendarPackage: CalendarPackage = buildCalendarPackage(lifestyle, YUTAI_LIST);
 
   // Map → 配列変換(Server→Client propsはシリアライズ可能な型のみ)
   const groupedResults: CategoryGroup[] = expenseCategories.map((cat) => ({
@@ -44,6 +46,7 @@ export default async function ResultsPage({
         <ResultsClient
           groupedResults={groupedResults}
           expenseCategoryCount={expenseCategories.length}
+          calendarPackage={calendarPackage}
         />
       </div>
     </div>
