@@ -604,6 +604,20 @@ export function getRelatedYutai(
     .slice(0, limit);
 }
 
+// ── EVユーザー向けガソリン給油系銘柄判定 ────────────────────────────
+
+// ガソリン給油所に特化した銘柄かどうかを判定する。
+// カー用品(オートバックス等)・駐車場・中古車はEVでも利用可能なので対象外。
+// 現在データ(2026年5月)ではENEOS・出光はannualValue=0のため結果に出ないが、
+// データ更新時に給油系優待が追加された場合に備えてフィルタを維持する。
+export function isGasolineYutai(yutai: Yutai): boolean {
+  const gasolineBrandKeywords = ["ENEOS", "エネオス", "apollostation", "出光ガソリンスタンド", "昭和シェル", "コスモ石油"];
+  const brandMatch = yutai.brands.some((b) => gasolineBrandKeywords.some((k) => b.includes(k)));
+  // 「給油」は給油所特有の表現。駐車場・カー用品の説明文には出てこない。
+  const descMatch = yutai.description.includes("給油");
+  return brandMatch || descMatch;
+}
+
 // ── 家族分散シミュレーション ────────────────────────────────────────
 
 export type FamilyShareType = "individual" | "shared";

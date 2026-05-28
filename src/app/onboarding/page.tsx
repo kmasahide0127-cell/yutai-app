@@ -13,8 +13,11 @@ import {
 import { ProgressBar } from "@/components/onboarding/ProgressBar";
 import { NavigationButtons } from "@/components/onboarding/NavigationButtons";
 import { useOnboardingStore } from "@/store/onboarding-store";
+import type { VehicleType } from "@/store/onboarding-store";
 import { EXPENSE_CATEGORIES } from "@/lib/matching";
 import { cn } from "@/lib/utils";
+
+const CAR_CATEGORY = "車関連費(ガソリン・駐車場・整備)" as const;
 
 const HOUSEHOLD_OPTIONS: { label: string; value: number }[] = [
   { label: "1人(単身)", value: 1 },
@@ -31,15 +34,24 @@ const INVESTMENT_OPTIONS: { label: string; value: string }[] = [
   { label: "上限なし", value: "unlimited" },
 ];
 
+const VEHICLE_OPTIONS: { label: string; value: "gasoline" | "ev" }[] = [
+  { label: "⛽ ガソリン車・ディーゼル車・ハイブリッド", value: "gasoline" },
+  { label: "🔌 EV(電気自動車)・PHV", value: "ev" },
+];
+
 function buildResultsUrl(
   expenseCategories: string[],
   maxInvestment: number | null,
-  householdSize: number
+  householdSize: number,
+  vehicleType: VehicleType
 ): string {
   const params = new URLSearchParams();
   if (expenseCategories.length > 0) params.set("expenses", expenseCategories.join(","));
   if (maxInvestment !== null) params.set("maxInvestment", String(maxInvestment));
   if (householdSize > 1) params.set("household", String(householdSize));
+  if (vehicleType && expenseCategories.includes(CAR_CATEGORY)) {
+    params.set("vehicleType", vehicleType);
+  }
   return `/results?${params.toString()}`;
 }
 
@@ -54,6 +66,11 @@ const HOUSEHOLD_LABELS: Record<number, string> = {
   4: "4人以上",
 };
 
+const VEHICLE_LABELS: Record<string, string> = {
+  gasoline: "ガソリン車・HV",
+  ev: "EV・PHV",
+};
+
 function OnboardingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -63,9 +80,11 @@ function OnboardingContent() {
     expenseCategories,
     householdSize,
     maxInvestment,
+    vehicleType,
     setExpenseCategories,
     setHouseholdSize,
     setMaxInvestment,
+    setVehicleType,
   } = useOnboardingStore();
 
   const investmentStr = maxInvestment === null ? "unlimited" : String(maxInvestment);
@@ -74,10 +93,21 @@ function OnboardingContent() {
     setMaxInvestment(val === "unlimited" ? null : parseInt(val, 10));
   };
 
+  // 車関連費のチェック解除時は vehicleType をリセット
+  const handleExpenseCategoryChange = (item: string) => {
+    const next = toggle(expenseCategories, item);
+    setExpenseCategories(next);
+    if (item === CAR_CATEGORY && !next.includes(item)) {
+      setVehicleType(null);
+    }
+  };
+
   const resultsHref =
     currentStep === 4
-      ? buildResultsUrl(expenseCategories, maxInvestment, householdSize)
+      ? buildResultsUrl(expenseCategories, maxInvestment, householdSize, vehicleType)
       : undefined;
+
+  const hasCarCategory = expenseCategories.includes(CAR_CATEGORY);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -103,14 +133,37 @@ function OnboardingContent() {
                   >
                     <Checkbox
                       checked={expenseCategories.includes(item)}
-                      onCheckedChange={() =>
-                        setExpenseCategories(toggle(expenseCategories, item))
-                      }
+                      onCheckedChange={() => handleExpenseCategoryChange(item)}
                     />
                     <span className="text-sm font-medium">{item}</span>
                   </label>
                 ))}
               </div>
+
+              {/* 車種サブ質問: 車関連費を選んだ時のみ表示 */}
+              {hasCarCategory && (
+                <div className="ml-2 mt-1 border-l-2 border-primary/30 pl-3 space-y-2">
+                  <p className="text-sm font-medium">お車の種類は?</p>
+                  <p className="text-xs text-muted-foreground">種類によって使える優待が変わります</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {VEHICLE_OPTIONS.map(({ label, value }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setVehicleType(vehicleType === value ? null : value)}
+                        className={cn(
+                          "rounded-lg border p-2.5 text-sm text-left transition-colors",
+                          vehicleType === value
+                            ? "border-primary bg-primary/10 font-medium"
+                            : "border-border hover:bg-muted/50"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           )}
 
@@ -218,6 +271,11 @@ function OnboardingContent() {
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">未選択</p>
+                  )}
+                  {hasCarCategory && vehicleType && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      お車: {VEHICLE_LABELS[vehicleType] ?? vehicleType}
+                    </p>
                   )}
                 </CardContent>
               </Card>

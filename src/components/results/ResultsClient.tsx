@@ -19,6 +19,7 @@ import {
   type BudgetPackage,
   type UserExpenseLifestyle,
 } from "@/lib/matching";
+import type { VehicleType } from "@/store/onboarding-store";
 import type { Yutai } from "@/lib/yutai-data";
 
 function formatYen(amount: number): string {
@@ -50,6 +51,8 @@ function FamilyShareBox({ yutai, householdSize }: { yutai: Yutai; householdSize:
   );
 }
 
+const CAR_EXPENSE_CATEGORY = "車関連費(ガソリン・駐車場・整備)";
+
 type Props = {
   groupedResults: CategoryGroup[];
   expenseCategoryCount: number;
@@ -58,6 +61,7 @@ type Props = {
   budgetCandidates: Yutai[];
   lifestyle: UserExpenseLifestyle;
   householdSize: number;
+  vehicleType: VehicleType;
 };
 
 export function ResultsClient({
@@ -68,6 +72,7 @@ export function ResultsClient({
   budgetCandidates,
   lifestyle,
   householdSize,
+  vehicleType,
 }: Props) {
   const perCategoryLimit = useMemo(() => {
     if (expenseCategoryCount <= 1) return 8;
@@ -364,7 +369,12 @@ export function ResultsClient({
 
       {/* ── カテゴリ別セクション ── */}
       {groupedResults.map(({ category, results }) => {
-        if (results.length === 0) return null;
+        const isCarCategory = category === CAR_EXPENSE_CATEGORY;
+        const isEvUser = vehicleType === "ev";
+
+        // EV車セクションは results=0 でも空状態ボックス表示のため素通りさせる
+        if (results.length === 0 && !(isEvUser && isCarCategory)) return null;
+
         const topResults = results.slice(0, perCategoryLimit);
         const sectionTotal = topResults.reduce((sum, r) => sum + r.annualSavings, 0);
 
@@ -372,10 +382,48 @@ export function ResultsClient({
           <section key={category}>
             <div className="mb-4 border-b-2 border-primary pb-2">
               <h2 className="text-lg font-bold">{category}</h2>
-              <p className="text-sm text-muted-foreground">
-                上位{topResults.length}銘柄で年間 {formatYen(sectionTotal)} 削減見込み
-              </p>
+              {topResults.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  上位{topResults.length}銘柄で年間 {formatYen(sectionTotal)} 削減見込み
+                </p>
+              )}
             </div>
+
+            {/* EV向け正直な空状態 */}
+            {isEvUser && isCarCategory && (
+              <div className="mb-4 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg leading-none mt-0.5">🔌</span>
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold">EVの充電費を下げる株主優待は、現状ありません</h3>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      EV・PHVの充電費を直接下げる株主優待を、2026年5月時点で調査しましたが、見つかりませんでした。
+                      石油元売り(ENEOS・出光等)の優待はガソリン給油の割引で、EVには使えません。
+                      電力会社や充電サービス事業者の株主優待も確認しましたが、充電費が安くなる銘柄はありませんでした。
+                    </p>
+                    <div className="rounded-lg bg-background/60 p-2.5 text-xs leading-relaxed">
+                      <p className="font-medium mb-1">💡 EV充電費を下げるには</p>
+                      <p className="text-muted-foreground">
+                        充電費の削減は「株主優待」ではなく「電気料金プラン」の領域です。
+                        自宅充電なら、深夜帯が割安になるEV向け電力プラン(各電力会社が提供)の見直しが効果的です。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* EVでも使える車関連優待の見出し */}
+            {isEvUser && isCarCategory && topResults.length > 0 && (
+              <p className="mb-3 text-sm font-medium text-muted-foreground">
+                EVでも使える車関連の優待
+              </p>
+            )}
+            {isEvUser && isCarCategory && topResults.length === 0 && (
+              <p className="rounded-lg border border-border bg-card p-3 text-center text-sm text-muted-foreground">
+                現在、EVでも使える車関連の優待は準備中です
+              </p>
+            )}
 
             <ul className="space-y-3" aria-label={`${category}の優待銘柄`}>
               {topResults.map(({ yutai, matchReason, annualSavings }, idx) => (

@@ -17,12 +17,14 @@ import {
   buildCalendarPackage,
   filterCandidatesForBudget,
   buildBudgetPackage,
+  isGasolineYutai,
   type ExpenseCategory,
   type CategoryGroup,
   type CalendarPackage,
   type BudgetPackage,
   type UserExpenseLifestyle,
 } from "@/lib/matching";
+import type { VehicleType } from "@/store/onboarding-store";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { ResultsClient } from "@/components/results/ResultsClient";
 
@@ -30,6 +32,7 @@ type SearchParams = Promise<{
   expenses?: string;
   maxInvestment?: string;
   household?: string;
+  vehicleType?: string;
 }>;
 
 export default async function ResultsPage({
@@ -37,13 +40,21 @@ export default async function ResultsPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const { expenses: expensesParam, maxInvestment: maxParam, household: householdParam } = await searchParams;
+  const {
+    expenses: expensesParam,
+    maxInvestment: maxParam,
+    household: householdParam,
+    vehicleType: vehicleTypeParam,
+  } = await searchParams;
 
   const expenseCategories = (
     expensesParam?.split(",").filter(Boolean) ?? []
   ) as ExpenseCategory[];
   const maxInvestment = maxParam ? parseInt(maxParam, 10) : undefined;
   const householdSize = householdParam ? Math.max(1, parseInt(householdParam, 10)) : 1;
+  const vehicleType = (["gasoline", "ev", "none"].includes(vehicleTypeParam ?? "")
+    ? vehicleTypeParam
+    : null) as VehicleType;
 
   const lifestyle: UserExpenseLifestyle = { expenseCategories, brands: [], maxInvestment };
 
@@ -55,10 +66,15 @@ export default async function ResultsPage({
   const initialBudgetPackage: BudgetPackage = buildBudgetPackage(lifestyle, budgetCandidates, defaultBudget);
 
   // Map → 配列変換(Server→Client propsはシリアライズ可能な型のみ)
-  const groupedResults: CategoryGroup[] = expenseCategories.map((cat) => ({
-    category: cat,
-    results: groupedMap.get(cat) ?? [],
-  }));
+  // EVユーザーの場合、車関連費セクションからガソリン給油系を除外する
+  const CAR_CATEGORY = "車関連費(ガソリン・駐車場・整備)" as ExpenseCategory;
+  const groupedResults: CategoryGroup[] = expenseCategories.map((cat) => {
+    const results = groupedMap.get(cat) ?? [];
+    if (vehicleType === "ev" && cat === CAR_CATEGORY) {
+      return { category: cat, results: results.filter((r) => !isGasolineYutai(r.yutai)) };
+    }
+    return { category: cat, results };
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -76,6 +92,7 @@ export default async function ResultsPage({
           budgetCandidates={budgetCandidates}
           lifestyle={lifestyle}
           householdSize={householdSize}
+          vehicleType={vehicleType}
         />
       </div>
     </div>
