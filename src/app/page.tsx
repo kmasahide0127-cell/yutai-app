@@ -2,6 +2,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { ResetLink } from "@/components/ResetLink";
 import { DATA_LAST_UPDATED, VERIFIED_COUNT, TOTAL_COUNT } from "@/lib/yutai-data";
+import { EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-");
@@ -33,6 +34,22 @@ export default function Home() {
             </p>
           </div>
         </main>
+
+        {/* 出費カテゴリから探す(SEO内部リンク) */}
+        <section className="mt-8 w-full max-w-2xl mx-auto px-4">
+          <p className="text-xs text-muted-foreground text-center mb-3">出費カテゴリから優待を探す</p>
+          <div className="flex flex-wrap gap-1.5 justify-center">
+            {Object.entries(EXPENSE_CATEGORY_SLUGS).map(([cat, slug]) => (
+              <Link
+                key={slug}
+                href={`/expense/${slug}`}
+                className="inline-flex items-center px-2.5 py-1 rounded-md border border-border bg-card text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+              >
+                {cat}
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
 
       {/* フッター */}

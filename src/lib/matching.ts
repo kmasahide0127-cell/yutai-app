@@ -531,6 +531,49 @@ export function buildBudgetPackage(
   };
 }
 
+// ── 出費カテゴリ ↔ URLスラッグ ────────────────────────────────────
+
+export const EXPENSE_CATEGORY_SLUGS: Record<ExpenseCategory, string> = {
+  "外食・カフェ": "eating-out",
+  "自炊・食材": "groceries",
+  "コンビニ・お菓子": "convenience",
+  "日用品・ドラッグストア": "daily-goods",
+  "衣服・ファッション": "fashion",
+  "美容・スキンケア": "beauty",
+  "通信費": "telecom",
+  "車関連費(ガソリン・駐車場・整備)": "car",
+  "交通・旅行": "travel",
+  "エンタメ(映画・テーマパーク)": "entertainment",
+  "健康・スポーツ": "health",
+  "子育て・教育": "family",
+  "趣味・ガジェット": "hobby",
+  "ネットショッピング": "online-shopping",
+};
+
+export function getExpenseCategoryBySlug(slug: string): ExpenseCategory | undefined {
+  const entry = Object.entries(EXPENSE_CATEGORY_SLUGS).find(([, s]) => s === slug);
+  return entry ? (entry[0] as ExpenseCategory) : undefined;
+}
+
+export function getYutaiForExpenseCategory(
+  expense: ExpenseCategory,
+  yutaiList: Yutai[],
+  limit: number = 20
+): Yutai[] {
+  const mapping = expenseToYutaiMatch[expense];
+  if (!mapping) return [];
+
+  return yutaiList
+    .filter((y) => y.annualValue > 0)
+    .filter((y) => {
+      const catMatch = y.categories.some((c) => mapping.categories.includes(c));
+      const tagMatch = y.lifestyleTags.some((t) => mapping.tags.includes(t));
+      return catMatch || tagMatch;
+    })
+    .sort((a, b) => b.annualValue - a.annualValue)
+    .slice(0, limit);
+}
+
 // ── 銘柄個別ページ用ユーティリティ ───────────────────────────────
 
 /** 銘柄から該当する出費カテゴリを逆引きする */
