@@ -1,4 +1,5 @@
 import type { Yutai, PreferenceTag } from "./yutai-data";
+export type { PreferenceTag };
 import type { MatchResult, UserLifestyle } from "@/types/matching";
 
 function generateMatchReason(

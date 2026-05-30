@@ -14,7 +14,12 @@ import { ProgressBar } from "@/components/onboarding/ProgressBar";
 import { NavigationButtons } from "@/components/onboarding/NavigationButtons";
 import { useOnboardingStore } from "@/store/onboarding-store";
 import type { VehicleType } from "@/store/onboarding-store";
-import { EXPENSE_CATEGORIES } from "@/lib/matching";
+import {
+  EXPENSE_CATEGORIES,
+  PREFERENCE_TAGS,
+  type ExpenseCategory,
+  type PreferenceTag,
+} from "@/lib/matching";
 import { cn } from "@/lib/utils";
 
 const CAR_CATEGORY = "車関連費(ガソリン・駐車場・整備)" as const;
@@ -39,11 +44,15 @@ const VEHICLE_OPTIONS: { label: string; value: "gasoline" | "ev" }[] = [
   { label: "🔌 EV(電気自動車)・PHV", value: "ev" },
 ];
 
+// Step 4 でタグ ID → ラベル変換に使う一覧
+const ALL_PREFERENCE_TAGS_FLAT = Object.values(PREFERENCE_TAGS).flat();
+
 function buildResultsUrl(
   expenseCategories: string[],
   maxInvestment: number | null,
   householdSize: number,
-  vehicleType: VehicleType
+  vehicleType: VehicleType,
+  preferenceTags: PreferenceTag[]
 ): string {
   const params = new URLSearchParams();
   if (expenseCategories.length > 0) params.set("expenses", expenseCategories.join(","));
@@ -52,6 +61,7 @@ function buildResultsUrl(
   if (vehicleType && expenseCategories.includes(CAR_CATEGORY)) {
     params.set("vehicleType", vehicleType);
   }
+  if (preferenceTags.length > 0) params.set("preferenceTags", preferenceTags.join(","));
   return `/results?${params.toString()}`;
 }
 
@@ -90,10 +100,13 @@ function OnboardingContent() {
     householdSize,
     maxInvestment,
     vehicleType,
+    preferenceTags,
     setExpenseCategories,
     setHouseholdSize,
     setMaxInvestment,
     setVehicleType,
+    setPreferenceTags,
+    togglePreferenceTag,
   } = useOnboardingStore();
 
   const investmentStr = maxInvestment === null ? "unlimited" : String(maxInvestment);
@@ -102,21 +115,32 @@ function OnboardingContent() {
     setMaxInvestment(val === "unlimited" ? null : parseInt(val, 10));
   };
 
-  // 車関連費のチェック解除時は vehicleType をリセット
   const handleExpenseCategoryChange = (item: string) => {
     const next = toggle(expenseCategories, item);
     setExpenseCategories(next);
     if (item === CAR_CATEGORY && !next.includes(item)) {
       setVehicleType(null);
     }
+    // カテゴリを外した時は、そのカテゴリに属するタグも削除
+    if (!next.includes(item)) {
+      const removedTagIds = PREFERENCE_TAGS[item as ExpenseCategory]?.map((t) => t.id) ?? [];
+      if (removedTagIds.length > 0) {
+        setPreferenceTags(preferenceTags.filter((t) => !removedTagIds.includes(t)));
+      }
+    }
   };
 
   const resultsHref =
     currentStep === 4
-      ? buildResultsUrl(expenseCategories, maxInvestment, householdSize, vehicleType)
+      ? buildResultsUrl(expenseCategories, maxInvestment, householdSize, vehicleType, preferenceTags)
       : undefined;
 
   const hasCarCategory = expenseCategories.includes(CAR_CATEGORY);
+
+  // タグが存在する選択済みカテゴリのみ抽出(表示順を保持)
+  const categoriesWithTags = expenseCategories.filter(
+    (cat) => (PREFERENCE_TAGS[cat as ExpenseCategory]?.length ?? 0) > 0
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -148,6 +172,44 @@ function OnboardingContent() {
                   </label>
                 ))}
               </div>
+
+              {/* 嗜好タグ: タグが定義されたカテゴリを選択した場合に表示 */}
+              {categoriesWithTags.length > 0 && (
+                <div className="space-y-3">
+                  {categoriesWithTags.map((cat) => {
+                    const tags = PREFERENCE_TAGS[cat as ExpenseCategory];
+                    return (
+                      <div
+                        key={cat}
+                        className="ml-2 border-l-2 border-primary/30 pl-3 space-y-2"
+                      >
+                        <p className="text-xs font-medium text-muted-foreground">
+                          {cat}について、特に重視するものは?{" "}
+                          <span className="font-normal">(任意・複数選択可)</span>
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                          {tags.map((tag) => (
+                            <button
+                              key={tag.id}
+                              type="button"
+                              onClick={() => togglePreferenceTag(tag.id)}
+                              className={cn(
+                                "flex items-center gap-1.5 rounded-md border px-2.5 py-2 text-xs text-left transition-colors",
+                                preferenceTags.includes(tag.id)
+                                  ? "border-primary bg-primary/10 font-medium"
+                                  : "border-border hover:bg-muted/50"
+                              )}
+                            >
+                              <span>{tag.emoji}</span>
+                              <span>{tag.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* 車種サブ質問: 車関連費を選んだ時のみ表示 */}
               {hasCarCategory && (
@@ -288,6 +350,38 @@ function OnboardingContent() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* 嗜好タグ確認(選択がある場合のみ表示) */}
+              {preferenceTags.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>嗜好タグ</CardTitle>
+                      <button
+                        onClick={() => router.push("/onboarding?step=1")}
+                        className="text-xs text-accent hover:underline"
+                      >
+                        修正
+                      </button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {preferenceTags.map((tagId) => {
+                        const tag = ALL_PREFERENCE_TAGS_FLAT.find((t) => t.id === tagId);
+                        return tag ? (
+                          <span
+                            key={tagId}
+                            className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                          >
+                            {tag.emoji} {tag.label}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card>
                 <CardHeader>

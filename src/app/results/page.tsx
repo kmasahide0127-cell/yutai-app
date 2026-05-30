@@ -33,6 +33,7 @@ type SearchParams = Promise<{
   maxInvestment?: string;
   household?: string;
   vehicleType?: string;
+  preferenceTags?: string; // TODO: Stage 3 でスコアリングに使用
 }>;
 
 export default async function ResultsPage({
@@ -45,7 +46,9 @@ export default async function ResultsPage({
     maxInvestment: maxParam,
     household: householdParam,
     vehicleType: vehicleTypeParam,
+    preferenceTags: preferenceTagsParam, // TODO: Stage 3 でスコアリングに使用
   } = await searchParams;
+  void preferenceTagsParam; // 現時点では未使用(Stage 3 で実装)
 
   const expenseCategories = (
     expensesParam?.split(",").filter(Boolean) ?? []
