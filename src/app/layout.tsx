@@ -15,10 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://yutai-app-lyart.vercel.app"),
   title: {
-    default: "優待アプリ(ベータ版) - 生活逆引き型 株主優待マッチング",
+    default: "優待アプリ - 生活逆引き型 株主優待マッチング",
     template: "%s | 優待アプリ",
   },
-  description: "あなたの毎月の出費から、それを削減できる株主優待を提案。生活逆引き型の優待マッチングアプリ(ベータ版・個人開発・データ取得日2026年5月27日)。",
+  description: "あなたの毎月の出費から、それを削減できる株主優待を提案。生活逆引き型の優待マッチングアプリ(個人開発・データ取得日2026年5月27日)。",
   keywords: [
     "株主優待",
     "優待",
@@ -49,14 +49,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ja_JP",
-    siteName: "優待アプリ(ベータ版)",
-    title: "優待アプリ(ベータ版) - 生活逆引き型 株主優待マッチング",
+    siteName: "優待アプリ",
+    title: "優待アプリ - 生活逆引き型 株主優待マッチング",
     description: "あなたの毎月の出費から、それを削減できる株主優待を提案。",
     url: "https://yutai-app-lyart.vercel.app",
   },
   twitter: {
     card: "summary",
-    title: "優待アプリ(ベータ版)",
+    title: "優待アプリ",
     description: "あなたの毎月の出費から、それを削減できる株主優待を提案。",
   },
   verification: {

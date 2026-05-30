@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/AppHeader";
 
 export const metadata: Metadata = {
   title: "プライバシーポリシー",
-  description: "優待アプリ(ベータ版)のプライバシーポリシー。すべてのデータはお使いのブラウザのみで保存されます。",
+  description: "優待アプリのプライバシーポリシー。すべてのデータはお使いのブラウザのみで保存されます。",
   alternates: {
     canonical: "/privacy",
   },
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="font-semibold text-base mb-2">4. アクセス解析</h2>
-            <p>本サービスは、ベータ版期間中はアクセス解析ツール(Google Analytics 等)を使用していません。将来導入する場合は、本ポリシーを更新の上、ユーザーに通知します。</p>
+            <p>本サービスは、現在はアクセス解析ツール(Google Analytics 等)を使用していません。将来導入する場合は、本ポリシーを更新の上、ユーザーに通知します。</p>
           </div>
 
           <div>

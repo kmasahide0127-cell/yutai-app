@@ -59,6 +59,15 @@ function toggle(list: string[], item: string): string[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
 
+function formatInvestmentLabel(amount: number): string {
+  if (amount >= 100000000) {
+    const oku = amount / 100000000;
+    return `${oku % 1 === 0 ? oku : oku.toFixed(1)}億円`;
+  }
+  const man = amount / 10000;
+  return `${man.toLocaleString()}万円`;
+}
+
 const HOUSEHOLD_LABELS: Record<number, string> = {
   1: "1人(単身)",
   2: "2人",
@@ -315,7 +324,7 @@ function OnboardingContent() {
                   <p className="text-sm font-medium">
                     {maxInvestment === null
                       ? "上限なし"
-                      : `${maxInvestment.toLocaleString("ja-JP")}円以下`}
+                      : `${formatInvestmentLabel(maxInvestment)}以下`}
                   </p>
                 </CardContent>
               </Card>

@@ -2,8 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { useOnboardingStore } from "@/store/onboarding-store";
-
 type NavigationButtonsProps = {
   currentStep: number;
   isNextDisabled: boolean;
@@ -16,7 +14,6 @@ export function NavigationButtons({
   resultsHref,
 }: NavigationButtonsProps) {
   const router = useRouter();
-  const reset = useOnboardingStore((s) => s.reset);
 
   const handleBack = () => {
     router.push(`/onboarding?step=${currentStep - 1}`);
@@ -28,7 +25,6 @@ export function NavigationButtons({
 
   const handleResults = () => {
     if (!resultsHref) return;
-    reset();
     router.push(resultsHref);
   };
 

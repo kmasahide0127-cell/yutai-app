@@ -16,7 +16,6 @@ export default function Home() {
       <div className="flex-1 w-full flex flex-col items-center justify-center px-4 py-12">
         <header className="mb-6 text-center">
           <h1 className="text-4xl font-bold tracking-tight">優待アプリ</h1>
-          <p className="text-sm text-muted-foreground mt-1">ベータ版</p>
         </header>
 
         <main className="text-center space-y-8">
@@ -55,7 +54,7 @@ export default function Home() {
       {/* フッター */}
       <footer className="mt-12 mb-6 text-center text-xs text-muted-foreground space-y-3 max-w-2xl mx-auto px-4">
         <p className="leading-relaxed">
-          本サイトは個人開発のベータ版です。優待情報は2026年5月27日時点のもので、最新でない可能性があります。
+          本サイトは個人開発による情報提供サイトです。優待情報は2026年5月27日時点のもので、最新でない可能性があります。
           投資判断はご自身の責任でお願いします。詳細は<Link href="/terms" className="underline">利用規約</Link>をご確認ください。
         </p>
         <div className="space-x-4">
@@ -71,7 +70,7 @@ export default function Home() {
             お問い合わせ
           </a>
         </div>
-        <p>© 2026 優待アプリ(ベータ版) | データ取得日: 2026年5月27日</p>
+        <p>© 2026 優待アプリ | データ取得日: 2026年5月27日</p>
       </footer>
     </div>
   );

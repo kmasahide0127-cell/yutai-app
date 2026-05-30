@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/AppHeader";
 
 export const metadata: Metadata = {
   title: "利用規約",
-  description: "優待アプリ(ベータ版)の利用規約をご確認ください。",
+  description: "優待アプリの利用規約をご確認ください。",
   alternates: {
     canonical: "/terms",
   },
@@ -19,7 +19,7 @@ export default function TermsPage() {
         <section className="space-y-6 text-sm leading-relaxed">
           <div>
             <h2 className="font-semibold text-base mb-2">第1条(本サービスについて)</h2>
-            <p>本サービス「優待アプリ(以下、本サービス)」は、個人が運営する株主優待情報の検索・提案サービスです。本サービスはベータ版であり、機能・データ・仕様が予告なく変更される場合があります。</p>
+            <p>本サービス「優待アプリ(以下、本サービス)」は、個人が運営する株主優待情報の検索・提案サービスです。本サービスの機能・データ・仕様は予告なく変更される場合があります。</p>
           </div>
 
           <div>

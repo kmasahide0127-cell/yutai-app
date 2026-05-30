@@ -21,7 +21,6 @@ export function AppHeader() {
         <Link href="/" className="flex items-center gap-2">
           <span className="text-xl">🎁</span>
           <span className="font-bold">優待アプリ</span>
-          <span className="text-xs text-muted-foreground">ベータ版</span>
         </Link>
         <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1.5">
           <RotateCcw className="w-3.5 h-3.5" />
