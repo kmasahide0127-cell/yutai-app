@@ -6,6 +6,16 @@
 //   "ai_generated" - 過去公開情報に基づく参考データ
 //                    最新情報は必ず各企業のIRページで確認してください
 
+export type PreferenceTag =
+  | "cafe" | "noodles" | "japanese" | "family-restaurant" | "izakaya"
+  | "coffee" | "tea" | "alcohol" | "sweets"
+  | "business-wear" | "casual-wear" | "luxury-brand" | "sports-wear"
+  | "makeup" | "skincare" | "hair-salon"
+  | "it-gadget" | "games" | "books" | "art"
+  | "movie" | "theme-park" | "live-concert"
+  | "gym" | "sports-watching" | "yoga"
+  | "domestic-flight" | "overseas-travel" | "train" | "hotel";
+
 type Yutai = {
   id: string;
   code: string;
@@ -21,6 +31,7 @@ type Yutai = {
   rightsMonths: number[];
   dataQuality: "verified" | "ai_generated";
   lastVerified: string;
+  preferenceTags?: PreferenceTag[];
 };
 
 const V = "verified" as const;

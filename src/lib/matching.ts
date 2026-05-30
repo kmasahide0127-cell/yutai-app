@@ -1,4 +1,4 @@
-import type { Yutai } from "./yutai-data";
+import type { Yutai, PreferenceTag } from "./yutai-data";
 import type { MatchResult, UserLifestyle } from "@/types/matching";
 
 function generateMatchReason(
@@ -662,6 +662,163 @@ export function simulateFamilyShare(
     totalInvestment: yutai.approxInvestment,
     sharesNeeded: 1,
   };
+}
+
+// ── 嗜好タグ機能 ────────────────────────────────────────────────
+
+// 出費カテゴリ別の嗜好タグ定義(タグがないカテゴリは空配列)
+export const PREFERENCE_TAGS: Record<ExpenseCategory, Array<{ id: PreferenceTag; label: string; emoji: string }>> = {
+  "外食・カフェ": [
+    { id: "cafe", label: "カフェ", emoji: "☕" },
+    { id: "noodles", label: "麺類", emoji: "🍜" },
+    { id: "japanese", label: "和食", emoji: "🍣" },
+    { id: "family-restaurant", label: "ファミレス・洋食", emoji: "🍔" },
+    { id: "izakaya", label: "居酒屋", emoji: "🍻" },
+  ],
+  "自炊・食材": [
+    { id: "coffee", label: "コーヒー", emoji: "☕" },
+    { id: "tea", label: "お茶・紅茶", emoji: "🍵" },
+    { id: "alcohol", label: "お酒", emoji: "🍶" },
+    { id: "sweets", label: "甘いもの・スイーツ", emoji: "🍰" },
+  ],
+  "衣服・ファッション": [
+    { id: "business-wear", label: "ビジネス", emoji: "👔" },
+    { id: "casual-wear", label: "カジュアル", emoji: "👗" },
+    { id: "luxury-brand", label: "ブランド・百貨店", emoji: "👜" },
+    { id: "sports-wear", label: "スポーツ", emoji: "👟" },
+  ],
+  "美容・スキンケア": [
+    { id: "makeup", label: "メイク", emoji: "💄" },
+    { id: "skincare", label: "スキンケア", emoji: "🧴" },
+    { id: "hair-salon", label: "ヘアサロン", emoji: "💇" },
+  ],
+  "趣味・ガジェット": [
+    { id: "it-gadget", label: "IT・ガジェット", emoji: "📱" },
+    { id: "games", label: "ゲーム", emoji: "🎮" },
+    { id: "books", label: "本・書店", emoji: "📚" },
+    { id: "art", label: "アート", emoji: "🎨" },
+  ],
+  "エンタメ(映画・テーマパーク)": [
+    { id: "movie", label: "映画", emoji: "🎬" },
+    { id: "theme-park", label: "テーマパーク", emoji: "🎢" },
+    { id: "live-concert", label: "ライブ・コンサート", emoji: "🎤" },
+  ],
+  "健康・スポーツ": [
+    { id: "gym", label: "ジム", emoji: "🏋️" },
+    { id: "sports-watching", label: "スポーツ観戦", emoji: "⚽" },
+    { id: "yoga", label: "ヨガ・ピラティス", emoji: "🧘" },
+  ],
+  "交通・旅行": [
+    { id: "domestic-flight", label: "国内線", emoji: "✈️" },
+    { id: "overseas-travel", label: "海外旅行", emoji: "🌏" },
+    { id: "train", label: "電車・新幹線", emoji: "🚄" },
+    { id: "hotel", label: "ホテル", emoji: "🏨" },
+  ],
+  "コンビニ・お菓子": [],
+  "日用品・ドラッグストア": [],
+  "通信費": [],
+  "車関連費(ガソリン・駐車場・整備)": [],
+  "子育て・教育": [],
+  "ネットショッピング": [],
+};
+
+// キーワードマッチで銘柄の嗜好タグを推測(精度70〜80%を目標)
+// preferenceTags が設定済みならそちらを優先する
+export function inferPreferenceTags(yutai: Yutai): PreferenceTag[] {
+  if (yutai.preferenceTags && yutai.preferenceTags.length > 0) return yutai.preferenceTags;
+
+  const tags = new Set<PreferenceTag>();
+  const searchText = [
+    yutai.name,
+    yutai.description,
+    ...(yutai.brands ?? []),
+    ...(yutai.categories ?? []),
+  ].join(" ").toLowerCase();
+
+  const keywordMap: Record<PreferenceTag, string[]> = {
+    "cafe": ["スターバックス", "ドトール", "コメダ", "タリーズ", "カフェ", "珈琲店", "コーヒーチェーン", "星乃"],
+    "noodles": ["丸亀", "はなまる", "うどん", "そば", "ラーメン", "リンガーハット", "幸楽苑"],
+    "japanese": ["和食", "寿司", "鮨", "くら寿司", "スシロー", "はま寿司", "天ぷら", "日本料理", "和食さと"],
+    "family-restaurant": ["ガスト", "ジョナサン", "バーミヤン", "ロイヤルホスト", "サイゼリヤ", "ジョイフル", "デニーズ", "すかいらーく"],
+    "izakaya": ["居酒屋", "ワタミ", "鳥貴族", "養老乃瀧", "串カツ", "焼き鳥", "魚民"],
+    "coffee": ["コーヒー", "珈琲", "ucc", "ネスレ", "キーコーヒー"],
+    "tea": ["伊藤園", "ルピシア"],
+    "alcohol": ["ビール", "ワイン", "日本酒", "アサヒ", "キリン", "サントリー", "宝ホールディングス", "オエノン"],
+    "sweets": ["シャトレーゼ", "不二家", "モロゾフ", "亀田製菓", "江崎グリコ", "ブルボン"],
+    "business-wear": ["スーツ", "青山商事", "aoki", "コナカ", "オンワード"],
+    "casual-wear": ["しまむら", "ライトオン", "ハニーズ", "アダストリア"],
+    "luxury-brand": ["百貨店", "高島屋", "三越", "伊勢丹", "大丸", "松坂屋", "そごう", "h2o", "j.フロント"],
+    "sports-wear": ["アシックス", "ミズノ", "アルペン", "ヴィクトリア"],
+    "makeup": ["化粧品", "資生堂", "コーセー", "ポーラ", "アルビオン"],
+    "skincare": ["ファンケル", "dhc", "オルビス", "ノエビア"],
+    "hair-salon": ["美容室", "美容院", "ヘアサロン", "アースホールディングス"],
+    "it-gadget": ["ヨドバシ", "ビックカメラ", "ヤマダ電機", "ノジマ", "エディオン", "上新電機"],
+    "games": ["ゲーム", "任天堂", "カプコン", "コナミ", "セガ", "バンダイ", "スクエニ", "スクウェア"],
+    "books": ["書店", "丸善", "ジュンク堂", "tsutaya", "蔦屋", "文教堂"],
+    "art": ["アート", "美術", "ギャラリー"],
+    "movie": ["映画", "シネマ", "東宝", "東映", "松竹"],
+    "theme-park": ["テーマパーク", "オリエンタルランド", "富士急", "よみうりランド", "ハウステンボス", "サンリオ"],
+    "live-concert": ["ライブ", "コンサート", "amuse", "エイベックス"],
+    "gym": ["フィットネス", "セントラルスポーツ", "ティップネス", "ルネサンス", "コナミスポーツ", "カーブス", "ライザップ"],
+    "sports-watching": ["プロ野球", "jリーグ", "観戦", "読売", "阪神"],
+    "yoga": ["ヨガ", "ピラティス", "lava"],
+    "domestic-flight": ["ana", "jal", "全日空", "日本航空", "スカイマーク", "ソラシド", "国内線"],
+    "overseas-travel": ["h.i.s", "jtb", "近畿日本ツーリスト", "海外旅行", "旅行代理店"],
+    "train": ["東急電鉄", "西武鉄道", "京王電鉄", "京成電鉄", "東武鉄道", "小田急", "京急", "近鉄", "南海電鉄", "阪急", "阪神電気", "名鉄"],
+    "hotel": ["ホテル", "リゾート", "藤田観光", "リゾートトラスト", "東急リゾート"],
+  };
+
+  for (const [tag, keywords] of Object.entries(keywordMap)) {
+    if (keywords.some((kw) => searchText.includes(kw.toLowerCase()))) {
+      tags.add(tag as PreferenceTag);
+    }
+  }
+
+  return Array.from(tags);
+}
+
+// ユーザー選択タグと銘柄タグの合致スコアを計算
+export function calculatePreferenceMatchScore(
+  yutai: Yutai,
+  selectedTags: PreferenceTag[]
+): { score: number; matchedTags: PreferenceTag[]; hasMatch: boolean } {
+  if (selectedTags.length === 0) {
+    return { score: 0, matchedTags: [], hasMatch: false };
+  }
+  const yutaiTags = inferPreferenceTags(yutai);
+  const matchedTags = selectedTags.filter((t) => yutaiTags.includes(t));
+  return {
+    score: matchedTags.length * 10,
+    matchedTags,
+    hasMatch: matchedTags.length > 0,
+  };
+}
+
+// 特定タグに該当する銘柄数を集計(「限定的です」表示判定用)
+export function countYutaiByTag(tag: PreferenceTag, yutaiList: Yutai[]): number {
+  return yutaiList.filter(
+    (y) => y.annualValue > 0 && inferPreferenceTags(y).includes(tag)
+  ).length;
+}
+
+// 開発用: 全銘柄のタグ分布をコンソール出力
+export function debugTagDistribution(yutaiList: Yutai[]): void {
+  const counts: Record<string, number> = {};
+  const samples: Record<string, string[]> = {};
+
+  for (const yutai of yutaiList) {
+    if (yutai.annualValue <= 0) continue;
+    for (const tag of inferPreferenceTags(yutai)) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+      if (!samples[tag]) samples[tag] = [];
+      if (samples[tag].length < 5) samples[tag].push(yutai.name);
+    }
+  }
+
+  console.log("=== 嗜好タグ分布 ===");
+  for (const [tag, count] of Object.entries(counts).sort((a, b) => b[1] - a[1])) {
+    console.log(`${tag}: ${count}件 (例: ${samples[tag].join(", ")})`);
+  }
 }
 
 // ── 使用例 ──────────────────────────────────────────────────────
