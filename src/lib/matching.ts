@@ -762,7 +762,7 @@ export function inferPreferenceTags(yutai: Yutai): PreferenceTag[] {
     "gym": ["フィットネス", "セントラルスポーツ", "ティップネス", "ルネサンス", "コナミスポーツ", "カーブス", "ライザップ"],
     "sports-watching": ["プロ野球", "jリーグ", "観戦", "読売", "阪神"],
     "yoga": ["ヨガ", "ピラティス", "lava"],
-    "domestic-flight": ["ana", "jal", "全日空", "日本航空", "スカイマーク", "ソラシド", "国内線"],
+    "domestic-flight": ["全日空", "日本航空", "anaマイレージ", "スカイマーク", "ソラシド", "スターフライヤー", "エアドゥ", "国内線", "航空券"],
     "overseas-travel": ["h.i.s", "jtb", "近畿日本ツーリスト", "海外旅行", "旅行代理店"],
     "train": ["東急電鉄", "西武鉄道", "京王電鉄", "京成電鉄", "東武鉄道", "小田急", "京急", "近鉄", "南海電鉄", "阪急", "阪神電気", "名鉄"],
     "hotel": ["ホテル", "リゾート", "藤田観光", "リゾートトラスト", "東急リゾート"],
@@ -772,6 +772,12 @@ export function inferPreferenceTags(yutai: Yutai): PreferenceTag[] {
     if (keywords.some((kw) => searchText.includes(kw.toLowerCase()))) {
       tags.add(tag as PreferenceTag);
     }
+  }
+
+  // 後処理: 鉄道系銘柄(train タグ付き)からは luxury-brand を除外
+  // 鉄道優待の本質は乗車券であり、傘下百貨店は付加的なため
+  if (tags.has("train") && tags.has("luxury-brand")) {
+    tags.delete("luxury-brand");
   }
 
   return Array.from(tags);
