@@ -14,13 +14,24 @@ import { ShareSection } from "./ShareSection";
 import {
   buildBudgetPackage,
   simulateFamilyShare,
+  inferPreferenceTags,
+  PREFERENCE_TAGS,
   type CategoryGroup,
   type CalendarPackage,
   type BudgetPackage,
   type UserExpenseLifestyle,
+  type ExpenseCategory,
+  type PreferenceTag,
 } from "@/lib/matching";
 import type { VehicleType } from "@/store/onboarding-store";
 import type { Yutai } from "@/lib/yutai-data";
+
+// モジュールレベルでフラット化(レンダーごとの再計算を避ける)
+const ALL_PREFERENCE_TAGS_FLAT = Object.values(PREFERENCE_TAGS).flat();
+
+function findTagInfo(tagId: PreferenceTag) {
+  return ALL_PREFERENCE_TAGS_FLAT.find((t) => t.id === tagId);
+}
 
 function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
@@ -62,6 +73,8 @@ type Props = {
   lifestyle: UserExpenseLifestyle;
   householdSize: number;
   vehicleType: VehicleType;
+  preferenceTags: PreferenceTag[];
+  preferenceTagCounts: Partial<Record<PreferenceTag, number>>;
 };
 
 export function ResultsClient({
@@ -73,6 +86,8 @@ export function ResultsClient({
   lifestyle,
   householdSize,
   vehicleType,
+  preferenceTags,
+  preferenceTagCounts,
 }: Props) {
   const perCategoryLimit = useMemo(() => {
     if (expenseCategoryCount <= 1) return 8;
@@ -378,6 +393,18 @@ export function ResultsClient({
         const topResults = results.slice(0, perCategoryLimit);
         const sectionTotal = topResults.reduce((sum, r) => sum + r.annualSavings, 0);
 
+        // 嗜好タグ: このカテゴリに属するタグのうちユーザーが選んだもの
+        const categoryTagDefs = PREFERENCE_TAGS[category as ExpenseCategory] ?? [];
+        const selectedTagsForCategory = categoryTagDefs.filter((t) =>
+          preferenceTags.includes(t.id)
+        );
+        const limitedTagInfos = selectedTagsForCategory
+          .map((t) => ({ tag: t, count: preferenceTagCounts[t.id] ?? 0 }))
+          .filter(({ count }) => count > 0 && count <= 2);
+        const emptyTagInfos = selectedTagsForCategory.filter(
+          (t) => (preferenceTagCounts[t.id] ?? 0) === 0
+        );
+
         return (
           <section key={category}>
             <div className="mb-4 border-b-2 border-primary pb-2">
@@ -388,6 +415,40 @@ export function ResultsClient({
                 </p>
               )}
             </div>
+
+            {/* 嗜好タグ 0件: 正直な空状態 */}
+            {emptyTagInfos.length > 0 && (
+              <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-1.5">
+                <p className="text-sm font-medium">
+                  {emptyTagInfos.map((t) => `${t.emoji} ${t.label}`).join("・")}関連の優待は現状ありません
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {emptyTagInfos.map((t) => t.label).join("・")}に特化した優待は、当アプリの収録範囲では現状確認できていません。
+                  銘柄データが充実次第、追加予定です。関連する一般的な優待を下に提案します。
+                </p>
+              </div>
+            )}
+
+            {/* 嗜好タグ 限定的(1〜2件) */}
+            {limitedTagInfos.length > 0 && (
+              <div className="mb-4 rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-1.5">
+                <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                  この嗜好に該当する優待は限定的です
+                </p>
+                <ul className="space-y-0.5">
+                  {limitedTagInfos.map(({ tag, count }) => (
+                    <li key={tag.id} className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                      <span>{tag.emoji}</span>
+                      <span>{tag.label}</span>
+                      <span className="text-amber-600/70 dark:text-amber-500/70">({count}件)</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-amber-600 dark:text-amber-500">
+                  関連する優待を提案しますが、お探しの分野は現状の銘柄数では選択肢が少ない状態です。
+                </p>
+              </div>
+            )}
 
             {/* EV向け正直な空状態 */}
             {isEvUser && isCarCategory && (
@@ -426,64 +487,88 @@ export function ResultsClient({
             )}
 
             <ul className="space-y-3" aria-label={`${category}の優待銘柄`}>
-              {topResults.map(({ yutai, matchReason, annualSavings }, idx) => (
-                <li key={yutai.id}>
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                          {idx + 1}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <CardTitle className="text-lg leading-snug">{yutai.name}</CardTitle>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            証券コード {yutai.code}
-                            {" · "}
-                            {yutai.dataQuality === "verified" ? (
-                              <span className="text-green-600 dark:text-green-400">
-                                ✓ 検証済み({yutai.lastVerified.replace(/-/g, "/").slice(2)}時点)
-                              </span>
-                            ) : (
-                              <span>⚠ 参考情報</span>
+              {topResults.map(({ yutai, matchReason, annualSavings }, idx) => {
+                // この銘柄に合致するユーザー選択タグを計算
+                const yutaiInferredTags = inferPreferenceTags(yutai);
+                const matchedPreferenceTags = preferenceTags.filter((t) =>
+                  yutaiInferredTags.includes(t)
+                );
+
+                return (
+                  <li key={yutai.id}>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                            {idx + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-lg leading-snug">{yutai.name}</CardTitle>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              証券コード {yutai.code}
+                              {" · "}
+                              {yutai.dataQuality === "verified" ? (
+                                <span className="text-green-600 dark:text-green-400">
+                                  ✓ 検証済み({yutai.lastVerified.replace(/-/g, "/").slice(2)}時点)
+                                </span>
+                              ) : (
+                                <span>⚠ 参考情報</span>
+                              )}
+                            </p>
+                            {/* 嗜好タグバッジ */}
+                            {matchedPreferenceTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {matchedPreferenceTags.map((tagId) => {
+                                  const info = findTagInfo(tagId);
+                                  return info ? (
+                                    <span
+                                      key={tagId}
+                                      className="inline-flex items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                                    >
+                                      {info.emoji} {info.label}
+                                    </span>
+                                  ) : null;
+                                })}
+                              </div>
                             )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="rounded-lg bg-primary/10 px-4 py-4 text-center">
+                          <p className="text-xs text-muted-foreground">年間出費削減見込み</p>
+                          <p className="text-3xl font-bold text-primary tabular-nums">
+                            {formatYen(annualSavings)}
                           </p>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="rounded-lg bg-primary/10 px-4 py-4 text-center">
-                        <p className="text-xs text-muted-foreground">年間出費削減見込み</p>
-                        <p className="text-3xl font-bold text-primary tabular-nums">
-                          {formatYen(annualSavings)}
-                        </p>
-                      </div>
 
-                      {householdSize >= 2 && (
-                        <FamilyShareBox yutai={yutai} householdSize={householdSize} />
-                      )}
+                        {householdSize >= 2 && (
+                          <FamilyShareBox yutai={yutai} householdSize={householdSize} />
+                        )}
 
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <p className="text-xs text-muted-foreground">必要投資額</p>
-                          <p className="font-semibold tabular-nums">{formatYen(yutai.approxInvestment)}</p>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-xs text-muted-foreground">必要投資額</p>
+                            <p className="font-semibold tabular-nums">{formatYen(yutai.approxInvestment)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">優待利回り</p>
+                            <p className="font-semibold tabular-nums">{yutai.yieldPercent}%</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">優待利回り</p>
-                          <p className="font-semibold tabular-nums">{yutai.yieldPercent}%</p>
+
+                        <p className="text-sm text-muted-foreground">{matchReason}</p>
+                        <p className="text-sm">{yutai.description}</p>
+
+                        <div className="flex justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+                          <span>権利確定: {yutai.rightsMonths.map((m) => `${m}月`).join("・")}</span>
+                          <span>取得日: {yutai.lastVerified}</span>
                         </div>
-                      </div>
-
-                      <p className="text-sm text-muted-foreground">{matchReason}</p>
-                      <p className="text-sm">{yutai.description}</p>
-
-                      <div className="flex justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-                        <span>権利確定: {yutai.rightsMonths.map((m) => `${m}月`).join("・")}</span>
-                        <span>取得日: {yutai.lastVerified}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </li>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </li>
+                );
+              })}
             </ul>
 
             {householdSize >= 2 && (
@@ -526,7 +611,7 @@ export function ResultsClient({
             お問い合わせ
           </a>
         </div>
-        <p className="mt-2">© 2026 優待アプリ(ベータ版) | データ取得日: 2026年5月27日</p>
+        <p className="mt-2">© 2026 優待アプリ | データ取得日: 2026年5月27日</p>
       </footer>
     </div>
   );
