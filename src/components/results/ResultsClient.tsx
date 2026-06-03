@@ -115,28 +115,23 @@ export function ResultsClient({
   // 予算スライダー。初期値はオンボーディングの investmentLimit
   const [budget, setBudget] = useState(investmentLimit);
 
-  // 予算変更のたびにカレンダーを再計算(クライアント側)
-  const calendarPackage = useMemo(
+  // 予算変更のたびにカレンダーを再計算(confirmed累積制約 + ghost候補)
+  const cal = useMemo(
     () => buildBudgetAwareCalendarPackage(budgetCandidates, budget, preferenceTags),
     [budgetCandidates, budget, preferenceTags]
   );
 
-  const calendarYield =
-    calendarPackage.totalInvestment > 0
-      ? ((calendarPackage.totalAnnualValue / calendarPackage.totalInvestment) * 100).toFixed(1)
-      : "0.0";
-
-  const coveredMonths = 12 - calendarPackage.uncoveredMonths.length;
+  const calendarYield = cal.confirmedYield.toFixed(1);
 
   const shareText = (() => {
     const lines: string[] = [];
     lines.push("🎁 優待アプリで見つけた私の優待ポートフォリオ");
     lines.push("");
-    if (calendarPackage.selectedYutai.length > 0) {
-      lines.push(`📅 年間優待カレンダー (${calendarPackage.selectedYutai.length}銘柄 / 予算${formatInvestmentLabel(budget)})`);
-      lines.push(`年間優待価値: ${formatYen(calendarPackage.totalAnnualValue)}`);
-      lines.push(`必要投資額: ${formatYen(calendarPackage.totalInvestment)}`);
-      lines.push(`利回り: ${calendarYield}% / ${coveredMonths}ヶ月カバー`);
+    if (cal.confirmedYutaiCount > 0) {
+      lines.push(`📅 年間優待カレンダー (${cal.confirmedYutaiCount}銘柄 / 予算${formatInvestmentLabel(budget)})`);
+      lines.push(`年間優待価値: ${formatYen(cal.confirmedAnnualValue)}`);
+      lines.push(`必要投資額: ${formatYen(cal.confirmedTotalInvestment)}`);
+      lines.push(`利回り: ${calendarYield}% / ${cal.confirmedMonthCount}ヶ月カバー`);
       lines.push("");
     }
     lines.push("あなたも生活スタイルから優待を見つけませんか?");
@@ -144,12 +139,9 @@ export function ResultsClient({
     return lines.join("\n");
   })();
 
-  const shareTextShort = (() => {
-    if (calendarPackage.selectedYutai.length > 0) {
-      return `🎁 優待アプリで年間${formatYen(calendarPackage.totalAnnualValue)}削減見込みの優待ポートフォリオを見つけました!\n生活スタイルから優待が見つかるアプリです。`;
-    }
-    return "🎁 優待アプリで自分にぴったりの株主優待を見つけました!";
-  })();
+  const shareTextShort = cal.confirmedYutaiCount > 0
+    ? `🎁 優待アプリで年間${formatYen(cal.confirmedAnnualValue)}削減見込みの優待ポートフォリオを見つけました!\n生活スタイルから優待が見つかるアプリです。`
+    : "🎁 優待アプリで自分にぴったりの株主優待を見つけました!";
 
   const shareUrl = "https://yutai-app-lyart.vercel.app";
 
@@ -189,16 +181,16 @@ export function ResultsClient({
           </div>
 
           {/* パッケージサマリー */}
-          {calendarPackage.selectedYutai.length > 0 ? (
+          {cal.confirmedYutaiCount > 0 ? (
             <>
-              <div className="mb-4 grid grid-cols-4 gap-2 rounded-lg bg-background p-3">
+              <div className="mb-3 grid grid-cols-4 gap-2 rounded-lg bg-background p-3">
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">必要投資額</p>
-                  <p className="text-sm font-bold tabular-nums">{formatYen(calendarPackage.totalInvestment)}</p>
+                  <p className="text-sm font-bold tabular-nums">{formatYen(cal.confirmedTotalInvestment)}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">年間優待価値</p>
-                  <p className="text-sm font-bold text-primary tabular-nums">{formatYen(calendarPackage.totalAnnualValue)}</p>
+                  <p className="text-sm font-bold text-primary tabular-nums">{formatYen(cal.confirmedAnnualValue)}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">合計利回り</p>
@@ -207,15 +199,22 @@ export function ResultsClient({
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">カバー月数</p>
                   <p className="text-sm font-bold tabular-nums">
-                    <span className={coveredMonths < 6 ? "text-muted-foreground" : "text-primary"}>
-                      {coveredMonths}
+                    <span className={cal.confirmedMonthCount < 6 ? "text-muted-foreground" : "text-primary"}>
+                      {cal.confirmedMonthCount}
                     </span>
                     <span className="text-xs text-muted-foreground">/12ヶ月</span>
                   </p>
                 </div>
               </div>
 
-              {calendarPackage.selectedYutai.length <= 3 && (
+              {/* 来年度候補サマリー(ghostがあれば) */}
+              {cal.ghost.length > 0 && (
+                <p className="mb-3 text-xs text-muted-foreground">
+                  💡 来年度の追加候補: 合計{formatYen(cal.ghostTotalInvestment)}（年間{formatYen(cal.ghostAnnualValue)}相当）
+                </p>
+              )}
+
+              {cal.confirmedYutaiCount <= 3 && (
                 <p className="mb-3 text-xs text-accent font-medium">
                   💡 もっとカテゴリを選ぶか予算を増やすと年間カレンダーが充実します
                 </p>
@@ -224,7 +223,7 @@ export function ResultsClient({
           ) : (
             <div className="mb-4 rounded-lg bg-background p-4 text-center">
               <p className="text-sm text-muted-foreground">
-                予算 {formatInvestmentLabel(budget)} では該当する優待がありません
+                予算 {formatInvestmentLabel(budget)} では確定できる優待がありません
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 スライダーを右に動かして予算を増やしてみてください
@@ -235,8 +234,11 @@ export function ResultsClient({
           {/* 月別カレンダー */}
           <div className="space-y-1.5">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
-              const entries = calendarPackage.monthEntries.filter((e) => e.month === month);
-              const isEmpty = entries.length === 0;
+              const confirmedEntries = cal.confirmed.filter((e) => e.month === month);
+              const ghostEntries = cal.ghost.filter((e) => e.month === month);
+              const hasConfirmed = confirmedEntries.length > 0;
+              const hasGhost = ghostEntries.length > 0;
+              const isEmpty = !hasConfirmed && !hasGhost;
 
               return (
                 <div
@@ -257,23 +259,52 @@ export function ResultsClient({
                         この月の優待は予算内では現状ありません
                       </p>
                     ) : (
-                      <div className="space-y-0.5">
-                        {entries.map((entry, idx) => (
-                          <div
-                            key={`${entry.yutai.id}-${idx}`}
-                            className="flex items-center justify-between gap-2 text-sm"
-                          >
-                            <span className="truncate font-medium">
-                              {entry.yutai.name}
-                              <span className="ml-1 text-xs text-muted-foreground">
-                                ({entry.yutai.code})
-                              </span>
-                            </span>
-                            <span className="shrink-0 font-semibold text-primary tabular-nums">
-                              {formatYen(Math.round(entry.annualValue))}
-                            </span>
+                      <div>
+                        {/* 確定銘柄 */}
+                        {hasConfirmed && (
+                          <div className="space-y-0.5">
+                            {confirmedEntries.map((entry, idx) => (
+                              <div
+                                key={`c-${entry.yutai.id}-${idx}`}
+                                className="flex items-center justify-between gap-2 text-sm"
+                              >
+                                <span className="truncate font-medium">
+                                  {entry.yutai.name}
+                                  <span className="ml-1 text-xs text-muted-foreground">
+                                    ({entry.yutai.code})
+                                  </span>
+                                </span>
+                                <span className="shrink-0 font-semibold text-primary tabular-nums">
+                                  {formatYen(entry.yutai.annualValue)}
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
+
+                        {/* ゴースト銘柄(確定がない月にのみ表示) */}
+                        {!hasConfirmed && hasGhost && (
+                          <div className="space-y-0.5">
+                            {ghostEntries.map((entry, idx) => (
+                              <div key={`g-${entry.yutai.id}-${idx}`} className="space-y-0">
+                                <p className="text-[10px] text-muted-foreground/70">
+                                  💡 来年度の追加候補
+                                </p>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="truncate text-xs text-muted-foreground/60">
+                                    {entry.yutai.name}
+                                    <span className="ml-1 text-muted-foreground/50">
+                                      ({entry.yutai.code})
+                                    </span>
+                                  </span>
+                                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
+                                    {formatYen(entry.yutai.approxInvestment)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -506,7 +537,7 @@ export function ResultsClient({
       })}
 
       {/* ── シェア・コピーボタン ── */}
-      {calendarPackage.selectedYutai.length > 0 && (
+      {cal.confirmedYutaiCount > 0 && (
         <ShareSection
           shareText={shareText}
           shareTextShort={shareTextShort}

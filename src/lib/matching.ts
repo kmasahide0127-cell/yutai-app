@@ -368,163 +368,143 @@ export function matchYutaiByExpenseGrouped(
   return result;
 }
 
-export type CalendarMonthEntry = {
-  month: number;
-  yutai: Yutai;
-  annualValue: number; // この権利確定月に帰属する優待価値(annualValue / rightsMonths.length)
-};
-
 export type CalendarPackage = {
-  totalAnnualValue: number;
-  totalInvestment: number;
-  monthEntries: CalendarMonthEntry[];
-  uncoveredMonths: number[];
-  selectedYutai: Yutai[];
+  confirmed: Array<{ month: number; yutai: Yutai }>;
+  ghost: Array<{ month: number; yutai: Yutai }>;
+  confirmedTotalInvestment: number;
+  confirmedAnnualValue: number;
+  confirmedYield: number;
+  confirmedMonthCount: number;
+  confirmedYutaiCount: number;
+  ghostTotalInvestment: number;
+  ghostAnnualValue: number;
 };
-
-// 出費カテゴリにマッチする銘柄から、権利確定月が年間に分散するポートフォリオを生成
-export function buildCalendarPackage(
-  lifestyle: UserExpenseLifestyle,
-  yutaiList: Yutai[]
-): CalendarPackage {
-  // Step 1: 選択カテゴリにマッチする候補銘柄を収集(重複除外)
-  const candidates: { yutai: Yutai; categoryMatch: boolean }[] = [];
-  const seenIds = new Set<string>();
-
-  for (const expense of lifestyle.expenseCategories) {
-    const mapping = expenseToYutaiMatch[expense as ExpenseCategory];
-    if (!mapping) continue;
-
-    for (const yutai of yutaiList) {
-      if (seenIds.has(yutai.id)) continue;
-      if (yutai.annualValue <= 0) continue;
-      if (!yutai.rightsMonths || yutai.rightsMonths.length === 0) continue;
-      if (lifestyle.maxInvestment && yutai.approxInvestment > lifestyle.maxInvestment) continue;
-
-      const catMatch = yutai.categories.some((c) => mapping.categories.includes(c));
-      const tagMatch = yutai.lifestyleTags.some((t) => mapping.tags.includes(t));
-      if (!catMatch && !tagMatch) continue;
-
-      candidates.push({ yutai, categoryMatch: catMatch });
-      seenIds.add(yutai.id);
-    }
-  }
-
-  // Step 2: スコアリング(年間優待価値・利回り重視)
-  const scored = candidates
-    .map(({ yutai, categoryMatch }) => {
-      let score = 0;
-      if (categoryMatch) score += 30;
-      score += Math.min(yutai.annualValue / 1000, 50);
-      score += (yutai.yieldPercent ?? 0) * 2;
-      return { yutai, score };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  // Step 3: 月別に割り当て(月あたり最大2銘柄、合計最大15銘柄)
-  const MAX_PER_MONTH = 2;
-  const MAX_TOTAL = 15;
-  const monthCount: Record<number, number> = {};
-  for (let m = 1; m <= 12; m++) monthCount[m] = 0;
-
-  const monthEntries: CalendarMonthEntry[] = [];
-  const selectedYutaiMap = new Map<string, Yutai>();
-  let totalSelected = 0;
-
-  for (const { yutai } of scored) {
-    if (totalSelected >= MAX_TOTAL) break;
-
-    const usableMonths = yutai.rightsMonths.filter((m) => monthCount[m] < MAX_PER_MONTH);
-    if (usableMonths.length === 0) continue;
-
-    const valuePerMonth = yutai.annualValue / yutai.rightsMonths.length;
-    for (const m of usableMonths) {
-      monthEntries.push({ month: m, yutai, annualValue: valuePerMonth });
-      monthCount[m]++;
-    }
-    selectedYutaiMap.set(yutai.id, yutai);
-    totalSelected++;
-  }
-
-  // Step 4: 集計
-  const selectedYutai = Array.from(selectedYutaiMap.values());
-  const totalInvestment = selectedYutai.reduce((sum, y) => sum + y.approxInvestment, 0);
-  const totalAnnualValue = selectedYutai.reduce((sum, y) => sum + y.annualValue, 0);
-  const uncoveredMonths: number[] = [];
-  for (let m = 1; m <= 12; m++) {
-    if (monthCount[m] === 0) uncoveredMonths.push(m);
-  }
-
-  monthEntries.sort((a, b) => a.month - b.month);
-
-  return { totalAnnualValue, totalInvestment, monthEntries, uncoveredMonths, selectedYutai };
-}
 
 /**
  * 予算制約付き年間カレンダーパッケージ(クライアント側リアルタイム再計算用)
- * buildCalendarPackage + buildBudgetPackage の後継。
- * 予算内銘柄のみを対象に月別分散を最大化し、該当のない月は uncoveredMonths に含める。
+ *
+ * confirmed: 累積 approxInvestment が budget を絶対に超えない確定銘柄
+ * ghost: budget < approxInvestment <= budget+50万 の「来年度追加候補」
+ *        確定のない月にのみ配置し、confirmed との重複銘柄は出さない
  */
 export function buildBudgetAwareCalendarPackage(
   candidates: Yutai[],
   budget: number,
   preferenceTags: PreferenceTag[]
 ): CalendarPackage {
-  // Step 1: 予算フィルタ
-  const filtered = candidates.filter(
+  const GHOST_MARGIN = 500000;
+  const MAX_PER_MONTH = 2;
+
+  // Step 1: 予算内候補(confirmed)と来年度候補(ghost)に分類
+  const confirmedCandidates = candidates.filter(
     (y) =>
       y.approxInvestment <= budget &&
       y.annualValue > 0 &&
       y.rightsMonths &&
       y.rightsMonths.length > 0
   );
+  const ghostCandidates = candidates.filter(
+    (y) =>
+      y.approxInvestment > budget &&
+      y.approxInvestment <= budget + GHOST_MARGIN &&
+      y.annualValue > 0 &&
+      y.rightsMonths &&
+      y.rightsMonths.length > 0
+  );
 
-  // Step 2: annualValue 降順 + 嗜好タグボーナスでスコアリング
-  const scored = filtered
-    .map((yutai) => {
-      let score = Math.min(yutai.annualValue / 1000, 50);
-      if (preferenceTags.length > 0) {
-        score += calculatePreferenceMatchScore(yutai, preferenceTags).score;
-      }
-      return { yutai, score };
-    })
+  // Step 2: annualValue降順 + 嗜好タグボーナスでスコアリング
+  const scoreYutai = (yutai: Yutai): number => {
+    let score = Math.min(yutai.annualValue / 1000, 50);
+    if (preferenceTags.length > 0) {
+      score += calculatePreferenceMatchScore(yutai, preferenceTags).score;
+    }
+    return score;
+  };
+
+  // Step 3: 確定銘柄の選択(累積 approxInvestment が budget を超えた時点でスキップ)
+  const scoredConfirmed = confirmedCandidates
+    .map((y) => ({ yutai: y, score: scoreYutai(y) }))
     .sort((a, b) => b.score - a.score);
 
-  // Step 3: 月別分散を最大化(月あたり最大2銘柄、合計最大15銘柄)
-  const MAX_PER_MONTH = 2;
-  const MAX_TOTAL = 15;
-  const monthCount: Record<number, number> = {};
-  for (let m = 1; m <= 12; m++) monthCount[m] = 0;
+  const monthConfirmedCount: Record<number, number> = {};
+  for (let m = 1; m <= 12; m++) monthConfirmedCount[m] = 0;
 
-  const monthEntries: CalendarMonthEntry[] = [];
-  const selectedYutaiMap = new Map<string, Yutai>();
-  let totalSelected = 0;
+  const confirmedEntries: Array<{ month: number; yutai: Yutai }> = [];
+  const confirmedYutaiList: Yutai[] = [];
+  const usedCodes = new Set<string>();
+  let cumulativeInvestment = 0;
 
-  for (const { yutai } of scored) {
-    if (totalSelected >= MAX_TOTAL) break;
-    const usableMonths = yutai.rightsMonths.filter((m) => monthCount[m] < MAX_PER_MONTH);
+  for (const { yutai } of scoredConfirmed) {
+    if (cumulativeInvestment + yutai.approxInvestment > budget) continue;
+    const usableMonths = yutai.rightsMonths.filter((m) => monthConfirmedCount[m] < MAX_PER_MONTH);
     if (usableMonths.length === 0) continue;
 
-    const valuePerMonth = yutai.annualValue / yutai.rightsMonths.length;
     for (const m of usableMonths) {
-      monthEntries.push({ month: m, yutai, annualValue: valuePerMonth });
-      monthCount[m]++;
+      confirmedEntries.push({ month: m, yutai });
+      monthConfirmedCount[m]++;
     }
-    selectedYutaiMap.set(yutai.id, yutai);
-    totalSelected++;
+    confirmedYutaiList.push(yutai);
+    usedCodes.add(yutai.code);
+    cumulativeInvestment += yutai.approxInvestment;
   }
 
-  // Step 4: 集計
-  const selectedYutai = Array.from(selectedYutaiMap.values());
-  const totalInvestment = selectedYutai.reduce((sum, y) => sum + y.approxInvestment, 0);
-  const totalAnnualValue = selectedYutai.reduce((sum, y) => sum + y.annualValue, 0);
-  const uncoveredMonths: number[] = [];
+  // Step 4: ゴースト銘柄の選択(確定がない月にのみ、confirmed との銘柄重複なし)
+  const uncoveredMonthSet = new Set<number>();
   for (let m = 1; m <= 12; m++) {
-    if (monthCount[m] === 0) uncoveredMonths.push(m);
+    if (monthConfirmedCount[m] === 0) uncoveredMonthSet.add(m);
   }
-  monthEntries.sort((a, b) => a.month - b.month);
 
-  return { totalAnnualValue, totalInvestment, monthEntries, uncoveredMonths, selectedYutai };
+  const scoredGhost = ghostCandidates
+    .filter((y) => !usedCodes.has(y.code))
+    .map((y) => ({ yutai: y, score: scoreYutai(y) }))
+    .sort((a, b) => b.score - a.score);
+
+  const monthGhostCount: Record<number, number> = {};
+  for (let m = 1; m <= 12; m++) monthGhostCount[m] = 0;
+
+  const ghostEntries: Array<{ month: number; yutai: Yutai }> = [];
+  const ghostYutaiList: Yutai[] = [];
+  const usedGhostCodes = new Set<string>(usedCodes);
+
+  for (const { yutai } of scoredGhost) {
+    if (usedGhostCodes.has(yutai.code)) continue;
+    const usableMonths = yutai.rightsMonths.filter(
+      (m) => uncoveredMonthSet.has(m) && monthGhostCount[m] < MAX_PER_MONTH
+    );
+    if (usableMonths.length === 0) continue;
+
+    for (const m of usableMonths) {
+      ghostEntries.push({ month: m, yutai });
+      monthGhostCount[m]++;
+    }
+    ghostYutaiList.push(yutai);
+    usedGhostCodes.add(yutai.code);
+  }
+
+  // Step 5: 集計
+  const confirmedTotalInvestment = cumulativeInvestment;
+  const confirmedAnnualValue = confirmedYutaiList.reduce((sum, y) => sum + y.annualValue, 0);
+  const confirmedYield =
+    confirmedTotalInvestment > 0
+      ? (confirmedAnnualValue / confirmedTotalInvestment) * 100
+      : 0;
+  const confirmedMonthCount = Object.values(monthConfirmedCount).filter((c) => c > 0).length;
+  const confirmedYutaiCount = confirmedYutaiList.length;
+
+  const ghostTotalInvestment = ghostYutaiList.reduce((sum, y) => sum + y.approxInvestment, 0);
+  const ghostAnnualValue = ghostYutaiList.reduce((sum, y) => sum + y.annualValue, 0);
+
+  return {
+    confirmed: confirmedEntries.sort((a, b) => a.month - b.month),
+    ghost: ghostEntries.sort((a, b) => a.month - b.month),
+    confirmedTotalInvestment,
+    confirmedAnnualValue,
+    confirmedYield,
+    confirmedMonthCount,
+    confirmedYutaiCount,
+    ghostTotalInvestment,
+    ghostAnnualValue,
+  };
 }
 
 // ── 予算別おすすめパッケージ ────────────────────────────────────────
