@@ -460,6 +460,73 @@ export function buildCalendarPackage(
   return { totalAnnualValue, totalInvestment, monthEntries, uncoveredMonths, selectedYutai };
 }
 
+/**
+ * 予算制約付き年間カレンダーパッケージ(クライアント側リアルタイム再計算用)
+ * buildCalendarPackage + buildBudgetPackage の後継。
+ * 予算内銘柄のみを対象に月別分散を最大化し、該当のない月は uncoveredMonths に含める。
+ */
+export function buildBudgetAwareCalendarPackage(
+  candidates: Yutai[],
+  budget: number,
+  preferenceTags: PreferenceTag[]
+): CalendarPackage {
+  // Step 1: 予算フィルタ
+  const filtered = candidates.filter(
+    (y) =>
+      y.approxInvestment <= budget &&
+      y.annualValue > 0 &&
+      y.rightsMonths &&
+      y.rightsMonths.length > 0
+  );
+
+  // Step 2: annualValue 降順 + 嗜好タグボーナスでスコアリング
+  const scored = filtered
+    .map((yutai) => {
+      let score = Math.min(yutai.annualValue / 1000, 50);
+      if (preferenceTags.length > 0) {
+        score += calculatePreferenceMatchScore(yutai, preferenceTags).score;
+      }
+      return { yutai, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  // Step 3: 月別分散を最大化(月あたり最大2銘柄、合計最大15銘柄)
+  const MAX_PER_MONTH = 2;
+  const MAX_TOTAL = 15;
+  const monthCount: Record<number, number> = {};
+  for (let m = 1; m <= 12; m++) monthCount[m] = 0;
+
+  const monthEntries: CalendarMonthEntry[] = [];
+  const selectedYutaiMap = new Map<string, Yutai>();
+  let totalSelected = 0;
+
+  for (const { yutai } of scored) {
+    if (totalSelected >= MAX_TOTAL) break;
+    const usableMonths = yutai.rightsMonths.filter((m) => monthCount[m] < MAX_PER_MONTH);
+    if (usableMonths.length === 0) continue;
+
+    const valuePerMonth = yutai.annualValue / yutai.rightsMonths.length;
+    for (const m of usableMonths) {
+      monthEntries.push({ month: m, yutai, annualValue: valuePerMonth });
+      monthCount[m]++;
+    }
+    selectedYutaiMap.set(yutai.id, yutai);
+    totalSelected++;
+  }
+
+  // Step 4: 集計
+  const selectedYutai = Array.from(selectedYutaiMap.values());
+  const totalInvestment = selectedYutai.reduce((sum, y) => sum + y.approxInvestment, 0);
+  const totalAnnualValue = selectedYutai.reduce((sum, y) => sum + y.annualValue, 0);
+  const uncoveredMonths: number[] = [];
+  for (let m = 1; m <= 12; m++) {
+    if (monthCount[m] === 0) uncoveredMonths.push(m);
+  }
+  monthEntries.sort((a, b) => a.month - b.month);
+
+  return { totalAnnualValue, totalInvestment, monthEntries, uncoveredMonths, selectedYutai };
+}
+
 // ── 予算別おすすめパッケージ ────────────────────────────────────────
 
 /** ライフスタイルにマッチする候補銘柄を返す(予算フィルタなし・重複排除済み) */

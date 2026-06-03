@@ -14,17 +14,13 @@ export const metadata: Metadata = {
 };
 import {
   matchYutaiByExpenseGrouped,
-  buildCalendarPackage,
   filterCandidatesForBudget,
-  buildBudgetPackage,
   isGasolineYutai,
   calculatePreferenceMatchScore,
   countYutaiByTag,
   PREFERENCE_TAGS,
   type ExpenseCategory,
   type CategoryGroup,
-  type CalendarPackage,
-  type BudgetPackage,
   type UserExpenseLifestyle,
   type PreferenceTag,
 } from "@/lib/matching";
@@ -75,11 +71,7 @@ export default async function ResultsPage({
   const lifestyle: UserExpenseLifestyle = { expenseCategories, brands: [], maxInvestment };
 
   const groupedMap = matchYutaiByExpenseGrouped(lifestyle, YUTAI_LIST);
-  const calendarPackage: CalendarPackage = buildCalendarPackage(lifestyle, YUTAI_LIST);
-
-  const defaultBudget = lifestyle.maxInvestment ?? 500000;
   const budgetCandidates = filterCandidatesForBudget(lifestyle, YUTAI_LIST);
-  const initialBudgetPackage: BudgetPackage = buildBudgetPackage(lifestyle, budgetCandidates, defaultBudget);
 
   // タグごとの該当銘柄数を事前計算(「限定的です」表示用)
   const preferenceTagCounts: Partial<Record<PreferenceTag, number>> = {};
@@ -122,10 +114,8 @@ export default async function ResultsPage({
         <ResultsClient
           groupedResults={groupedResults}
           expenseCategoryCount={expenseCategories.length}
-          calendarPackage={calendarPackage}
-          initialBudgetPackage={initialBudgetPackage}
           budgetCandidates={budgetCandidates}
-          lifestyle={lifestyle}
+          investmentLimit={lifestyle.maxInvestment ?? 500000}
           householdSize={householdSize}
           vehicleType={vehicleType}
           preferenceTags={preferenceTags}

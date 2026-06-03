@@ -12,21 +12,17 @@ import {
 } from "@/components/ui/card";
 import { ShareSection } from "./ShareSection";
 import {
-  buildBudgetPackage,
+  buildBudgetAwareCalendarPackage,
   simulateFamilyShare,
   inferPreferenceTags,
   PREFERENCE_TAGS,
   type CategoryGroup,
-  type CalendarPackage,
-  type BudgetPackage,
-  type UserExpenseLifestyle,
   type ExpenseCategory,
   type PreferenceTag,
 } from "@/lib/matching";
 import type { VehicleType } from "@/store/onboarding-store";
 import type { Yutai } from "@/lib/yutai-data";
 
-// モジュールレベルでフラット化(レンダーごとの再計算を避ける)
 const ALL_PREFERENCE_TAGS_FLAT = Object.values(PREFERENCE_TAGS).flat();
 
 function findTagInfo(tagId: PreferenceTag) {
@@ -35,6 +31,11 @@ function findTagInfo(tagId: PreferenceTag) {
 
 function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
+}
+
+function formatInvestmentLabel(amount: number): string {
+  const man = Math.round(amount / 10000);
+  return `${man.toLocaleString()}万円`;
 }
 
 function FamilyShareBox({ yutai, householdSize }: { yutai: Yutai; householdSize: number }) {
@@ -67,10 +68,8 @@ const CAR_EXPENSE_CATEGORY = "車関連費(ガソリン・駐車場・整備)";
 type Props = {
   groupedResults: CategoryGroup[];
   expenseCategoryCount: number;
-  calendarPackage: CalendarPackage;
-  initialBudgetPackage: BudgetPackage;
   budgetCandidates: Yutai[];
-  lifestyle: UserExpenseLifestyle;
+  investmentLimit: number;
   householdSize: number;
   vehicleType: VehicleType;
   preferenceTags: PreferenceTag[];
@@ -80,10 +79,8 @@ type Props = {
 export function ResultsClient({
   groupedResults,
   expenseCategoryCount,
-  calendarPackage,
-  initialBudgetPackage,
   budgetCandidates,
-  lifestyle,
+  investmentLimit,
   householdSize,
   vehicleType,
   preferenceTags,
@@ -99,7 +96,6 @@ export function ResultsClient({
 
   const hasAnyResults = groupedResults.some((g) => g.results.length > 0);
 
-  // サマリー: 同銘柄が複数カテゴリに出てもダブルカウントしない
   const { totalSavings, totalInvestment, totalUnique } = useMemo(() => {
     const seen = new Set<string>();
     let savings = 0;
@@ -116,42 +112,31 @@ export function ResultsClient({
     return { totalSavings: savings, totalInvestment: investment, totalUnique: seen.size };
   }, [groupedResults, perCategoryLimit]);
 
+  // 予算スライダー。初期値はオンボーディングの investmentLimit
+  const [budget, setBudget] = useState(investmentLimit);
+
+  // 予算変更のたびにカレンダーを再計算(クライアント側)
+  const calendarPackage = useMemo(
+    () => buildBudgetAwareCalendarPackage(budgetCandidates, budget, preferenceTags),
+    [budgetCandidates, budget, preferenceTags]
+  );
+
   const calendarYield =
     calendarPackage.totalInvestment > 0
       ? ((calendarPackage.totalAnnualValue / calendarPackage.totalInvestment) * 100).toFixed(1)
       : "0.0";
 
-  const [budget, setBudget] = useState(initialBudgetPackage.budget);
-  const budgetPackage = useMemo(() => {
-    if (budget === initialBudgetPackage.budget) return initialBudgetPackage;
-    return buildBudgetPackage(lifestyle, budgetCandidates, budget);
-  }, [budget, initialBudgetPackage, lifestyle, budgetCandidates]);
-  const budgetYield =
-    budgetPackage.totalInvestment > 0
-      ? ((budgetPackage.totalAnnualValue / budgetPackage.totalInvestment) * 100).toFixed(1)
-      : "0.0";
+  const coveredMonths = 12 - calendarPackage.uncoveredMonths.length;
 
   const shareText = (() => {
     const lines: string[] = [];
     lines.push("🎁 優待アプリで見つけた私の優待ポートフォリオ");
     lines.push("");
     if (calendarPackage.selectedYutai.length > 0) {
-      lines.push(`📅 年間優待カレンダー (${calendarPackage.selectedYutai.length}銘柄)`);
+      lines.push(`📅 年間優待カレンダー (${calendarPackage.selectedYutai.length}銘柄 / 予算${formatInvestmentLabel(budget)})`);
       lines.push(`年間優待価値: ${formatYen(calendarPackage.totalAnnualValue)}`);
       lines.push(`必要投資額: ${formatYen(calendarPackage.totalInvestment)}`);
-      lines.push(`利回り: ${calendarYield}%`);
-      lines.push("");
-    }
-    if (budgetPackage.selectedYutai.length > 0) {
-      lines.push(`💰 予算${formatYen(budget)}でのおすすめパッケージ`);
-      lines.push(`年間優待価値: ${formatYen(budgetPackage.totalAnnualValue)}`);
-      lines.push(`使用額: ${formatYen(budgetPackage.totalInvestment)}`);
-      lines.push(`利回り: ${budgetYield}%`);
-      lines.push("");
-      lines.push("選ばれた銘柄:");
-      budgetPackage.selectedYutai.forEach((s, idx) => {
-        lines.push(`${idx + 1}. ${s.yutai.name}(${s.yutai.code}) - 年${formatYen(s.annualSavings)}`);
-      });
+      lines.push(`利回り: ${calendarYield}% / ${coveredMonths}ヶ月カバー`);
       lines.push("");
     }
     lines.push("あなたも生活スタイルから優待を見つけませんか?");
@@ -163,9 +148,6 @@ export function ResultsClient({
     if (calendarPackage.selectedYutai.length > 0) {
       return `🎁 優待アプリで年間${formatYen(calendarPackage.totalAnnualValue)}削減見込みの優待ポートフォリオを見つけました!\n生活スタイルから優待が見つかるアプリです。`;
     }
-    if (budgetPackage.selectedYutai.length > 0) {
-      return `🎁 優待アプリで予算${formatYen(budget)}・利回り${budgetYield}%のおすすめパッケージを発見!\n生活スタイルから優待が見つかるアプリです。`;
-    }
     return "🎁 優待アプリで自分にぴったりの株主優待を見つけました!";
   })();
 
@@ -173,39 +155,82 @@ export function ResultsClient({
 
   return (
     <div className="space-y-8 min-w-0">
-      {/* ── 年間優待カレンダーパッケージ ── */}
-      {calendarPackage.selectedYutai.length > 0 && (
+      {/* ── 年間優待カレンダー + 予算スライダー(統合) ── */}
+      {budgetCandidates.length > 0 && (
         <section className="rounded-xl border-2 border-primary bg-primary/5 p-4">
           <div className="mb-4">
             <h2 className="flex items-center gap-2 text-xl font-bold">
               📅 年間優待カレンダー
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              権利確定月が分散するように選んだ {calendarPackage.selectedYutai.length} 銘柄。
-              年間を通じて優待が届くパッケージです。
+              投資予算内で権利確定月が分散するパッケージを自動構成します
             </p>
-            {calendarPackage.selectedYutai.length <= 3 && (
-              <p className="mt-2 text-xs text-accent font-medium">
-                💡 もっとカテゴリを選ぶと年間カレンダーが充実します
-              </p>
-            )}
+          </div>
+
+          {/* 予算スライダー */}
+          <div className="mb-4 rounded-lg bg-background p-3">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">予算</span>
+              <span className="text-lg font-bold tabular-nums">{formatInvestmentLabel(budget)}</span>
+            </div>
+            <input
+              type="range"
+              min={100000}
+              max={10000000}
+              step={100000}
+              value={budget}
+              onChange={(e) => setBudget(Number(e.target.value))}
+              className="w-full accent-primary"
+            />
+            <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+              <span>10万円</span>
+              <span>1,000万円</span>
+            </div>
           </div>
 
           {/* パッケージサマリー */}
-          <div className="mb-4 grid grid-cols-3 gap-3 rounded-lg bg-background p-3">
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">必要投資額</p>
-              <p className="text-base font-bold tabular-nums">{formatYen(calendarPackage.totalInvestment)}</p>
+          {calendarPackage.selectedYutai.length > 0 ? (
+            <>
+              <div className="mb-4 grid grid-cols-4 gap-2 rounded-lg bg-background p-3">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">必要投資額</p>
+                  <p className="text-sm font-bold tabular-nums">{formatYen(calendarPackage.totalInvestment)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">年間優待価値</p>
+                  <p className="text-sm font-bold text-primary tabular-nums">{formatYen(calendarPackage.totalAnnualValue)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">合計利回り</p>
+                  <p className="text-sm font-bold tabular-nums">{calendarYield}%</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">カバー月数</p>
+                  <p className="text-sm font-bold tabular-nums">
+                    <span className={coveredMonths < 6 ? "text-muted-foreground" : "text-primary"}>
+                      {coveredMonths}
+                    </span>
+                    <span className="text-xs text-muted-foreground">/12ヶ月</span>
+                  </p>
+                </div>
+              </div>
+
+              {calendarPackage.selectedYutai.length <= 3 && (
+                <p className="mb-3 text-xs text-accent font-medium">
+                  💡 もっとカテゴリを選ぶか予算を増やすと年間カレンダーが充実します
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="mb-4 rounded-lg bg-background p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                予算 {formatInvestmentLabel(budget)} では該当する優待がありません
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                スライダーを右に動かして予算を増やしてみてください
+              </p>
             </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">年間優待価値</p>
-              <p className="text-base font-bold text-primary tabular-nums">{formatYen(calendarPackage.totalAnnualValue)}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">合計利回り</p>
-              <p className="text-base font-bold tabular-nums">{calendarYield}%</p>
-            </div>
-          </div>
+          )}
 
           {/* 月別カレンダー */}
           <div className="space-y-1.5">
@@ -228,7 +253,9 @@ export function ResultsClient({
                   </div>
                   <div className="flex-1 min-w-0">
                     {isEmpty ? (
-                      <p className="text-xs italic text-muted-foreground">権利確定なし</p>
+                      <p className="text-xs italic text-muted-foreground">
+                        この月の優待は予算内では現状ありません
+                      </p>
                     ) : (
                       <div className="space-y-0.5">
                         {entries.map((entry, idx) => (
@@ -261,100 +288,6 @@ export function ResultsClient({
         </section>
       )}
 
-      {/* ── 予算別おすすめパッケージ ── */}
-      {budgetCandidates.length > 0 && (
-        <section className="rounded-xl border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/20 p-4">
-          <div className="mb-4">
-            <h2 className="flex items-center gap-2 text-xl font-bold">
-              💰 予算別おすすめパッケージ
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              投資予算を動かして、コスパ最大の組み合わせをシミュレーション
-            </p>
-          </div>
-
-          {/* スライダー */}
-          <div className="mb-4">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">投資予算</span>
-              <span className="text-lg font-bold tabular-nums">{formatYen(budget)}</span>
-            </div>
-            <input
-              type="range"
-              min={100000}
-              max={3000000}
-              step={50000}
-              value={budget}
-              onChange={(e) => setBudget(Number(e.target.value))}
-              className="w-full accent-amber-500"
-            />
-            <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-              <span>10万円</span>
-              <span>300万円</span>
-            </div>
-          </div>
-
-          {/* パッケージサマリー */}
-          <div className="mb-4 grid grid-cols-3 gap-3 rounded-lg bg-background p-3">
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">使用額</p>
-              <p className="text-base font-bold tabular-nums">{formatYen(budgetPackage.totalInvestment)}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">年間優待価値</p>
-              <p className="text-base font-bold text-amber-600 dark:text-amber-400 tabular-nums">
-                {formatYen(budgetPackage.totalAnnualValue)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">優待利回り</p>
-              <p className="text-base font-bold tabular-nums">{budgetYield}%</p>
-            </div>
-          </div>
-
-          {/* 銘柄リスト */}
-          {budgetPackage.selectedYutai.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-4">
-              この予算に合う銘柄がありません。予算を増やしてみてください。
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {budgetPackage.selectedYutai.map(({ yutai, annualSavings }, idx) => (
-                <li
-                  key={yutai.id}
-                  className="flex items-center gap-3 rounded-lg bg-background px-3 py-2"
-                >
-                  <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
-                    {idx + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {yutai.name}
-                      <span className="ml-1 text-xs text-muted-foreground">({yutai.code})</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      投資額 {formatYen(yutai.approxInvestment)} · 利回り {yutai.yieldPercent}%
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-sm font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
-                    {formatYen(Math.round(annualSavings))}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {budgetPackage.unusedBudget > 0 && budgetPackage.selectedYutai.length > 0 && (
-            <p className="mt-3 text-xs text-muted-foreground text-right">
-              残り予算: {formatYen(budgetPackage.unusedBudget)}
-            </p>
-          )}
-          <p className="mt-2 text-xs text-muted-foreground">
-            ※ コスパ(優待価値÷投資額)が高い順に予算内で最大10銘柄を選択。投資判断はご自身でご確認ください。
-          </p>
-        </section>
-      )}
-
       {/* ── カテゴリ別サマリー ── */}
       {hasAnyResults && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-5">
@@ -374,7 +307,7 @@ export function ResultsClient({
       )}
 
       {/* ── 全カテゴリ該当なし ── */}
-      {!hasAnyResults && calendarPackage.selectedYutai.length === 0 && (
+      {!hasAnyResults && budgetCandidates.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">
             選んだ出費カテゴリに該当する優待銘柄が見つかりませんでした。他のカテゴリも試してみてください。
@@ -387,13 +320,11 @@ export function ResultsClient({
         const isCarCategory = category === CAR_EXPENSE_CATEGORY;
         const isEvUser = vehicleType === "ev";
 
-        // EV車セクションは results=0 でも空状態ボックス表示のため素通りさせる
         if (results.length === 0 && !(isEvUser && isCarCategory)) return null;
 
         const topResults = results.slice(0, perCategoryLimit);
         const sectionTotal = topResults.reduce((sum, r) => sum + r.annualSavings, 0);
 
-        // 嗜好タグ: このカテゴリに属するタグのうちユーザーが選んだもの
         const categoryTagDefs = PREFERENCE_TAGS[category as ExpenseCategory] ?? [];
         const selectedTagsForCategory = categoryTagDefs.filter((t) =>
           preferenceTags.includes(t.id)
@@ -416,7 +347,6 @@ export function ResultsClient({
               )}
             </div>
 
-            {/* 嗜好タグ 0件: 正直な空状態 */}
             {emptyTagInfos.length > 0 && (
               <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-1.5">
                 <p className="text-sm font-medium">
@@ -429,7 +359,6 @@ export function ResultsClient({
               </div>
             )}
 
-            {/* 嗜好タグ 限定的(1〜2件) */}
             {limitedTagInfos.length > 0 && (
               <div className="mb-4 rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-1.5">
                 <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
@@ -450,7 +379,6 @@ export function ResultsClient({
               </div>
             )}
 
-            {/* EV向け正直な空状態 */}
             {isEvUser && isCarCategory && (
               <div className="mb-4 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 space-y-3">
                 <div className="flex items-start gap-2">
@@ -474,7 +402,6 @@ export function ResultsClient({
               </div>
             )}
 
-            {/* EVでも使える車関連優待の見出し */}
             {isEvUser && isCarCategory && topResults.length > 0 && (
               <p className="mb-3 text-sm font-medium text-muted-foreground">
                 EVでも使える車関連の優待
@@ -488,7 +415,6 @@ export function ResultsClient({
 
             <ul className="space-y-3" aria-label={`${category}の優待銘柄`}>
               {topResults.map(({ yutai, matchReason, annualSavings }, idx) => {
-                // この銘柄に合致するユーザー選択タグを計算
                 const yutaiInferredTags = inferPreferenceTags(yutai);
                 const matchedPreferenceTags = preferenceTags.filter((t) =>
                   yutaiInferredTags.includes(t)
@@ -515,7 +441,6 @@ export function ResultsClient({
                                 <span>⚠ 参考情報</span>
                               )}
                             </p>
-                            {/* 嗜好タグバッジ */}
                             {matchedPreferenceTags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1.5">
                                 {matchedPreferenceTags.map((tagId) => {
@@ -581,7 +506,7 @@ export function ResultsClient({
       })}
 
       {/* ── シェア・コピーボタン ── */}
-      {(calendarPackage.selectedYutai.length > 0 || budgetPackage.selectedYutai.length > 0) && (
+      {calendarPackage.selectedYutai.length > 0 && (
         <ShareSection
           shareText={shareText}
           shareTextShort={shareTextShort}
