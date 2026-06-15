@@ -26,10 +26,10 @@ export default function ContactPage() {
             <h2 className="font-semibold text-base">メールでのお問い合わせ</h2>
             <p className="text-muted-foreground">以下のメールアドレスまでご連絡ください。</p>
             <a
-              href="mailto:contact@yutai-match.com"
+              href="mailto:yutaiinfoshare@gmail.com"
               className="inline-block font-mono text-primary underline break-all"
             >
-              contact@yutai-match.com
+              yutaiinfoshare@gmail.com
             </a>
             <p className="text-xs text-muted-foreground">
               ※ 返信までお時間をいただく場合があります。副業での個人運営のため、ご了承ください。

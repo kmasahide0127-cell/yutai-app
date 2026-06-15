@@ -558,14 +558,8 @@ export function ResultsClient({
         <div className="space-x-4">
           <Link href="/terms" className="hover:underline">利用規約</Link>
           <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
-          <a
-            href="https://github.com/kmasahide0127-cell/yutai-app/issues"
-            className="hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            お問い合わせ
-          </a>
+          <Link href="/contact" className="hover:underline">お問い合わせ</Link>
+          <Link href="/about" className="hover:underline">このサイトについて</Link>
         </div>
         <p className="mt-2">© 2026 優待アプリ | データ取得日: 2026年5月27日</p>
       </footer>
