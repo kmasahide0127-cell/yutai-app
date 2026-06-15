@@ -59,16 +59,10 @@ export default function Home() {
         </p>
         <div className="space-x-4">
           <Link href="/stocks" className="hover:underline">銘柄一覧</Link>
+          <Link href="/about" className="hover:underline">このサイトについて</Link>
+          <Link href="/contact" className="hover:underline">お問い合わせ</Link>
           <Link href="/terms" className="hover:underline">利用規約</Link>
           <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
-          <a
-            href="https://github.com/kmasahide0127-cell/yutai-app/issues"
-            className="hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            お問い合わせ
-          </a>
         </div>
         <p>© 2026 優待アプリ | データ取得日: 2026年5月27日</p>
       </footer>
