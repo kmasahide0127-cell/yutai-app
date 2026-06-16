@@ -282,6 +282,9 @@ export function ResultsClient({
           )}
 
           {/* 月別カレンダー */}
+          <p className="mb-2 text-xs text-muted-foreground/70">
+            すでに持っている銘柄にチェックを入れると、提案から外して「保有済み」として扱います
+          </p>
           <div className="space-y-1.5">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
               const confirmedEntries = cal.confirmed.filter((e) => e.month === month);
