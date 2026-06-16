@@ -131,6 +131,13 @@ export function ResultsClient({
     return map;
   }, [heldYutai]);
 
+  const toggleHeld = (yutai: Yutai) => {
+    setHeldYutai((prev) => {
+      const isHeld = prev.some((h) => h.code === yutai.code);
+      return isHeld ? prev.filter((h) => h.code !== yutai.code) : [...prev, yutai];
+    });
+  };
+
   // 予算・保有株変更のたびにカレンダーを再計算(confirmed累積制約 + ghost候補)
   const cal = useMemo(
     () => buildBudgetAwareCalendarPackage(budgetCandidates, budget, preferenceTags, heldYutai.map((y) => y.code)),
@@ -138,6 +145,23 @@ export function ResultsClient({
   );
 
   const calendarYield = cal.confirmedYield.toFixed(1);
+
+  // 保有株の権利月も含めた実際のカバー月数
+  const coveredMonthCount = useMemo(() => {
+    const months = new Set<number>(cal.confirmed.map((e) => e.month));
+    for (const m of heldCalendarEntries.keys()) months.add(m);
+    return months.size;
+  }, [cal.confirmed, heldCalendarEntries]);
+
+  // 保有株だけがカバーする月数(内訳表示用)
+  const heldOnlyMonthCount = useMemo(() => {
+    const confirmedMonths = new Set<number>(cal.confirmed.map((e) => e.month));
+    let count = 0;
+    for (const m of heldCalendarEntries.keys()) {
+      if (!confirmedMonths.has(m)) count++;
+    }
+    return count;
+  }, [cal.confirmed, heldCalendarEntries]);
 
   const shareText = (() => {
     const lines: string[] = [];
@@ -147,7 +171,7 @@ export function ResultsClient({
       lines.push(`📅 年間優待カレンダー (${cal.confirmedYutaiCount}銘柄 / 予算${formatInvestmentLabel(budget)})`);
       lines.push(`年間優待価値: ${formatYen(cal.confirmedAnnualValue)}`);
       lines.push(`必要投資額: ${formatYen(cal.confirmedTotalInvestment)}`);
-      lines.push(`利回り: ${calendarYield}% / ${cal.confirmedMonthCount}ヶ月カバー`);
+      lines.push(`利回り: ${calendarYield}% / ${coveredMonthCount}ヶ月カバー`);
       lines.push("");
     }
     lines.push("あなたも生活スタイルから優待を見つけませんか?");
@@ -222,11 +246,14 @@ export function ResultsClient({
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">カバー月数</p>
                   <p className="text-sm font-bold tabular-nums">
-                    <span className={cal.confirmedMonthCount < 6 ? "text-muted-foreground" : "text-primary"}>
-                      {cal.confirmedMonthCount}
+                    <span className={coveredMonthCount < 6 ? "text-muted-foreground" : "text-primary"}>
+                      {coveredMonthCount}
                     </span>
                     <span className="text-xs text-muted-foreground">/12ヶ月</span>
                   </p>
+                  {heldOnlyMonthCount > 0 && (
+                    <p className="text-[10px] text-muted-foreground/70">うち保有{heldOnlyMonthCount}ヶ月</p>
+                  )}
                 </div>
               </div>
 
@@ -291,9 +318,16 @@ export function ResultsClient({
                             {heldForMonth.map((y) => (
                               <div
                                 key={`h-${y.code}`}
-                                className="flex items-center justify-between gap-2"
+                                className="flex items-center gap-2"
                               >
-                                <span className="truncate text-sm text-muted-foreground">
+                                <input
+                                  type="checkbox"
+                                  checked
+                                  onChange={() => toggleHeld(y)}
+                                  className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
+                                  aria-label={`${y.name}の保有設定を解除`}
+                                />
+                                <span className="truncate text-sm text-muted-foreground flex-1">
                                   {y.name}
                                   <span className="ml-1 text-xs text-muted-foreground/70">
                                     ({y.code})
@@ -313,9 +347,16 @@ export function ResultsClient({
                             {confirmedEntries.map((entry, idx) => (
                               <div
                                 key={`c-${entry.yutai.id}-${idx}`}
-                                className="flex items-center justify-between gap-2 text-sm"
+                                className="flex items-center gap-2 text-sm"
                               >
-                                <span className="truncate font-medium">
+                                <input
+                                  type="checkbox"
+                                  checked={false}
+                                  onChange={() => toggleHeld(entry.yutai)}
+                                  className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
+                                  aria-label={`${entry.yutai.name}を保有済みに設定`}
+                                />
+                                <span className="truncate font-medium flex-1">
                                   {entry.yutai.name}
                                   <span className="ml-1 text-xs text-muted-foreground">
                                     ({entry.yutai.code})
@@ -337,8 +378,15 @@ export function ResultsClient({
                                 <p className="text-[10px] text-muted-foreground/70">
                                   💡 来年度の追加候補
                                 </p>
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="truncate text-xs text-muted-foreground/60">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={false}
+                                    onChange={() => toggleHeld(entry.yutai)}
+                                    className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
+                                    aria-label={`${entry.yutai.name}を保有済みに設定`}
+                                  />
+                                  <span className="truncate text-xs text-muted-foreground/60 flex-1">
                                     {entry.yutai.name}
                                     <span className="ml-1 text-muted-foreground/50">
                                       ({entry.yutai.code})
