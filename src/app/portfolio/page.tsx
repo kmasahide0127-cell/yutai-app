@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import type { Yutai } from "@/lib/yutai-data";
 import {
@@ -13,6 +12,10 @@ import {
   analyzeRedundancy,
   suggestForGaps,
   type ResolvedHolding,
+  type RightsMonthGapAnalysis,
+  type CategoryBiasAnalysis,
+  type RedundancyAnalysis,
+  type GapSuggestions,
 } from "@/lib/portfolio";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +23,19 @@ type HeldItem = {
   input: string;
   resolved: ResolvedHolding;
 };
+
+type AnalysisResult = {
+  resolvedList: ResolvedHolding[];
+  monthGaps: RightsMonthGapAnalysis;
+  categoryBias: CategoryBiasAnalysis;
+  redundancy: RedundancyAnalysis;
+  gaps: GapSuggestions;
+};
+
+function formatMan(amount: number): string {
+  const man = Math.round(amount / 10000);
+  return `約${man.toLocaleString()}万円`;
+}
 
 function searchYutai(query: string): Yutai[] {
   const lower = query.toLowerCase();
@@ -31,14 +47,221 @@ function searchYutai(query: string): Yutai[] {
   ).slice(0, 8);
 }
 
+// ── 候補銘柄のコンパクトカード ────────────────────────────────────────────
+
+function SuggestionCard({ yutai }: { yutai: Yutai }) {
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2.5 space-y-1">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-xs text-muted-foreground w-10 shrink-0">{yutai.code}</span>
+        <span className="text-sm font-medium flex-1 truncate">{yutai.name}</span>
+      </div>
+      <p className="text-xs text-muted-foreground line-clamp-2 pl-12">{yutai.description}</p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 pl-12 text-xs text-muted-foreground">
+        <span>権利確定: {yutai.rightsMonths.map((m) => `${m}月`).join("・")}</span>
+        <span>必要投資額: {formatMan(yutai.approxInvestment)}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── 分析結果ビュー ────────────────────────────────────────────────────────
+
+function AnalysisResultView({ result }: { result: AnalysisResult }) {
+  const { resolvedList, monthGaps, categoryBias, redundancy, gaps } = result;
+
+  const foundCount = resolvedList.filter((h) => h.found).length;
+  const notFoundList = resolvedList.filter((h) => !h.found);
+  const coveredSet = new Set(monthGaps.coveredMonths);
+  const topCategories = categoryBias.dominantCategories.slice(0, 5);
+
+  // 提案: 提案がある月のみ・最大6ヶ月
+  const monthSuggestions = gaps.forEmptyMonths
+    .filter((m) => m.suggestions.length > 0)
+    .slice(0, 6);
+
+  // 提案: 提案があるカテゴリのみ・最大4カテゴリ
+  const categorySuggestions = gaps.forMissingCategories
+    .filter((c) => c.suggestions.length > 0)
+    .slice(0, 4);
+
+  return (
+    <div className="space-y-8">
+
+      {/* セクション0: 入力サマリー */}
+      <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-1.5">
+        <p className="text-sm font-medium">
+          {resolvedList.length}銘柄を入力 — データ収録: {foundCount}件 / 分析対象外: {notFoundList.length}件
+        </p>
+        {notFoundList.length > 0 && (
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            分析対象外: {notFoundList.map((h) => `「${h.input}」`).join("・")}
+            （優待データに収録されていない銘柄のため除外しています）
+          </p>
+        )}
+        {foundCount === 0 && (
+          <p className="text-xs text-muted-foreground mt-1">
+            データ収録銘柄がないため、分析を表示できません。銘柄名・証券コードで再入力してみてください。
+          </p>
+        )}
+      </div>
+
+      {foundCount > 0 && (
+        <>
+          {/* セクション1: 権利確定月の分布 */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold border-b border-border pb-2">権利確定月の分布</h2>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => {
+                const covered = coveredSet.has(m);
+                return (
+                  <div
+                    key={m}
+                    className={cn(
+                      "rounded py-2 text-center text-xs font-medium",
+                      covered
+                        ? "bg-primary/15 text-foreground"
+                        : "bg-muted/40 text-muted-foreground"
+                    )}
+                  >
+                    {m}月
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {monthGaps.coveredMonths.length === 0
+                ? "カバーされている月がありません。"
+                : monthGaps.coveredMonths.length === 12
+                ? "12ヶ月すべてカバーされています。"
+                : (() => {
+                    const covered = monthGaps.coveredMonths.map((m) => `${m}月`).join("・");
+                    const empty = monthGaps.emptyMonths.map((m) => `${m}月`).join("・");
+                    return `${covered}に権利確定が集中しています。${empty}はカバーされていません。`;
+                  })()}
+            </p>
+          </section>
+
+          {/* セクション2: ジャンルの傾向 */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold border-b border-border pb-2">ジャンルの傾向</h2>
+            {topCategories.length > 0 ? (
+              <>
+                <div className="space-y-1.5">
+                  {topCategories.map(({ category, count }) => (
+                    <div
+                      key={category}
+                      className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2"
+                    >
+                      <span className="text-sm flex-1">{category}</span>
+                      <span className="text-xs text-muted-foreground">{count}銘柄</span>
+                    </div>
+                  ))}
+                  {categoryBias.dominantCategories.length > 5 && (
+                    <p className="text-xs text-muted-foreground pl-1">
+                      ほか{categoryBias.dominantCategories.length - 5}ジャンル
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {categoryBias.missingCategories.length > 0
+                    ? `収録銘柄の中でまだ手元にないジャンルが${categoryBias.missingCategories.length}カテゴリあります。`
+                    : "保有銘柄で収録中のジャンルをすべてカバーしています。"}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">ジャンル情報が取得できませんでした。</p>
+            )}
+          </section>
+
+          {/* セクション3: 同ジャンル重複（重複がある場合のみ表示） */}
+          {redundancy.redundantGroups.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold border-b border-border pb-2">同ジャンルの重複（参考）</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                同じジャンルに複数の銘柄があります。良し悪しの判断ではなく、傾向の確認としてご参照ください。
+              </p>
+              <div className="space-y-2">
+                {redundancy.redundantGroups.map(({ category, yutaiNames }) => (
+                  <div
+                    key={category}
+                    className="rounded-lg border border-border bg-card px-3 py-2.5"
+                  >
+                    <p className="text-xs text-muted-foreground">{category}</p>
+                    <p className="text-sm mt-0.5">{yutaiNames.join("・")}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* セクション4: 穴を埋める候補 */}
+          {(monthSuggestions.length > 0 || categorySuggestions.length > 0) && (
+            <section className="space-y-5">
+              <div className="border-b border-border pb-2">
+                <h2 className="text-sm font-semibold">穴を埋める候補</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  空き月・不足ジャンルに該当する銘柄の候補です。投資の判断はご自身でお願いします。
+                </p>
+              </div>
+
+              {/* 空き月の候補 */}
+              {monthSuggestions.length > 0 && (
+                <div className="space-y-4">
+                  <p className="text-xs font-medium text-muted-foreground">空き月をカバーできる候補</p>
+                  {monthSuggestions.map(({ month, suggestions }) => (
+                    <div key={month} className="space-y-2">
+                      <p className="text-xs font-medium">{month}月の権利確定</p>
+                      <div className="space-y-1.5">
+                        {suggestions.map((y) => (
+                          <SuggestionCard key={y.code} yutai={y} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 不足ジャンルの候補 */}
+              {categorySuggestions.length > 0 && (
+                <div className="space-y-4">
+                  <p className="text-xs font-medium text-muted-foreground">不足ジャンルの候補</p>
+                  {categorySuggestions.map(({ category, suggestions }) => (
+                    <div key={category} className="space-y-2">
+                      <p className="text-xs font-medium">{category}</p>
+                      <div className="space-y-1.5">
+                        {suggestions.map((y) => (
+                          <SuggestionCard key={y.code} yutai={y} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* フッター注記 */}
+          <p className="text-xs text-muted-foreground">
+            ※ 優待情報は2026年5月27日時点。内容は各企業のIRページで必ずご確認ください。
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── メインページ ──────────────────────────────────────────────────────────
+
 export default function PortfolioPage() {
   const [query, setQuery] = useState("");
   const [held, setHeld] = useState<HeldItem[]>([]);
   const [suggestions, setSuggestions] = useState<Yutai[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [debugResult, setDebugResult] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (query.trim()) {
@@ -64,6 +287,14 @@ export default function PortfolioPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (analysisResult) {
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }, [analysisResult]);
 
   const isAlreadyHeld = useCallback(
     (code: string) => held.some((h) => h.resolved.found && h.resolved.yutai?.code === code),
@@ -95,7 +326,7 @@ export default function PortfolioPage() {
 
   function remove(index: number) {
     setHeld((prev) => prev.filter((_, i) => i !== index));
-    setDebugResult(null);
+    setAnalysisResult(null);
   }
 
   function analyze() {
@@ -104,9 +335,7 @@ export default function PortfolioPage() {
     const categoryBias = analyzeCategoryBias(resolvedList);
     const redundancy = analyzeRedundancy(resolvedList);
     const gaps = suggestForGaps(resolvedList, YUTAI_LIST);
-    const result = { monthGaps, categoryBias, redundancy, gaps };
-    console.log("3軸分析結果:", result);
-    setDebugResult(JSON.stringify(result, null, 2));
+    setAnalysisResult({ resolvedList, monthGaps, categoryBias, redundancy, gaps });
   }
 
   return (
@@ -290,19 +519,16 @@ export default function PortfolioPage() {
             分析する
           </Button>
 
-          {/* デバッグ表示(Stage 3 完成前の暫定出力) */}
-          {debugResult && (
-            <Card>
-              <CardContent className="pt-4">
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  分析結果（開発用デバッグ表示 — Stage 3 で本番UIに置き換えます）
-                </p>
-                <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-all text-foreground/70">
-                  {debugResult}
-                </pre>
-              </CardContent>
-            </Card>
+          {/* 分析結果 */}
+          {analysisResult && (
+            <div ref={resultsRef} className="border-t border-border pt-6">
+              <p className="text-xs font-medium text-muted-foreground mb-4 uppercase tracking-wide">
+                分析結果
+              </p>
+              <AnalysisResultView result={analysisResult} />
+            </div>
           )}
+
         </div>
       </div>
     </div>
