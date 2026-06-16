@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -31,13 +31,7 @@ const HOUSEHOLD_OPTIONS: { label: string; value: number }[] = [
   { label: "4人以上", value: 4 },
 ];
 
-const INVESTMENT_OPTIONS: { label: string; value: string }[] = [
-  { label: "10万円以下", value: "100000" },
-  { label: "30万円以下", value: "300000" },
-  { label: "50万円以下", value: "500000" },
-  { label: "100万円以下", value: "1000000" },
-  { label: "上限なし", value: "unlimited" },
-];
+const INVESTMENT_MAX_MAN_YEN = 100000; // 100,000万円 = 10億円
 
 const VEHICLE_OPTIONS: { label: string; value: "gasoline" | "ev" }[] = [
   { label: "⛽ ガソリン車・ディーゼル車・ハイブリッド", value: "gasoline" },
@@ -109,10 +103,37 @@ function OnboardingContent() {
     togglePreferenceTag,
   } = useOnboardingStore();
 
-  const investmentStr = maxInvestment === null ? "unlimited" : String(maxInvestment);
+  // 投資額入力: 万円単位の文字列。store には円単位で保存。
+  const [investmentInput, setInvestmentInput] = useState<string>(() =>
+    maxInvestment !== null ? String(maxInvestment / 10000) : ""
+  );
 
-  const handleInvestmentChange = (val: string) => {
-    setMaxInvestment(val === "unlimited" ? null : parseInt(val, 10));
+  // ステップ変化時にストアの値と同期(「戻る」で戻ってきた場合など)
+  useEffect(() => {
+    setInvestmentInput(maxInvestment !== null ? String(maxInvestment / 10000) : "");
+  // currentStep が変わったタイミングのみ再同期。タイピング中は不要。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
+  const parsedManYen = parseInt(investmentInput, 10);
+  const isInvestmentOverLimit =
+    investmentInput.length > 0 && !isNaN(parsedManYen) && parsedManYen > INVESTMENT_MAX_MAN_YEN;
+  const isInvestmentValid =
+    investmentInput.length > 0 &&
+    !isNaN(parsedManYen) &&
+    parsedManYen > 0 &&
+    parsedManYen <= INVESTMENT_MAX_MAN_YEN;
+
+  const handleInvestmentInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 半角数字のみ許可(全角は除去)
+    const cleaned = e.target.value.replace(/[^0-9]/g, "");
+    setInvestmentInput(cleaned);
+    const parsed = parseInt(cleaned, 10);
+    if (cleaned.length > 0 && !isNaN(parsed) && parsed > 0 && parsed <= INVESTMENT_MAX_MAN_YEN) {
+      setMaxInvestment(parsed * 10000);
+    } else {
+      setMaxInvestment(null);
+    }
   };
 
   const handleExpenseCategoryChange = (item: string) => {
@@ -278,31 +299,49 @@ function OnboardingContent() {
             <section className="space-y-4">
               <div className="space-y-1">
                 <h2 className="text-xl font-bold">投資可能な金額は?</h2>
-                <p className="text-sm text-muted-foreground">1つ選択してください</p>
+                <p className="text-sm text-muted-foreground">
+                  半角数字で入力してください(例: 150 → 150万円)
+                </p>
               </div>
-              <RadioGroup
-                value={investmentStr}
-                onValueChange={handleInvestmentChange}
+              <div
+                className={cn(
+                  "rounded-lg border px-4 py-4 transition-colors",
+                  isInvestmentOverLimit
+                    ? "border-destructive/50"
+                    : isInvestmentValid
+                    ? "border-primary bg-primary/5"
+                    : "border-border"
+                )}
               >
-                {INVESTMENT_OPTIONS.map(({ label, value }) => (
-                  <div
-                    key={value}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-4 transition-colors",
-                      investmentStr === value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted/50"
-                    )}
-                    onClick={() => handleInvestmentChange(value)}
-                  >
-                    <RadioGroupItem
-                      value={value}
-                      className="pointer-events-none"
-                    />
-                    <span className="text-sm font-medium">{label}</span>
-                  </div>
-                ))}
-              </RadioGroup>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={investmentInput}
+                    onChange={handleInvestmentInputChange}
+                    placeholder="例: 150"
+                    autoFocus
+                    className="w-full bg-transparent text-lg font-medium outline-none placeholder:text-muted-foreground/40"
+                  />
+                  <span className="shrink-0 text-sm font-medium text-muted-foreground">万円</span>
+                </div>
+                {isInvestmentValid && (
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    = {formatInvestmentLabel(parsedManYen * 10000)}
+                  </p>
+                )}
+                {!isNaN(parsedManYen) && parsedManYen === 0 && investmentInput.length > 0 && (
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    0より大きい金額を入力してください
+                  </p>
+                )}
+                {isInvestmentOverLimit && (
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    入力できる上限は {INVESTMENT_MAX_MAN_YEN.toLocaleString()}万円(10億円)です
+                  </p>
+                )}
+              </div>
             </section>
           )}
 
@@ -417,8 +456,8 @@ function OnboardingContent() {
                 <CardContent>
                   <p className="text-sm font-medium">
                     {maxInvestment === null
-                      ? "上限なし"
-                      : `${formatInvestmentLabel(maxInvestment)}以下`}
+                      ? "未入力"
+                      : formatInvestmentLabel(maxInvestment)}
                   </p>
                 </CardContent>
               </Card>
@@ -429,7 +468,7 @@ function OnboardingContent() {
 
       <NavigationButtons
         currentStep={currentStep}
-        isNextDisabled={false}
+        isNextDisabled={currentStep === 3 ? !isInvestmentValid : false}
         resultsHref={resultsHref}
       />
     </div>
