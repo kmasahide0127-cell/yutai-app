@@ -75,10 +75,13 @@ function AnalysisResultView({ result }: { result: AnalysisResult }) {
   const coveredSet = new Set(monthGaps.coveredMonths);
   const topCategories = categoryBias.dominantCategories.slice(0, 5);
 
-  // 提案: 提案がある月のみ・最大6ヶ月
-  const monthSuggestions = gaps.forEmptyMonths
-    .filter((m) => m.suggestions.length > 0)
-    .slice(0, 6);
+  // 月→候補銘柄のマップ(全空き月を含む)
+  const emptyMonthMap = new Map(gaps.forEmptyMonths.map((e) => [e.month, e.suggestions]));
+
+  // 候補なしの空き月(カレンダー下部にまとめて正直表示)
+  const noSuggestionMonths = gaps.forEmptyMonths
+    .filter((e) => e.suggestions.length === 0)
+    .map((e) => e.month);
 
   // 提案: 提案があるカテゴリのみ・最大4カテゴリ
   const categorySuggestions = gaps.forMissingCategories
@@ -195,8 +198,8 @@ function AnalysisResultView({ result }: { result: AnalysisResult }) {
             </section>
           )}
 
-          {/* セクション4: 穴を埋める候補 */}
-          {(monthSuggestions.length > 0 || categorySuggestions.length > 0) && (
+          {/* セクション4: 穴を埋める候補 — 年間カレンダー形式 */}
+          {(monthGaps.emptyMonths.length > 0 || categorySuggestions.length > 0) && (
             <section className="space-y-5">
               <div className="border-b border-border pb-2">
                 <h2 className="text-sm font-semibold">穴を埋める候補</h2>
@@ -205,20 +208,85 @@ function AnalysisResultView({ result }: { result: AnalysisResult }) {
                 </p>
               </div>
 
-              {/* 空き月の候補 */}
-              {monthSuggestions.length > 0 && (
-                <div className="space-y-4">
-                  <p className="text-xs font-medium text-muted-foreground">空き月をカバーできる候補</p>
-                  {monthSuggestions.map(({ month, suggestions }) => (
-                    <div key={month} className="space-y-2">
-                      <p className="text-xs font-medium">{month}月の権利確定</p>
-                      <div className="space-y-1.5">
-                        {suggestions.map((y) => (
-                          <SuggestionCard key={y.code} yutai={y} />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+              {/* 年間カレンダーグリッド */}
+              {monthGaps.emptyMonths.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-muted-foreground">空き月のカレンダー</p>
+
+                  {/* 4列×3行グリッド */}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => {
+                      const isHeld = coveredSet.has(m);
+                      const candidates = emptyMonthMap.get(m);
+                      const hasCandidate = !isHeld && candidates !== undefined && candidates.length > 0;
+
+                      return (
+                        <div
+                          key={m}
+                          className={cn(
+                            "rounded py-2 px-1 text-center space-y-0.5",
+                            isHeld
+                              ? "bg-primary/15 text-foreground"
+                              : hasCandidate
+                              ? "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200"
+                              : "bg-muted/40 text-muted-foreground"
+                          )}
+                        >
+                          <p className="text-xs font-medium">{m}月</p>
+                          <p className={cn(
+                            "text-[10px] leading-none",
+                            isHeld
+                              ? "text-foreground/60"
+                              : hasCandidate
+                              ? "text-amber-700 dark:text-amber-300"
+                              : "text-muted-foreground/60"
+                          )}>
+                            {isHeld ? "保有" : hasCandidate ? `候補${candidates!.length}件` : "—"}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 凡例 */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded bg-primary/15" />
+                      保有済み
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded bg-amber-100 dark:bg-amber-900/30" />
+                      候補あり
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded bg-muted/40" />
+                      候補なし
+                    </span>
+                  </div>
+
+                  {/* 月別候補詳細(候補がある月のみ展開) */}
+                  <div className="space-y-4 pt-1">
+                    {gaps.forEmptyMonths
+                      .filter((e) => e.suggestions.length > 0)
+                      .map(({ month, suggestions }) => (
+                        <div key={month} className="space-y-2">
+                          <p className="text-xs font-medium">{month}月の空きを埋める候補</p>
+                          <div className="space-y-1.5">
+                            {suggestions.map((y) => (
+                              <SuggestionCard key={y.code} yutai={y} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* 候補なし月をまとめて正直に表示 */}
+                  {noSuggestionMonths.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {noSuggestionMonths.map((m) => `${m}月`).join("・")}:
+                      {" "}この月に該当する優待データはありません
+                    </p>
+                  )}
                 </div>
               )}
 
