@@ -390,14 +390,19 @@ export type CalendarPackage = {
 export function buildBudgetAwareCalendarPackage(
   candidates: Yutai[],
   budget: number,
-  preferenceTags: PreferenceTag[]
+  preferenceTags: PreferenceTag[],
+  heldCodes?: string[]
 ): CalendarPackage {
   const GHOST_MARGIN = 500000;
   const MAX_PER_MONTH = 2;
 
+  // 保有株は新規提案(confirmed/ghost)から除外する
+  const excludeSet = new Set(heldCodes ?? []);
+
   // Step 1: 予算内候補(confirmed)と来年度候補(ghost)に分類
   const confirmedCandidates = candidates.filter(
     (y) =>
+      !excludeSet.has(y.code) &&
       y.approxInvestment <= budget &&
       y.annualValue > 0 &&
       y.rightsMonths &&
@@ -405,6 +410,7 @@ export function buildBudgetAwareCalendarPackage(
   );
   const ghostCandidates = candidates.filter(
     (y) =>
+      !excludeSet.has(y.code) &&
       y.approxInvestment > budget &&
       y.approxInvestment <= budget + GHOST_MARGIN &&
       y.annualValue > 0 &&
