@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ShareSection } from "./ShareSection";
+import { HoldingsInput } from "./HoldingsInput";
 import {
   buildBudgetAwareCalendarPackage,
   simulateFamilyShare,
@@ -115,10 +116,25 @@ export function ResultsClient({
   // 予算スライダー。初期値はオンボーディングの investmentLimit
   const [budget, setBudget] = useState(investmentLimit);
 
-  // 予算変更のたびにカレンダーを再計算(confirmed累積制約 + ghost候補)
+  // 保有株
+  const [heldYutai, setHeldYutai] = useState<Yutai[]>([]);
+
+  // 月 → 保有済み銘柄のマップ
+  const heldCalendarEntries = useMemo(() => {
+    const map = new Map<number, Yutai[]>();
+    for (const y of heldYutai) {
+      for (const m of y.rightsMonths) {
+        if (!map.has(m)) map.set(m, []);
+        map.get(m)!.push(y);
+      }
+    }
+    return map;
+  }, [heldYutai]);
+
+  // 予算・保有株変更のたびにカレンダーを再計算(confirmed累積制約 + ghost候補)
   const cal = useMemo(
-    () => buildBudgetAwareCalendarPackage(budgetCandidates, budget, preferenceTags),
-    [budgetCandidates, budget, preferenceTags]
+    () => buildBudgetAwareCalendarPackage(budgetCandidates, budget, preferenceTags, heldYutai.map((y) => y.code)),
+    [budgetCandidates, budget, preferenceTags, heldYutai]
   );
 
   const calendarYield = cal.confirmedYield.toFixed(1);
@@ -180,12 +196,19 @@ export function ResultsClient({
             </div>
           </div>
 
+          {/* 保有済み銘柄 */}
+          <div className="mb-4 rounded-lg bg-background p-3">
+            <HoldingsInput heldYutai={heldYutai} onChange={setHeldYutai} />
+          </div>
+
           {/* パッケージサマリー */}
           {cal.confirmedYutaiCount > 0 ? (
             <>
               <div className="mb-3 grid grid-cols-4 gap-2 rounded-lg bg-background p-3">
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground">必要投資額</p>
+                  <p className="text-xs text-muted-foreground">
+                    {heldYutai.length > 0 ? "必要投資額(保有分を除く)" : "必要投資額"}
+                  </p>
                   <p className="text-sm font-bold tabular-nums">{formatYen(cal.confirmedTotalInvestment)}</p>
                 </div>
                 <div className="text-center">
@@ -236,9 +259,11 @@ export function ResultsClient({
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
               const confirmedEntries = cal.confirmed.filter((e) => e.month === month);
               const ghostEntries = cal.ghost.filter((e) => e.month === month);
+              const heldForMonth = heldCalendarEntries.get(month) ?? [];
               const hasConfirmed = confirmedEntries.length > 0;
               const hasGhost = ghostEntries.length > 0;
-              const isEmpty = !hasConfirmed && !hasGhost;
+              const isHeldCovered = heldForMonth.length > 0;
+              const isEmpty = !hasConfirmed && !hasGhost && !isHeldCovered;
 
               return (
                 <div
@@ -259,7 +284,29 @@ export function ResultsClient({
                         この月の優待は予算内では現状ありません
                       </p>
                     ) : (
-                      <div>
+                      <div className="space-y-1">
+                        {/* 保有済み銘柄 */}
+                        {isHeldCovered && (
+                          <div className="space-y-0.5">
+                            {heldForMonth.map((y) => (
+                              <div
+                                key={`h-${y.code}`}
+                                className="flex items-center justify-between gap-2"
+                              >
+                                <span className="truncate text-sm text-muted-foreground">
+                                  {y.name}
+                                  <span className="ml-1 text-xs text-muted-foreground/70">
+                                    ({y.code})
+                                  </span>
+                                </span>
+                                <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary/80">
+                                  保有済み
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         {/* 確定銘柄 */}
                         {hasConfirmed && (
                           <div className="space-y-0.5">
