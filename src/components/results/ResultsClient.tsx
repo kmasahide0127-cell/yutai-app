@@ -75,6 +75,7 @@ type Props = {
   vehicleType: VehicleType;
   preferenceTags: PreferenceTag[];
   preferenceTagCounts: Partial<Record<PreferenceTag, number>>;
+  shareUrl: string;
 };
 
 export function ResultsClient({
@@ -86,6 +87,7 @@ export function ResultsClient({
   vehicleType,
   preferenceTags,
   preferenceTagCounts,
+  shareUrl,
 }: Props) {
   const perCategoryLimit = useMemo(() => {
     if (expenseCategoryCount <= 1) return 8;
@@ -165,25 +167,26 @@ export function ResultsClient({
 
   const shareText = (() => {
     const lines: string[] = [];
-    lines.push("🎁 優待アプリで見つけた私の優待ポートフォリオ");
+    lines.push("🎁 生活から株主優待を逆引きして、私の「年間優待カレンダー」を作ってみました");
     lines.push("");
     if (cal.confirmedYutaiCount > 0) {
-      lines.push(`📅 年間優待カレンダー (${cal.confirmedYutaiCount}銘柄 / 予算${formatInvestmentLabel(budget)})`);
-      lines.push(`年間優待価値: ${formatYen(cal.confirmedAnnualValue)}`);
-      lines.push(`必要投資額: ${formatYen(cal.confirmedTotalInvestment)}`);
-      lines.push(`利回り: ${calendarYield}% / ${coveredMonthCount}ヶ月カバー`);
+      lines.push("📅 私の診断結果");
+      lines.push(`・${cal.confirmedYutaiCount}銘柄 / ${coveredMonthCount}ヶ月カバー`);
+      lines.push(`・優待利回り: ${calendarYield}%`);
       lines.push("");
     }
-    lines.push("あなたも生活スタイルから優待を見つけませんか?");
-    lines.push("https://yutai-app-lyart.vercel.app");
+    lines.push("食費・外食・交通など毎月の出費を入力するだけで、");
+    lines.push("自分の生活にぴったりの優待が見つかります。");
+    lines.push("投資の判断はご自身でどうぞ。");
+    lines.push("");
+    lines.push("👉 同じ診断をしてみる");
+    lines.push(shareUrl);
     return lines.join("\n");
   })();
 
   const shareTextShort = cal.confirmedYutaiCount > 0
-    ? `🎁 優待アプリで年間${formatYen(cal.confirmedAnnualValue)}削減見込みの優待ポートフォリオを見つけました!\n生活スタイルから優待が見つかるアプリです。`
-    : "🎁 優待アプリで自分にぴったりの株主優待を見つけました!";
-
-  const shareUrl = "https://yutai-app-lyart.vercel.app";
+    ? `🎁 生活費から株主優待を逆引きする診断を試してみました！\n私の優待カレンダー: ${cal.confirmedYutaiCount}銘柄・${coveredMonthCount}ヶ月カバー\nあなたも診断してみませんか？`
+    : "🎁 生活から株主優待を逆引きするツールで診断してみました！";
 
   return (
     <div className="space-y-8 min-w-0">

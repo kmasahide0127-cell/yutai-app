@@ -103,6 +103,17 @@ export default async function ResultsPage({
         }))
       : baseGroupedResults;
 
+  // 診断条件を含む結果URLを SSR で確定させる（ドメイン統一 + hydrationズレ防止のため案1採用）
+  const BASE_URL = "https://yutai-match.com";
+  const qp = new URLSearchParams();
+  if (expensesParam) qp.set("expenses", expensesParam);
+  if (maxParam) qp.set("maxInvestment", maxParam);
+  if (householdParam) qp.set("household", householdParam);
+  if (vehicleTypeParam) qp.set("vehicleType", vehicleTypeParam);
+  if (preferenceTagsParam) qp.set("preferenceTags", preferenceTagsParam);
+  const qpString = qp.toString();
+  const shareUrl = qpString ? `${BASE_URL}/results?${qpString}` : BASE_URL;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
@@ -120,6 +131,7 @@ export default async function ResultsPage({
           vehicleType={vehicleType}
           preferenceTags={preferenceTags}
           preferenceTagCounts={preferenceTagCounts}
+          shareUrl={shareUrl}
         />
       </div>
     </div>

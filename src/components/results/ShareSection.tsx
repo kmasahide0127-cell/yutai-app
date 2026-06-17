@@ -59,7 +59,7 @@ export function ShareSection({ shareText, shareTextShort, shareUrl }: ShareSecti
   };
 
   const openEmail = () => {
-    const subject = encodeURIComponent("優待アプリで見つけた優待ポートフォリオ");
+    const subject = encodeURIComponent("私の年間優待カレンダーができました | 優待診断ツール");
     const body = encodeURIComponent(shareText);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
