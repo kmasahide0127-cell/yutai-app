@@ -1,17 +1,5 @@
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
-
-export const metadata: Metadata = {
-  title: "あなたにマッチする優待",
-  description: "毎月の出費から、削減できる株主優待を提案。あなたのライフスタイルにぴったりの優待が見つかります。",
-  alternates: {
-    canonical: "/results",
-  },
-  robots: {
-    index: false,
-    follow: true,
-  },
-};
 import {
   matchYutaiByExpenseGrouped,
   filterCandidatesForBudget,
@@ -36,10 +24,54 @@ type SearchParams = Promise<{
   preferenceTags?: string;
 }>;
 
+const BASE_URL = "https://yutai-match.com";
+
 // 有効な PreferenceTag ID の集合(型ガード用)
 const VALID_TAG_IDS = new Set(
   Object.values(PREFERENCE_TAGS).flat().map((t) => t.id)
 );
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}): Promise<Metadata> {
+  const {
+    expenses: expensesParam,
+    maxInvestment: maxParam,
+    household: householdParam,
+    vehicleType: vehicleTypeParam,
+    preferenceTags: preferenceTagsParam,
+  } = await searchParams;
+
+  const qp = new URLSearchParams();
+  if (expensesParam) qp.set("expenses", expensesParam);
+  if (maxParam) qp.set("maxInvestment", maxParam);
+  if (householdParam) qp.set("household", householdParam);
+  if (vehicleTypeParam) qp.set("vehicleType", vehicleTypeParam);
+  if (preferenceTagsParam) qp.set("preferenceTags", preferenceTagsParam);
+  const qpStr = qp.toString();
+  const ogImageUrl = `${BASE_URL}/api/og${qpStr ? `?${qpStr}` : ""}`;
+
+  return {
+    title: "あなたにマッチする優待",
+    description:
+      "毎月の出費から、削減できる株主優待を提案。あなたのライフスタイルにぴったりの優待が見つかります。",
+    alternates: { canonical: "/results" },
+    robots: { index: false, follow: true },
+    openGraph: {
+      title: "私の年間優待カレンダー | 優待アプリ",
+      description: "毎月の出費から、削減できる株主優待を提案。",
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: "私の年間優待カレンダー" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "私の年間優待カレンダー | 優待アプリ",
+      description: "毎月の出費から、削減できる株主優待を提案。",
+      images: [ogImageUrl],
+    },
+  };
+}
 
 export default async function ResultsPage({
   searchParams,
@@ -104,7 +136,6 @@ export default async function ResultsPage({
       : baseGroupedResults;
 
   // 診断条件を含む結果URLを SSR で確定させる（ドメイン統一 + hydrationズレ防止のため案1採用）
-  const BASE_URL = "https://yutai-match.com";
   const qp = new URLSearchParams();
   if (expensesParam) qp.set("expenses", expensesParam);
   if (maxParam) qp.set("maxInvestment", maxParam);
