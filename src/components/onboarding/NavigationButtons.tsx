@@ -34,7 +34,7 @@ export function NavigationButtons({
         className="mx-auto flex max-w-2xl items-center gap-3 px-4 pt-3 sm:pt-4"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
       >
-        {currentStep > 1 && (
+        {currentStep > 0 && (
           <Button
             variant="outline"
             size="lg"

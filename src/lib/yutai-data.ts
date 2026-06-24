@@ -12,6 +12,7 @@ export type PreferenceTag =
   | "business-wear" | "casual-wear" | "luxury-brand" | "sports-wear"
   | "makeup" | "skincare" | "hair-salon"
   | "it-gadget" | "games" | "books" | "art"
+  | "anime" | "oshi-katsu" | "streaming"
   | "movie" | "theme-park" | "live-concert"
   | "gym" | "sports-watching" | "yoga"
   | "domestic-flight" | "overseas-travel" | "train" | "hotel";
@@ -245,10 +246,10 @@ export const YUTAI_LIST: Yutai[] = [
   { id: "5187", code: "5187", name: "クリエートメディック", brands: ["CREATEMEDIC"], categories: ["医療"], lifestyleTags: [], minShares: 100, approxInvestment: 80000, annualValue: 1500, yieldPercent: 1.9, description: "クオカード1,500円分", rightsMonths: [9], dataQuality: A, lastVerified: D },
 
   // ---- エンタメ拡充 ----
-  { id: "7832", code: "7832", name: "バンダイナムコHD", brands: ["バンダイ", "ナムコ", "ガンダム", "ガンプラ", "プリキュア", "アンパンマン"], categories: ["エンタメ"], lifestyleTags: ["子育て中", "ファミリー", "ゲーム好き"], minShares: 100, approxInvestment: 350000, annualValue: 0, yieldPercent: 0.0, description: "現在は優待なし、配当狙い", rightsMonths: [3, 9], dataQuality: V, lastVerified: D },
+  { id: "7832", code: "7832", name: "バンダイナムコHD", brands: ["バンダイナムコ", "バンダイ", "ナムコ", "BANDAI NAMCO", "ガンダム", "ガンプラ", "アイドルマスター", "プレミアムバンダイ", "プリキュア", "アンパンマン"], categories: ["エンタメ", "IT"], lifestyleTags: ["ゲーム好き", "アニメ好き", "推し活", "フィギュア収集", "子育て中", "ファミリー"], minShares: 100, approxInvestment: 408100, annualValue: 1000, yieldPercent: 0.25, description: "100株以上保有で年1回(3月末確定)、株主優待ポイントを贈呈。ポイントはガンダム・アイドルマスター等のアートコレクション、オンラインゲーム・アニメ動画配信に使える電子マネー「バナコイン」、アミューズメント施設チケット等に交換可能。優待価値はポイント制のため推定。", rightsMonths: [3], dataQuality: V, lastVerified: "2026-06-25" },
   { id: "8136", code: "8136", name: "サンリオ", brands: ["サンリオ", "ハローキティ", "マイメロディ", "ピューロランド", "シナモロール"], categories: ["エンタメ"], lifestyleTags: ["ファミリー", "テーマパーク好き", "子育て中"], minShares: 100, approxInvestment: 600000, annualValue: 6000, yieldPercent: 1.0, description: "ピューロランド・ハーモニーランドの入場優待券+自社製品", rightsMonths: [3, 9], dataQuality: V, lastVerified: D },
   { id: "7552", code: "7552", name: "ハピネット", brands: ["Happinet", "プラモデル", "ホビー"], categories: ["エンタメ", "EC"], lifestyleTags: ["ゲーム好き", "子育て中"], minShares: 100, approxInvestment: 220000, annualValue: 2000, yieldPercent: 0.9, description: "2,000円相当の自社オンラインショップ優待", rightsMonths: [3], dataQuality: A, lastVerified: D },
-  { id: "4751", code: "4751", name: "サイバーエージェント", brands: ["AbemaTV", "Ameba", "Cygames"], categories: ["エンタメ", "IT"], lifestyleTags: ["ゲーム好き", "動画視聴"], minShares: 100, approxInvestment: 95000, annualValue: 0, yieldPercent: 0.0, description: "現在は優待なし、配当狙い", rightsMonths: [9], dataQuality: V, lastVerified: D },
+  { id: "4751", code: "4751", name: "サイバーエージェント", brands: ["サイバーエージェント", "CyberAgent", "ABEMA", "AbemaTV", "Ameba", "Cygames"], categories: ["IT", "エンタメ", "サービス"], lifestyleTags: ["アニメ好き", "推し活", "動画配信好き", "ゲーム好き"], minShares: 100, approxInvestment: 128250, annualValue: 3540, yieldPercent: 2.8, description: "100株以上保有で年1回(9月末確定)、ABEMAプレミアムの無料利用クーポンを贈呈(100株で3ヶ月分、500株以上で12ヶ月分)。アニメ・ドラマ・バラエティが広告無しで視聴可能。", rightsMonths: [9], dataQuality: V, lastVerified: "2026-06-25" },
   { id: "9684", code: "9684", name: "スクウェア・エニックスHD", brands: ["スクウェア・エニックス", "FF", "ドラクエ", "ファイナルファンタジー"], categories: ["エンタメ"], lifestyleTags: ["ゲーム好き"], minShares: 100, approxInvestment: 470000, annualValue: 0, yieldPercent: 0.0, description: "現在は優待なし、配当狙い", rightsMonths: [3, 9], dataQuality: V, lastVerified: D },
 
   // ---- ホテル拡充 ----

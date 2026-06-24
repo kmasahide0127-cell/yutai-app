@@ -84,10 +84,78 @@ const VEHICLE_LABELS: Record<string, string> = {
   ev: "EV・PHV",
 };
 
+type TypePreset = {
+  id: string;
+  emoji: string;
+  label: string;
+  chips: string[];
+  expenseCategories: ExpenseCategory[];
+  preferenceTags: PreferenceTag[];
+};
+
+const TYPE_PRESETS: TypePreset[] = [
+  {
+    id: "family",
+    emoji: "👨‍👩‍👧",
+    label: "子育てファミリー型",
+    chips: ["子育て", "ファミリー外食", "教育"],
+    expenseCategories: ["子育て・教育", "外食・カフェ"],
+    preferenceTags: ["family-restaurant"],
+  },
+  {
+    id: "otaku",
+    emoji: "🎮",
+    label: "推し活・インドア型",
+    chips: ["ゲーム", "アニメ", "推し活", "動画配信"],
+    expenseCategories: ["趣味・ガジェット", "エンタメ(映画・テーマパーク)"],
+    preferenceTags: ["games", "anime", "oshi-katsu", "streaming"],
+  },
+  {
+    id: "beauty",
+    emoji: "✨",
+    label: "美容意識高め型",
+    chips: ["スキンケア", "メイク", "コスメ"],
+    expenseCategories: ["美容・スキンケア"],
+    preferenceTags: ["makeup", "skincare"],
+  },
+  {
+    id: "travel",
+    emoji: "✈️",
+    label: "おでかけ・旅好き型",
+    chips: ["旅行", "温泉", "ホテル"],
+    expenseCategories: ["交通・旅行"],
+    preferenceTags: ["domestic-flight", "hotel"],
+  },
+  {
+    id: "car",
+    emoji: "🚗",
+    label: "クルマ・バイク型",
+    chips: ["車所有", "ドライブ", "カー用品"],
+    expenseCategories: ["車関連費(ガソリン・駐車場・整備)"],
+    preferenceTags: [],
+  },
+  {
+    id: "sports",
+    emoji: "🏃",
+    label: "健康・スポーツ型",
+    chips: ["スポーツ", "アウトドア", "健康"],
+    expenseCategories: ["健康・スポーツ"],
+    preferenceTags: ["gym"],
+  },
+  {
+    id: "savings",
+    emoji: "💰",
+    label: "節約・家計管理型",
+    chips: ["日用品", "節約", "家計管理"],
+    expenseCategories: ["日用品・ドラッグストア", "ネットショッピング"],
+    preferenceTags: [],
+  },
+];
+
 function OnboardingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentStep = Math.max(1, Math.min(4, parseInt(searchParams.get("step") ?? "1", 10)));
+  const currentStep = Math.max(0, Math.min(4, parseInt(searchParams.get("step") ?? "0", 10)));
 
   const {
     expenseCategories,
@@ -165,10 +233,56 @@ function OnboardingContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <ProgressBar currentStep={currentStep} />
+      {currentStep > 0 && <ProgressBar currentStep={currentStep} />}
 
-      <div className="px-4 py-8 pb-32">
+      <div className={cn("px-4 py-8", currentStep > 0 ? "pb-32" : "pb-12")}>
         <div className="mx-auto max-w-2xl space-y-6">
+
+          {/* Step 0: タイプ選択 */}
+          {currentStep === 0 && (
+            <section className="space-y-5">
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold">あなたに近いタイプは?</h2>
+                <p className="text-sm text-muted-foreground">
+                  タイプを選ぶと、出費やお好みの設問がまとめて選択されます(あとで自由に調整できます)
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {TYPE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      setExpenseCategories(preset.expenseCategories);
+                      setPreferenceTags(preset.preferenceTags);
+                      router.push("/onboarding?step=1");
+                    }}
+                    className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card px-4 py-4 text-left transition-colors hover:border-primary/50 hover:bg-muted/50 active:scale-[0.98]"
+                  >
+                    <span className="text-2xl">{preset.emoji}</span>
+                    <span className="text-sm font-medium leading-tight">{preset.label}</span>
+                    <div className="flex flex-wrap gap-1">
+                      {preset.chips.map((chip) => (
+                        <span
+                          key={chip}
+                          className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
+                        >
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => router.push("/onboarding?step=1")}
+                className="w-full rounded-xl border border-border px-4 py-3.5 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+              >
+                じぶんで選ぶ →
+              </button>
+            </section>
+          )}
 
           {/* Step 1: 出費カテゴリ */}
           {currentStep === 1 && (
@@ -466,11 +580,13 @@ function OnboardingContent() {
         </div>
       </div>
 
-      <NavigationButtons
-        currentStep={currentStep}
-        isNextDisabled={currentStep === 3 ? !isInvestmentValid : false}
-        resultsHref={resultsHref}
-      />
+      {currentStep > 0 && (
+        <NavigationButtons
+          currentStep={currentStep}
+          isNextDisabled={currentStep === 3 ? !isInvestmentValid : false}
+          resultsHref={resultsHref}
+        />
+      )}
     </div>
   );
 }
