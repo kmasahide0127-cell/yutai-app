@@ -427,7 +427,7 @@ export function buildBudgetAwareCalendarPackage(
     return score;
   };
 
-  // Step 3: 確定銘柄の選択(累積 approxInvestment が budget を超えた時点でスキップ)
+  // Step 3: 確定銘柄の2段階選択
   const scoredConfirmed = confirmedCandidates
     .map((y) => ({ yutai: y, score: scoreYutai(y) }))
     .sort((a, b) => b.score - a.score);
@@ -440,7 +440,62 @@ export function buildBudgetAwareCalendarPackage(
   const usedCodes = new Set<string>();
   let cumulativeInvestment = 0;
 
+  // Pass 1: 月カバレッジの確保
+  // Pass 1 の役割は「安価な手段で各月を最低1件カバーすること」であり、
+  // 高額銘柄の選択は Pass 2 のスコア優先 Greedy に委ねる。
+  // 単銘柄コスト上限(予算の15%)を設けることで、Pass 1 が予算を食い潰して
+  // Pass 2 の高価値銘柄が入る余地がなくなる事態を防ぐ。
+  // 処理順は「安くカバーできる月から」にして、廉価な月を確実に取る。
+  // 同額ならスコア高を優先。1銘柄が複数月権利を持つ場合は全権利月に同時反映。
+  const PASS1_MAX_COST = Math.floor(budget * 0.15);
+
+  const monthsWithCandidates = Array.from({ length: 12 }, (_, i) => i + 1)
+    .map((m) => {
+      const cheapest = confirmedCandidates.reduce(
+        (min, y) =>
+          y.rightsMonths.includes(m) && y.approxInvestment <= PASS1_MAX_COST
+            ? Math.min(min, y.approxInvestment)
+            : min,
+        Infinity
+      );
+      return { m, cheapest };
+    })
+    .filter(({ cheapest }) => cheapest < Infinity)
+    .sort((a, b) => a.cheapest - b.cheapest);
+
+  for (const { m } of monthsWithCandidates) {
+    if (monthConfirmedCount[m] > 0) continue;
+
+    const eligible = scoredConfirmed.filter(
+      ({ yutai }) =>
+        !usedCodes.has(yutai.code) &&
+        yutai.approxInvestment <= PASS1_MAX_COST &&
+        cumulativeInvestment + yutai.approxInvestment <= budget &&
+        yutai.rightsMonths.includes(m)
+    );
+    if (eligible.length === 0) continue;
+
+    // 最安値優先(同額ならスコア高)
+    const best = eligible.reduce((a, b) => {
+      if (a.yutai.approxInvestment !== b.yutai.approxInvestment)
+        return a.yutai.approxInvestment < b.yutai.approxInvestment ? a : b;
+      return a.score >= b.score ? a : b;
+    });
+
+    const { yutai } = best;
+    const usableMonths = yutai.rightsMonths.filter((rm) => monthConfirmedCount[rm] < MAX_PER_MONTH);
+    for (const rm of usableMonths) {
+      confirmedEntries.push({ month: rm, yutai });
+      monthConfirmedCount[rm]++;
+    }
+    confirmedYutaiList.push(yutai);
+    usedCodes.add(yutai.code);
+    cumulativeInvestment += yutai.approxInvestment;
+  }
+
+  // Pass 2: 残り予算で価値を最大化(スコア順Greedy・Pass1使用済みコードはスキップ)
   for (const { yutai } of scoredConfirmed) {
+    if (usedCodes.has(yutai.code)) continue;
     if (cumulativeInvestment + yutai.approxInvestment > budget) continue;
     const usableMonths = yutai.rightsMonths.filter((m) => monthConfirmedCount[m] < MAX_PER_MONTH);
     if (usableMonths.length === 0) continue;
