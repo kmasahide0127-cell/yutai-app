@@ -9,6 +9,7 @@ import {
 } from "@/lib/matching";
 import { AppHeader } from "@/components/AppHeader";
 import { buttonVariants } from "@/components/ui/button";
+import { siteConfig } from "@/config/site";
 
 export async function generateStaticParams() {
   return Object.values(EXPENSE_CATEGORY_SLUGS).map((slug) => ({ slug }));
@@ -32,7 +33,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${expense}に使える株主優待`,
       description,
-      url: `https://yutai-app-lyart.vercel.app/expense/${slug}`,
+      url: `${siteConfig.url}/expense/${slug}`,
       type: "article",
     },
     twitter: { card: "summary", title: `${expense}に使える株主優待`, description },
@@ -42,6 +43,79 @@ export async function generateMetadata({
 function formatYen(amount: number): string {
   return `${amount.toLocaleString()}円`;
 }
+
+const CATEGORY_DESCRIPTIONS: Record<string, { summary: string; tips: string; caution: string }> = {
+  "外食・カフェ": {
+    summary: "外食やカフェの支出は、食事券・お食事優待券の形で還元できる株主優待が充実しています。ファミリーレストラン、回転寿司、牛丼チェーン、カフェなど幅広い業種から選べます。",
+    tips: "外食頻度が月4回以上の方なら、年間1〜3万円分の優待を活用できるケースがあります。家族でよく利用するチェーン系の銘柄を選ぶと使いやすくなります。",
+    caution: "優待券には有効期限があるものが多く、店舗限定の場合もあります。最新情報は必ず各企業のIRページでご確認ください。",
+  },
+  "自炊・食材": {
+    summary: "食材購入に使える株主優待として、スーパーマーケットの割引券や食品メーカーの自社商品詰め合わせがあります。日常の食費削減につながる優待です。",
+    tips: "食品・食材系の優待は「自社商品セット」の形が多く、生活必需品として活用しやすい傾向があります。",
+    caution: "商品ギフト型優待は、商品の種類が毎年変わることがあります。最新内容は企業IRサイトでご確認ください。",
+  },
+  "コンビニ・お菓子": {
+    summary: "コンビニ関連や菓子メーカーの株主優待は、自社製品の詰め合わせや割引クーポンの形で提供されることが多く、日常生活に密着した優待です。",
+    tips: "コンビニを毎日利用する方にとっては小額でも積み重なる効果があります。菓子メーカー系は贈答品にも活用できます。",
+    caution: "有効期限・使用店舗が限定される場合があります。優待内容の変更も多いため、必ずIRページでご確認ください。",
+  },
+  "日用品・ドラッグストア": {
+    summary: "ドラッグストアや日用品メーカーの株主優待では、割引クーポンや自社商品セットが提供されます。毎月かかる日用品費の実質的な節約につながります。",
+    tips: "ドラッグストア系は関東・関西など地域限定の場合があります。居住エリアで使える銘柄を選ぶと効率的です。",
+    caution: "全国展開していない企業の優待は、近隣店舗がない場合に利用できません。株主優待の内容・条件は変更されることがあります。",
+  },
+  "衣服・ファッション": {
+    summary: "アパレル・ファッション企業の株主優待では、自社ブランドの割引券や商品券が提供されます。普段使いのブランドと銘柄が一致すると活用しやすくなります。",
+    tips: "アパレル系は季節ごとのセール前後に優待を活用すると、より大きな節約効果が期待できます。",
+    caution: "優待の対象ブランドが限定されることがあります。詳細は企業のIRページまたは株主優待専用ページでご確認ください。",
+  },
+  "美容・スキンケア": {
+    summary: "化粧品メーカーや美容サービス関連企業の株主優待として、自社製品のサンプルセットや割引クーポンが提供されることがあります。",
+    tips: "化粧品系の優待は定価換算での価値が高い場合があります。普段使いのブランドと一致すると効果的です。",
+    caution: "優待内容は変更・廃止されることがあります。事前に最新の優待詳細を必ずご確認ください。",
+  },
+  "通信費": {
+    summary: "通信会社の株主優待では、携帯料金の割引や通信関連のポイント付与などが提供されます。毎月発生する固定費の実質削減につながる優待です。",
+    tips: "通信費は毎月発生する固定費のため、優待を活用できると年間を通じた節約効果が安定しやすいです。",
+    caution: "通信会社の優待は料金プランや契約条件に依存する場合があります。詳細条件は必ずご確認ください。",
+  },
+  "車関連費(ガソリン・駐車場・整備)": {
+    summary: "自動車関連企業の株主優待では、ガソリンスタンドの割引、カーメンテナンスサービス、カー用品の割引などが提供されます。車を使う方の日常的な支出削減に活用できます。",
+    tips: "ガソリン代は価格変動が大きいですが、株主優待による固定的な還元は安定した節約効果があります。EVオーナーは給油系優待より電気関連・カー用品系を選ぶと活用しやすいです。",
+    caution: "ガソリンスタンドの優待は特定のブランド店舗のみ対応の場合があります。最新の対象店舗情報をご確認ください。",
+  },
+  "交通・旅行": {
+    summary: "鉄道会社、航空会社、旅行会社の株主優待では、運賃割引証や旅行商品の優待が提供されます。旅行好きの方や長距離通勤の方に活用しやすい優待です。",
+    tips: "鉄道系の株主優待割引証は、乗車券購入時に使える場合が多く、年に数回の帰省や旅行で大きな節約になることがあります。",
+    caution: "航空・鉄道優待は繁忙期に使えない場合や、対象路線が限定されることがあります。利用前に必ず条件をご確認ください。",
+  },
+  "エンタメ(映画・テーマパーク)": {
+    summary: "映画館やテーマパーク、レジャー施設を運営する企業の株主優待では、入場券や割引券が提供されます。家族でのお出かけや趣味のエンタメ費用を実質削減できます。",
+    tips: "映画鑑賞券はファミリーでの利用にも向いており、年に複数回映画館を訪れる方は継続的な活用が見込めます。",
+    caution: "テーマパーク系優待は入場可能な曜日・時期に制限がある場合があります。詳細は最新の優待案内でご確認ください。",
+  },
+  "健康・スポーツ": {
+    summary: "フィットネスクラブや健康関連企業の株主優待では、施設利用割引や健康食品の提供などがあります。健康維持にかかるコストを一部優待で補える場合があります。",
+    tips: "スポーツジム系優待は利用頻度が高いほど費用対効果が高まります。自宅や職場近くの施設が対象かどうかを事前に確認しましょう。",
+    caution: "施設の場所が限定されるため、居住地域との相性をご確認ください。優待条件は変更されることがあります。",
+  },
+  "子育て・教育": {
+    summary: "子育て・教育関連企業の株主優待では、玩具の割引、学習サービスの優待、子ども向け施設の入場券などが提供されることがあります。お子様がいるご家庭の出費削減に役立てられます。",
+    tips: "お子様の年齢に合わせた優待を選ぶことで、実際の生活費削減につながります。玩具メーカー系は誕生日やクリスマスギフト代わりにも活用できます。",
+    caution: "子育て関連優待は対象年齢に制限がある場合があります。お子様の年齢要件を事前にご確認ください。",
+  },
+  "趣味・ガジェット": {
+    summary: "家電量販店や趣味・ホビー関連企業の株主優待では、自社店舗の割引クーポンや商品券が提供されます。ガジェット好きや趣味の出費が多い方に活用しやすい優待です。",
+    tips: "家電量販店系優待は大型購入の際にまとめて使うと節約効果が大きくなります。ポイント還元との組み合わせも検討しましょう。",
+    caution: "優待クーポンの利用条件(金額下限・対象商品)があることが多いです。詳細は各企業のIRページでご確認ください。",
+  },
+  "ネットショッピング": {
+    summary: "ECサービスや通販を展開する企業の株主優待では、割引クーポンやポイント付与が提供されることがあります。日常的にオンラインショッピングを利用する方の出費削減に役立てられます。",
+    tips: "ネットショッピング系の優待は自宅から気軽に使えるため、使いやすさが高い傾向にあります。",
+    caution: "優待クーポンには有効期限や最低購入金額の条件があることがあります。最新条件は必ずご確認ください。",
+  },
+};
 
 export default async function ExpenseCategoryPage({
   params,
@@ -53,6 +127,7 @@ export default async function ExpenseCategoryPage({
   if (!expense) notFound();
 
   const yutaiList = getYutaiForExpenseCategory(expense, YUTAI_LIST, 20);
+  const categoryDesc = CATEGORY_DESCRIPTIONS[expense];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -80,6 +155,19 @@ export default async function ExpenseCategoryPage({
             ここでは{expense}に活用できる優待銘柄を、年間優待価値の高い順に紹介します。
           </p>
         </header>
+
+        {categoryDesc && (
+          <section className="space-y-3 text-sm leading-relaxed">
+            <p>{categoryDesc.summary}</p>
+            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+              <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">活用のポイント</p>
+              <p className="text-muted-foreground">{categoryDesc.tips}</p>
+            </div>
+            <p className="text-xs text-muted-foreground border-l-2 border-amber-400 pl-3">
+              注意: {categoryDesc.caution}
+            </p>
+          </section>
+        )}
 
         {/* CTA(上部) */}
         <section className="rounded-xl border-2 border-primary bg-primary text-primary-foreground p-5 text-center space-y-3">

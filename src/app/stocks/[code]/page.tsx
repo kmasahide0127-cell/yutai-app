@@ -5,6 +5,7 @@ import { YUTAI_LIST } from "@/lib/yutai-data";
 import { getMatchingExpenseCategoriesForYutai, getRelatedYutai } from "@/lib/matching";
 import { AppHeader } from "@/components/AppHeader";
 import { buttonVariants } from "@/components/ui/button";
+import { siteConfig } from "@/config/site";
 
 export async function generateStaticParams() {
   return YUTAI_LIST.map((yutai) => ({ code: yutai.code }));
@@ -28,7 +29,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${yutai.name}(${yutai.code})の株主優待`,
       description,
-      url: `https://yutai-app-lyart.vercel.app/stocks/${yutai.code}`,
+      url: `${siteConfig.url}/stocks/${yutai.code}`,
       type: "article",
     },
     twitter: { card: "summary", title: `${yutai.name}の株主優待`, description },
@@ -115,6 +116,10 @@ export default async function StockDetailPage({
         <section className="space-y-2">
           <h2 className="text-base font-bold">優待内容</h2>
           <p className="text-sm leading-relaxed">{yutai.description}</p>
+          <div className="text-xs text-muted-foreground p-3 rounded-lg bg-muted/40 space-y-1">
+            <p>・優待内容は変更・廃止される場合があります。最新情報は各企業のIRページでご確認ください。</p>
+            <p>・本ページの情報は投資勧誘ではありません。投資判断はご自身の責任でお願いします。</p>
+          </div>
         </section>
 
         {yutai.brands && yutai.brands.length > 0 && (

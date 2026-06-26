@@ -28,9 +28,27 @@ export default function StocksListPage() {
           <span>銘柄一覧</span>
         </nav>
         <header className="space-y-1">
-          <h1 className="text-2xl font-bold">全銘柄一覧</h1>
+          <h1 className="text-2xl font-bold">株主優待 全銘柄一覧</h1>
           <p className="text-sm text-muted-foreground">{validYutai.length}銘柄(年間優待価値の高い順)</p>
         </header>
+
+        <section className="text-sm leading-relaxed text-muted-foreground space-y-3 p-4 rounded-xl border border-border bg-card">
+          <p>
+            本ページでは、優待マッチが収録する株主優待銘柄の一覧を掲載しています。
+            年間の優待価値が高い順に並べており、各銘柄の詳細ページでは優待内容・必要投資額・
+            優待利回り・権利確定月などを確認できます。
+          </p>
+          <p>
+            銘柄ごとの詳細ページでは、その優待がどの出費カテゴリ(外食・通信費・交通費など)に
+            対応するかも表示しています。あなたの生活費に合わせた優待選びの参考にご活用ください。
+          </p>
+          <p className="text-xs">
+            ※ 本サービスは情報提供のみを目的としており、投資助言・投資勧誘にはあたりません。
+            優待情報は変更・廃止される場合があります。最新情報は各企業のIRページでご確認ください。
+            投資判断はご自身の責任でお願いします。
+          </p>
+        </section>
+
         <p className="text-xs text-muted-foreground p-3 rounded-lg bg-muted/50">
           💡 各銘柄をタップすると詳細ページが開きます。あなたに合う優待は<Link href="/onboarding" className="underline font-medium">診断</Link>で見つかります。
         </p>

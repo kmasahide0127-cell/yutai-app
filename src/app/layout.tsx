@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { siteConfig } from "@/config/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,10 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://yutai-app-lyart.vercel.app"),
+  metadataBase: new URL(siteConfig.url),
   title: {
-    default: "優待アプリ - 生活逆引き型 株主優待マッチング",
-    template: "%s | 優待アプリ",
+    default: "優待マッチ - 生活逆引き型 株主優待マッチング",
+    template: "%s | 優待マッチ",
   },
   description: "あなたの毎月の出費から、それを削減できる株主優待を提案。生活逆引き型の優待マッチングアプリ(個人開発・データ取得日2026年5月27日)。",
   keywords: [
@@ -29,17 +30,18 @@ export const metadata: Metadata = {
     "ライフスタイル",
     "個人投資家",
     "優待検索",
+    "優待マッチ",
   ],
-  authors: [{ name: "雅英" }],
-  creator: "雅英",
+  authors: [{ name: "優待マッチ運営" }],
+  creator: "優待マッチ運営",
   alternates: {
     canonical: "/",
   },
-  applicationName: "優待アプリ",
+  applicationName: "優待マッチ",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "優待アプリ",
+    title: "優待マッチ",
   },
   formatDetection: {
     telephone: false,
@@ -49,14 +51,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ja_JP",
-    siteName: "優待アプリ",
-    title: "優待アプリ - 生活逆引き型 株主優待マッチング",
+    siteName: "優待マッチ",
+    title: "優待マッチ - 生活逆引き型 株主優待マッチング",
     description: "あなたの毎月の出費から、それを削減できる株主優待を提案。",
-    url: "https://yutai-app-lyart.vercel.app",
+    url: siteConfig.url,
   },
   twitter: {
     card: "summary",
-    title: "優待アプリ",
+    title: "優待マッチ",
     description: "あなたの毎月の出費から、それを削減できる株主優待を提案。",
   },
   verification: {
@@ -84,7 +86,6 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6624294914787679"
@@ -97,27 +98,37 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebApplication",
-              name: "優待アプリ",
-              description: "毎月の出費から、それを削減できる株主優待を提案する生活逆引き型マッチングアプリ",
-              url: "https://yutai-app-lyart.vercel.app",
-              applicationCategory: "FinanceApplication",
-              operatingSystem: "Web",
-              offers: {
-                "@type": "Offer",
-                price: "0",
-                priceCurrency: "JPY",
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: siteConfig.name,
+                url: siteConfig.url,
+                description: siteConfig.description,
+                inLanguage: "ja-JP",
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: {
+                    "@type": "EntryPoint",
+                    urlTemplate: `${siteConfig.url}/stocks`,
+                  },
+                  "query-input": "required name=search_term_string",
+                },
               },
-              author: {
-                "@type": "Person",
-                name: "雅英",
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: siteConfig.name,
+                url: siteConfig.url,
+                description: siteConfig.description,
+                contactPoint: {
+                  "@type": "ContactPoint",
+                  contactType: "customer support",
+                  email: "yutaiinfoshare@gmail.com",
+                  availableLanguage: "Japanese",
+                },
               },
-              inLanguage: "ja-JP",
-              datePublished: "2026-05-27",
-              dateModified: "2026-05-28",
-            }),
+            ]),
           }}
         />
         {children}

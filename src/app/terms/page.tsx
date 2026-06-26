@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
 
 export const metadata: Metadata = {
-  title: "利用規約",
-  description: "優待アプリの利用規約をご確認ください。",
+  title: "利用規約 | 優待マッチ",
+  description: "優待マッチの利用規約をご確認ください。投資助言ではないこと・免責事項・禁止事項を明記しています。",
   alternates: {
     canonical: "/terms",
   },

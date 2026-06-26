@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
 
 export const metadata: Metadata = {
-  title: "お問い合わせ | 優待アプリ",
+  title: "お問い合わせ | 優待マッチ",
   description: "優待アプリへのご意見・ご要望・データ誤り報告はこちらからお送りください。",
   alternates: {
     canonical: "/contact",
@@ -18,7 +18,7 @@ export default function ContactPage() {
 
         <section className="space-y-6 text-sm leading-relaxed">
           <p>
-            優待アプリに関するご意見・ご要望・データの誤り報告など、
+            優待マッチに関するご意見・ご要望・データの誤り報告・広告に関するお問い合わせなど、
             お気軽にご連絡ください。
           </p>
 
@@ -42,6 +42,7 @@ export default function ContactPage() {
               <li>優待情報の誤り・更新のご報告</li>
               <li>掲載されていない銘柄のリクエスト</li>
               <li>機能に関するご意見・ご要望</li>
+              <li>広告・掲載に関するお問い合わせ</li>
               <li>その他、サイトに関するご連絡</li>
             </ul>
           </div>

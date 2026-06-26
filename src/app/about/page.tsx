@@ -3,8 +3,8 @@ import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 
 export const metadata: Metadata = {
-  title: "このサイトについて | 優待アプリ",
-  description: "優待アプリの運営者情報・サイトの目的・免責事項をご説明します。",
+  title: "このサイトについて | 優待マッチ",
+  description: "優待マッチの運営者情報・サービス目的・免責事項をご説明します。個人開発による株主優待情報提供サービスです。",
   alternates: {
     canonical: "/about",
   },
@@ -19,9 +19,9 @@ export default function AboutPage() {
 
         <section className="space-y-6 text-sm leading-relaxed">
           <div>
-            <h2 className="font-semibold text-base mb-2">サイトの目的</h2>
+            <h2 className="font-semibold text-base mb-2">サービスの目的</h2>
             <p>
-              優待アプリは、「生活から逆引きで株主優待を提案する」個人開発の情報提供サービスです。
+              優待マッチは、「生活から逆引きで株主優待を提案する」個人開発の情報提供サービスです。
               毎月の出費カテゴリ(外食・通信費・交通費など)を入力すると、
               その出費を実質的に削減できる株主優待銘柄を提案します。
             </p>
