@@ -24,10 +24,10 @@ export async function generateMetadata({
   const expense = getExpenseCategoryBySlug(slug);
   if (!expense) return { title: "カテゴリが見つかりません" };
 
-  const description = `${expense}の出費を株主優待で削減する方法。${expense}に使えるおすすめ優待銘柄を年間価値の高い順に紹介。あなたに合う優待を無料診断できます。`;
+  const description = `${expense}の株主優待まとめ。代表銘柄・活用例・全銘柄一覧を掲載。あなたに合う優待を無料で診断できます。`;
 
   return {
-    title: `${expense}に使える株主優待 - 出費を優待で削減`,
+    title: `${expense}に使える株主優待 | 優待マッチ`,
     description,
     alternates: { canonical: `/expense/${slug}` },
     openGraph: {
@@ -43,7 +43,12 @@ export async function generateMetadata({
 function formatYen(amount: number): string {
   return `${amount.toLocaleString()}円`;
 }
+function formatMonths(months: number[]): string {
+  if (!months || months.length === 0) return "未定";
+  return months.map((m) => `${m}月`).join("・");
+}
 
+// カテゴリ別の詳細説明
 const CATEGORY_DESCRIPTIONS: Record<string, { summary: string; tips: string; caution: string }> = {
   "外食・カフェ": {
     summary: "外食やカフェの支出は、食事券・お食事優待券の形で還元できる株主優待が充実しています。ファミリーレストラン、回転寿司、牛丼チェーン、カフェなど幅広い業種から選べます。",
@@ -117,6 +122,24 @@ const CATEGORY_DESCRIPTIONS: Record<string, { summary: string; tips: string; cau
   },
 };
 
+// カテゴリ別の優待種類
+const CATEGORY_BENEFIT_TYPES: Record<string, string[]> = {
+  "外食・カフェ": ["食事優待券型（特定チェーン店で使える券）", "割引型（来店時の割引・クーポン）", "プリペイドチャージ型（専用カードへの入金）"],
+  "自炊・食材": ["自社製品詰め合わせ型", "割引クーポン型", "カタログギフト型"],
+  "コンビニ・お菓子": ["自社製品詰め合わせ型", "割引クーポン型"],
+  "日用品・ドラッグストア": ["割引クーポン型", "自社製品セット型", "ポイント付与型"],
+  "衣服・ファッション": ["割引券型（○%OFF）", "商品券型", "会員特典型"],
+  "美容・スキンケア": ["自社製品セット型", "割引クーポン型", "サンプルセット型"],
+  "通信費": ["ポイント付与型", "料金割引型", "通信サービス提供型（eSIMなど）"],
+  "車関連費(ガソリン・駐車場・整備)": ["割引チケット型", "カー用品割引型", "サービス優待型"],
+  "交通・旅行": ["割引証型（運賃○%割引）", "招待券型", "旅行代金割引型"],
+  "エンタメ(映画・テーマパーク)": ["入場券型", "割引券型", "会員優待型"],
+  "健康・スポーツ": ["施設利用割引型", "自社製品提供型", "会員特典型"],
+  "子育て・教育": ["自社製品提供型（玩具・食品）", "割引券型", "施設入場券型"],
+  "趣味・ガジェット": ["割引クーポン型", "商品券型", "ポイント付与型"],
+  "ネットショッピング": ["ポイント付与型", "割引クーポン型", "送料無料特典型"],
+};
+
 export default async function ExpenseCategoryPage({
   params,
 }: {
@@ -126,14 +149,17 @@ export default async function ExpenseCategoryPage({
   const expense = getExpenseCategoryBySlug(slug);
   if (!expense) notFound();
 
-  const yutaiList = getYutaiForExpenseCategory(expense, YUTAI_LIST, 20);
+  // 全銘柄取得（上限を YUTAI_LIST.length に設定）
+  const allYutai = getYutaiForExpenseCategory(expense, YUTAI_LIST, YUTAI_LIST.length);
+  const topYutai = allYutai.slice(0, 5);
   const categoryDesc = CATEGORY_DESCRIPTIONS[expense];
+  const benefitTypes = CATEGORY_BENEFIT_TYPES[expense];
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: `${expense}に使える株主優待`,
-    description: `${expense}の出費を削減できる株主優待の一覧`,
+    description: `${expense}の出費を削減できる株主優待の一覧。${allYutai.length}銘柄掲載。`,
     inLanguage: "ja-JP",
   };
 
@@ -141,27 +167,32 @@ export default async function ExpenseCategoryPage({
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="mx-auto max-w-2xl min-w-0 space-y-6 px-4 py-8">
+      <div className="mx-auto max-w-2xl min-w-0 space-y-8 px-4 py-8">
+
+        {/* パンくず */}
         <nav className="text-xs text-muted-foreground">
           <Link href="/" className="hover:underline">トップ</Link>
           <span className="mx-2">›</span>
           <span>{expense}の優待</span>
         </nav>
 
+        {/* ヘッダー */}
         <header className="space-y-2">
           <h1 className="text-2xl font-bold">{expense}に使える株主優待</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {expense}の出費は、株主優待で削減できます。
-            ここでは{expense}に活用できる優待銘柄を、年間優待価値の高い順に紹介します。
+            ここでは{expense}に活用できる優待銘柄を年間優待価値の高い順に紹介します（{allYutai.length}銘柄掲載）。
           </p>
         </header>
 
+        {/* カテゴリ説明 */}
         {categoryDesc && (
-          <section className="space-y-3 text-sm leading-relaxed">
-            <p>{categoryDesc.summary}</p>
-            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+          <section className="space-y-3 text-sm leading-relaxed" aria-label="カテゴリについて">
+            <h2 className="font-bold text-base text-foreground">このカテゴリについて</h2>
+            <p className="text-muted-foreground">{categoryDesc.summary}</p>
+            <div className="rounded-lg bg-muted/50 p-4 space-y-1.5">
               <p className="font-medium text-xs text-muted-foreground uppercase tracking-wide">活用のポイント</p>
-              <p className="text-muted-foreground">{categoryDesc.tips}</p>
+              <p className="text-sm text-muted-foreground">{categoryDesc.tips}</p>
             </div>
             <p className="text-xs text-muted-foreground border-l-2 border-amber-400 pl-3">
               注意: {categoryDesc.caution}
@@ -169,44 +200,107 @@ export default async function ExpenseCategoryPage({
           </section>
         )}
 
-        {/* CTA(上部) */}
+        {/* 代表的な優待銘柄 */}
+        {topYutai.length > 0 && (
+          <section className="space-y-3" aria-labelledby="top-stocks-heading">
+            <h2 id="top-stocks-heading" className="font-bold text-base text-foreground">
+              代表的な優待銘柄（上位{topYutai.length}銘柄）
+            </h2>
+            <div className="space-y-2">
+              {topYutai.map((yutai, idx) => (
+                <Link
+                  key={yutai.id}
+                  href={`/stocks/${yutai.code}`}
+                  className="block rounded-xl border border-border bg-card p-4 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold">{yutai.name}</p>
+                        <span className="text-xs text-muted-foreground tabular-nums">({yutai.code})</span>
+                        {yutai.dataQuality === "verified" && (
+                          <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-md">
+                            ✓ 検証済み
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        年間 {formatYen(yutai.annualValue)} / 権利確定: {formatMonths(yutai.rightsMonths)}
+                      </p>
+                      {yutai.description && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{yutai.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 優待の種類 */}
+        {benefitTypes && benefitTypes.length > 0 && (
+          <section className="space-y-3" aria-labelledby="benefit-types-heading">
+            <h2 id="benefit-types-heading" className="font-bold text-base text-foreground">
+              {expense}優待の種類
+            </h2>
+            <ul className="space-y-1.5">
+              {benefitTypes.map((type) => (
+                <li key={type} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <span className="shrink-0 text-primary mt-0.5">▪</span>
+                  <span>{type}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* CTA */}
         <section className="rounded-xl border-2 border-primary bg-primary text-primary-foreground p-5 text-center space-y-3">
           <h2 className="text-lg font-bold">あなたにぴったりの優待を診断</h2>
           <p className="text-sm opacity-90">
-            {expense}を含む、あなたの生活全体から最適な優待を無料で診断します(1分)
+            {expense}を含む、あなたの生活全体から最適な優待を無料で診断します（1分）
           </p>
           <Link href="/onboarding" className={buttonVariants({ size: "lg", variant: "secondary" })}>
             無料で診断する
           </Link>
         </section>
 
-        {/* 銘柄リスト */}
-        {yutaiList.length > 0 ? (
-          <section className="space-y-3">
-            <h2 className="text-base font-bold">{expense}におすすめの優待銘柄({yutaiList.length}件)</h2>
-            <div className="space-y-2">
-              {yutaiList.map((yutai, idx) => (
+        {/* 全銘柄一覧 */}
+        {allYutai.length > 0 ? (
+          <section className="space-y-3" aria-labelledby="all-stocks-heading">
+            <h2 id="all-stocks-heading" className="font-bold text-base text-foreground">
+              {expense}の全優待銘柄一覧（{allYutai.length}銘柄）
+            </h2>
+            <div className="space-y-1.5">
+              {allYutai.map((yutai) => (
                 <Link
                   key={yutai.id}
                   href={`/stocks/${yutai.code}`}
-                  className="block rounded-lg border border-border bg-card p-3 hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors min-w-0"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="text-sm font-bold text-muted-foreground tabular-nums shrink-0 mt-0.5">
-                      {idx + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">{yutai.name}</p>
-                        <span className="text-xs text-muted-foreground tabular-nums shrink-0">({yutai.code})</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
-                        年間 {formatYen(yutai.annualValue)} / 必要投資 {formatYen(yutai.approxInvestment)} / 利回り {yutai.yieldPercent}%
-                      </p>
-                      {yutai.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{yutai.description}</p>
-                      )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-sm font-medium truncate">{yutai.name}</span>
                     </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatMonths(yutai.rightsMonths)}確定 · 年{formatYen(yutai.annualValue)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {yutai.dataQuality === "verified" ? (
+                      <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-md hidden sm:inline">
+                        ✓ 検証済み
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-md hidden sm:inline">
+                        ⚠ 参考
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground tabular-nums">{yutai.code}</span>
                   </div>
                 </Link>
               ))}
@@ -221,9 +315,9 @@ export default async function ExpenseCategoryPage({
           </section>
         )}
 
-        {/* 他カテゴリへの導線 */}
+        {/* 他カテゴリ */}
         <section className="space-y-3 pt-4 border-t border-border">
-          <h2 className="text-base font-bold">他の出費カテゴリも見る</h2>
+          <h2 className="font-bold text-base text-foreground">他の出費カテゴリも見る</h2>
           <div className="flex flex-wrap gap-2">
             {Object.entries(EXPENSE_CATEGORY_SLUGS)
               .filter(([cat]) => cat !== expense)
