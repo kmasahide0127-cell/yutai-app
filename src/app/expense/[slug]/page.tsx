@@ -10,6 +10,7 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 import { buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
+import AdUnit from "@/components/common/AdUnit";
 
 export async function generateStaticParams() {
   return Object.values(EXPENSE_CATEGORY_SLUGS).map((slug) => ({ slug }));
@@ -268,6 +269,8 @@ export default async function ExpenseCategoryPage({
             無料で診断する
           </Link>
         </section>
+
+        <AdUnit format="horizontal" className="my-2" />
 
         {/* 全銘柄一覧 */}
         {allYutai.length > 0 ? (

@@ -6,6 +6,7 @@ import { getMatchingExpenseCategoriesForYutai, getRelatedYutai, EXPENSE_CATEGORY
 import { AppHeader } from "@/components/AppHeader";
 import { buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
+import AdUnit from "@/components/common/AdUnit";
 
 export async function generateStaticParams() {
   return YUTAI_LIST.map((yutai) => ({ code: yutai.code }));
@@ -227,6 +228,8 @@ export default async function StockDetailPage({
             無料で診断する
           </Link>
         </section>
+
+        <AdUnit format="horizontal" className="my-2" />
 
         {/* 関連銘柄 */}
         {relatedYutai.length > 0 && (

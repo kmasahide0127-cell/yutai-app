@@ -5,6 +5,7 @@ import { ResetLink } from "@/components/ResetLink";
 import { DATA_LAST_UPDATED, VERIFIED_COUNT, TOTAL_COUNT, YUTAI_LIST } from "@/lib/yutai-data";
 import { EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { siteConfig } from "@/config/site";
+import AdUnit from "@/components/common/AdUnit";
 
 export const metadata: Metadata = {
   title: "優待マッチ - 生活逆引き型 株主優待マッチング",
@@ -191,6 +192,8 @@ export default function Home() {
           </div>
         </section>
 
+        <AdUnit format="horizontal" className="py-2" />
+
         {/* ── 4. 年間優待カレンダー例 ── */}
         <section aria-labelledby="calendar-heading">
           <h2 id="calendar-heading" className="text-base font-bold text-foreground mb-1">
@@ -294,6 +297,8 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        <AdUnit format="horizontal" className="py-2" />
 
         {/* ── 8. 注意事項・免責 ── */}
         <section aria-labelledby="disclaimer-heading">
