@@ -11,6 +11,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
+import AffiliateBanner from "@/components/AffiliateBanner";
 
 export async function generateStaticParams() {
   return Object.values(EXPENSE_CATEGORY_SLUGS).map((slug) => ({ slug }));
@@ -317,6 +318,12 @@ export default async function ExpenseCategoryPage({
             </p>
           </section>
         )}
+
+        {/* アフィリエイトバナー */}
+        <section className="space-y-2" aria-label="証券口座のご案内">
+          <h2 className="font-bold text-base text-foreground">証券口座をお持ちでない方へ</h2>
+          <AffiliateBanner />
+        </section>
 
         {/* 他カテゴリ */}
         <section className="space-y-3 pt-4 border-t border-border">

@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
+import AffiliateBanner from "@/components/AffiliateBanner";
 
 export async function generateStaticParams() {
   return YUTAI_LIST.map((yutai) => ({ code: yutai.code }));
@@ -275,6 +276,12 @@ export default async function StockDetailPage({
             で必ずご確認ください。
           </p>
           <p>※ 本サイトの情報は投資勧誘ではありません。投資判断はご自身の責任でお願いします。</p>
+        </section>
+
+        {/* アフィリエイトバナー */}
+        <section className="space-y-2" aria-label="証券口座のご案内">
+          <h2 className="text-base font-bold">この銘柄を購入するには証券口座が必要です</h2>
+          <AffiliateBanner />
         </section>
 
         <Link href="/stocks" className="inline-flex text-sm text-primary hover:underline">
