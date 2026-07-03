@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { ShareSection } from "./ShareSection";
 import { HoldingsInput } from "./HoldingsInput";
+import AffiliateBanner from "@/components/AffiliateBanner";
 import {
   buildBudgetAwareCalendarPackage,
   simulateFamilyShare,
@@ -417,6 +418,14 @@ export function ResultsClient({
           <p className="mt-3 text-xs text-muted-foreground">
             ※ 権利確定月は2026年5月27日時点の情報。権利確定後、実際に優待品が届くまでには通常2〜4ヶ月程度かかります(企業により異なります)。実際の優待発送は各企業の方針により異なりますので、詳細は各企業のIR情報をご確認ください。
           </p>
+        </section>
+      )}
+
+      {/* ── アフィリエイトバナー ── */}
+      {budgetCandidates.length > 0 && (
+        <section className="space-y-2" aria-label="証券口座のご案内">
+          <h2 className="text-base font-bold">証券口座をお持ちでない方へ</h2>
+          <AffiliateBanner />
         </section>
       )}
 
