@@ -226,6 +226,41 @@ export function ResultsClient({
 
   return (
     <div className="space-y-8 min-w-0">
+      {/* ── 興味なしにした優待の復元(最上部・目につく位置に配置) ── */}
+      {dismissedYutaiList.length > 0 && (
+        <details className="rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/20 overflow-hidden">
+          <summary className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium text-amber-800 dark:text-amber-300 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <X className="size-4" />
+            興味なしにした優待({dismissedYutaiList.length}件)を確認・戻す
+          </summary>
+          <div className="px-4 pb-4 space-y-2">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={restoreAll}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                すべて提案に戻す
+              </button>
+            </div>
+            <ul className="space-y-1.5">
+              {dismissedYutaiList.map((y) => (
+                <li key={y.code} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate text-muted-foreground">{y.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => restore(y.code)}
+                    className="shrink-0 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    ↩ 提案に戻す
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
+      )}
+
       {/* ── 年間優待カレンダー + 予算スライダー(統合) ── */}
       {visibleBudgetCandidates.length > 0 && (
         <section className="rounded-xl border-2 border-primary bg-primary/5 p-4">
@@ -707,41 +742,6 @@ export function ResultsClient({
           </section>
         );
       })}
-
-      {/* ── 興味なしにした優待の復元 ── */}
-      {dismissedYutaiList.length > 0 && (
-        <details className="rounded-xl border border-border bg-card overflow-hidden">
-          <summary className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium text-foreground cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <X className="size-4" />
-            興味なしにした優待({dismissedYutaiList.length}件)
-          </summary>
-          <div className="px-4 pb-4 space-y-2">
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={restoreAll}
-                className="text-xs text-muted-foreground hover:text-foreground underline"
-              >
-                すべて提案に戻す
-              </button>
-            </div>
-            <ul className="space-y-1.5">
-              {dismissedYutaiList.map((y) => (
-                <li key={y.code} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="truncate text-muted-foreground">{y.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => restore(y.code)}
-                    className="shrink-0 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
-                  >
-                    ↩ 提案に戻す
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </details>
-      )}
 
       {/* ── シェア・コピーボタン ── */}
       {cal.confirmedYutaiCount > 0 && (
