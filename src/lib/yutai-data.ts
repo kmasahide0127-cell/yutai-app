@@ -14,7 +14,7 @@ export type PreferenceTag =
   | "it-gadget" | "games" | "books" | "art"
   | "anime" | "oshi-katsu" | "streaming"
   | "movie" | "theme-park" | "live-concert"
-  | "gym" | "sports-watching" | "yoga"
+  | "gym" | "sports-watching" | "yoga" | "sauna"
   | "domestic-flight" | "overseas-travel" | "train" | "hotel";
 
 type Yutai = {
@@ -378,6 +378,12 @@ export const YUTAI_LIST: Yutai[] = [
 
   // ---- IT・金融サービス ----
   { id: "3994", code: "3994", name: "マネーフォワード", brands: ["マネーフォワード", "マネーフォワードME", "MoneyForward", "Money Forward", "マネフォ", "マネーフォワード クラウド"], categories: ["IT", "金融", "サービス"], lifestyleTags: ["家計簿", "投資する", "ガジェット好き", "資産管理", "確定申告"], minShares: 100, approxInvestment: 647900, annualValue: 6000, yieldPercent: 0.9, description: "100株でマネーフォワードMEプレミアムサービス半年分クーポン×2(年間6,000円相当)。200株以上で資産形成アドバンスコース、300株以上でクラウド確定申告も追加(半年以上継続保有が条件、2026年11月基準日以降)", rightsMonths: [5, 11], dataQuality: V, lastVerified: "2026-08-14" },
+
+  // ---- 生活シーンの穴埋め(温浴・メガネ・アミューズメント・中古品) ----
+  { id: "2340", code: "2340", name: "極楽湯ホールディングス", brands: ["極楽湯", "RAKU SPA"], categories: ["エンタメ", "スポーツ"], lifestyleTags: ["サウナ・銭湯好き", "健康意識高い"], minShares: 100, approxInvestment: 52900, annualValue: 1000, yieldPercent: 1.9, description: "100株以上を1年以上継続保有でQUOカード1,000円(500株以上は10,000円)。あわせて保有株数・期間に応じ入浴無料券4〜22枚も選択可能。優待価値はQUOカード分を採用、現物のため推定。", rightsMonths: [9], dataQuality: A, lastVerified: "2026-08-14" },
+  { id: "3046", code: "3046", name: "ジンズホールディングス", brands: ["JINS", "ジンズ"], categories: ["医療", "ファッション"], lifestyleTags: ["視力ケア", "ファッション好き"], minShares: 100, approxInvestment: 660000, annualValue: 9000, yieldPercent: 1.4, description: "100株以上保有で自社店舗・オンラインショップで使える9,000円分の割引券(年1回)", rightsMonths: [8], dataQuality: A, lastVerified: "2026-08-14" },
+  { id: "9166", code: "9166", name: "GENDA", brands: ["GiGO", "ジーゴ", "カラオケBanBan"], categories: ["エンタメ"], lifestyleTags: ["ゲーム好き", "デート"], minShares: 100, approxInvestment: 74000, annualValue: 4000, yieldPercent: 5.4, description: "GiGO・カラオケBanBanで使える自社アプリポイント優待。100株以上(6ヶ月以上保有)で年2回・各2,000円相当(年間4,000円相当)、300株以上・500株以上でさらに増額", rightsMonths: [1, 7], dataQuality: A, lastVerified: "2026-08-14" },
+  { id: "9278", code: "9278", name: "ブックオフグループホールディングス", brands: ["ブックオフ", "BOOKOFF", "ハグオール"], categories: ["小売"], lifestyleTags: ["中古品", "コスパ志向"], minShares: 100, approxInvestment: 292600, annualValue: 2000, yieldPercent: 0.7, description: "100株以上でブックオフグループ店舗買物券2,000円分+書籍買取20%アップクーポン2枚(年1回)。200株以上で3,000円分、500株以上で5,000円分、3年以上継続保有でさらに充実", rightsMonths: [6, 12], dataQuality: A, lastVerified: "2026-08-14" },
 
   // 注: J-Quants/TDnet 自動取得基盤構築後にさらに拡張予定
 ];
