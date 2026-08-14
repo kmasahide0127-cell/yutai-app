@@ -2,6 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
+import { DATA_LAST_UPDATED } from "@/lib/yutai-data";
+
+function formatJapaneseDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-");
+  return `${y}年${Number(m)}月${Number(d)}日`;
+}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +25,7 @@ export const metadata: Metadata = {
     default: "優待マッチ - 生活逆引き型 株主優待マッチング",
     template: "%s | 優待マッチ",
   },
-  description: "あなたの毎月の出費から、それを削減できる株主優待を提案。生活逆引き型の優待マッチングアプリ(個人開発・データ取得日2026年5月27日)。",
+  description: `あなたの毎月の出費から、それを削減できる株主優待を提案。生活逆引き型の優待マッチングアプリ(個人開発・データ取得日${formatJapaneseDate(DATA_LAST_UPDATED)})。`,
   keywords: [
     "株主優待",
     "優待",

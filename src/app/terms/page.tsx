@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
+import { DATA_LAST_UPDATED } from "@/lib/yutai-data";
+
+function formatJapaneseDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-");
+  return `${y}年${Number(m)}月${Number(d)}日`;
+}
 
 export const metadata: Metadata = {
   title: "利用規約 | 優待マッチ",
@@ -29,7 +35,7 @@ export default function TermsPage() {
 
           <div>
             <h2 className="font-semibold text-base mb-2">第3条(情報の正確性と取得日)</h2>
-            <p>本サービスで提供される優待情報は、運営者が公開情報に基づき手作業で収集したものです。優待情報は2026年5月27日時点のものであり、最新でない可能性があります。優待制度は予告なく変更・廃止される場合があるため、実際の優待内容については、必ず各企業のIRページや公式発表で最新情報をご確認ください。</p>
+            <p>本サービスで提供される優待情報は、運営者が公開情報に基づき手作業で収集したものです。優待情報は{formatJapaneseDate(DATA_LAST_UPDATED)}時点のものであり、最新でない可能性があります。優待制度は予告なく変更・廃止される場合があるため、実際の優待内容については、必ず各企業のIRページや公式発表で最新情報をご確認ください。</p>
           </div>
 
           <div>
@@ -60,7 +66,7 @@ export default function TermsPage() {
           <p className="text-xs text-muted-foreground mt-8">
             規約制定日: 2026年5月27日<br />
             最終更新日: 2026年5月27日<br />
-            掲載優待データ取得日: 2026年5月27日
+            掲載優待データ取得日: {formatJapaneseDate(DATA_LAST_UPDATED)}
           </p>
         </section>
       </div>

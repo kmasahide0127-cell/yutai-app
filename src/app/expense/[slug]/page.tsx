@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { YUTAI_LIST } from "@/lib/yutai-data";
+import { YUTAI_LIST, DATA_LAST_UPDATED } from "@/lib/yutai-data";
 import {
   EXPENSE_CATEGORY_SLUGS,
   getExpenseCategoryBySlug,
@@ -44,6 +44,10 @@ export async function generateMetadata({
 
 function formatYen(amount: number): string {
   return `${amount.toLocaleString()}円`;
+}
+function formatJapaneseDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-");
+  return `${y}年${Number(m)}月${Number(d)}日`;
 }
 function formatMonths(months: number[]): string {
   if (!months || months.length === 0) return "未定";
@@ -345,7 +349,7 @@ export default async function ExpenseCategoryPage({
 
         {/* 免責 */}
         <section className="pt-4 border-t border-border text-xs text-muted-foreground space-y-1">
-          <p>※ 優待情報は2026年5月27日時点のものです。最新情報は各企業のIRページでご確認ください。</p>
+          <p>※ 優待情報は{formatJapaneseDate(DATA_LAST_UPDATED)}時点のものです。最新情報は各企業のIRページでご確認ください。</p>
           <p>※ 本サイトの情報は投資勧誘ではありません。投資判断はご自身の責任でお願いします。</p>
         </section>
       </div>
