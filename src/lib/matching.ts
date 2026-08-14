@@ -727,6 +727,42 @@ export function isGasolineYutai(yutai: Yutai): boolean {
   return brandMatch || descMatch;
 }
 
+// ── 銘柄カテゴリ絞り込み(銘柄一覧ページ用) ────────────────────────────
+
+// 特定ブランドに縛られず自由に使える金券系の優待(クオカード等)かどうかを判定する。
+// 「お酒だけ」「クオカードだけ」等、狭いジャンルに絞って探したいユーザー向けの分類。
+export function isGiftCardYutai(yutai: Yutai): boolean {
+  return yutai.description.includes("クオカード") || yutai.description.includes("QUOカード");
+}
+
+export const GIFT_CARD_FILTER_KEY = "gift-card" as const;
+
+export type StockListFilter = string; // Yutai.categories の値、または GIFT_CARD_FILTER_KEY
+
+/** 銘柄一覧ページ用: カテゴリ別の該当銘柄数(2件以上のカテゴリのみ、多い順) */
+export function countYutaiByCategory(yutaiList: Yutai[]): Array<{ category: string; count: number }> {
+  const counts: Record<string, number> = {};
+  for (const y of yutaiList) {
+    if (y.annualValue <= 0) continue;
+    for (const c of y.categories) {
+      counts[c] = (counts[c] ?? 0) + 1;
+    }
+  }
+  return Object.entries(counts)
+    .filter(([, count]) => count >= 2)
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export function filterYutaiByStockListFilter(
+  yutaiList: Yutai[],
+  filter: StockListFilter | null
+): Yutai[] {
+  if (!filter) return yutaiList;
+  if (filter === GIFT_CARD_FILTER_KEY) return yutaiList.filter(isGiftCardYutai);
+  return yutaiList.filter((y) => y.categories.includes(filter));
+}
+
 // ── 家族分散シミュレーション ────────────────────────────────────────
 
 export type FamilyShareType = "individual" | "shared";
