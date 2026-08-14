@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -321,7 +322,7 @@ export function ResultsClient({
 
           {/* 月別カレンダー */}
           <p className="mb-2 text-xs text-muted-foreground/70">
-            すでに持っている銘柄にチェックを入れると、提案から外して「保有済み」として扱います。🚫を押すと興味なしとして除外し、他の候補に差し替えます
+            すでに持っている銘柄にチェックを入れると、提案から外して「保有済み」として扱います。✕を押すと興味なしとして除外し、他の候補に差し替えます
           </p>
           <div className="space-y-1.5">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
@@ -409,11 +410,11 @@ export function ResultsClient({
                                 <button
                                   type="button"
                                   onClick={() => dismiss(entry.yutai.code)}
-                                  className="shrink-0 rounded px-1 py-0.5 text-xs text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors"
+                                  className="shrink-0 rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors"
                                   aria-label={`${entry.yutai.name}を興味なしにして他の候補に差し替える`}
                                   title="興味なし・他の候補に差し替える"
                                 >
-                                  🚫
+                                  <X className="size-3.5" />
                                 </button>
                               </div>
                             ))}
@@ -448,11 +449,11 @@ export function ResultsClient({
                                   <button
                                     type="button"
                                     onClick={() => dismiss(entry.yutai.code)}
-                                    className="shrink-0 rounded px-1 py-0.5 text-xs text-muted-foreground/40 hover:bg-muted hover:text-foreground transition-colors"
+                                    className="shrink-0 rounded p-0.5 text-muted-foreground/40 hover:bg-muted hover:text-foreground transition-colors"
                                     aria-label={`${entry.yutai.name}を興味なしにして他の候補に差し替える`}
                                     title="興味なし・他の候補に差し替える"
                                   >
-                                    🚫
+                                    <X className="size-3" />
                                   </button>
                                 </div>
                               </div>
@@ -653,10 +654,11 @@ export function ResultsClient({
                           <button
                             type="button"
                             onClick={() => dismiss(yutai.code)}
-                            className="shrink-0 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                             aria-label={`${yutai.name}を興味なしにして提案から外す`}
                           >
-                            🚫 興味なし
+                            <X className="size-3.5" />
+                            興味なし
                           </button>
                         </div>
                       </CardHeader>
@@ -709,8 +711,9 @@ export function ResultsClient({
       {/* ── 興味なしにした優待の復元 ── */}
       {dismissedYutaiList.length > 0 && (
         <details className="rounded-xl border border-border bg-card overflow-hidden">
-          <summary className="px-4 py-3 text-sm font-medium text-foreground cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            🚫 興味なしにした優待({dismissedYutaiList.length}件)
+          <summary className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium text-foreground cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <X className="size-4" />
+            興味なしにした優待({dismissedYutaiList.length}件)
           </summary>
           <div className="px-4 pb-4 space-y-2">
             <div className="flex justify-end">
