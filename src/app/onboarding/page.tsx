@@ -103,6 +103,14 @@ const TYPE_PRESETS: TypePreset[] = [
     preferenceTags: ["family-restaurant"],
   },
   {
+    id: "gourmet",
+    emoji: "🍽️",
+    label: "グルメ・お酒好き型",
+    chips: ["外食", "居酒屋", "お酒"],
+    expenseCategories: ["外食・カフェ", "自炊・食材"],
+    preferenceTags: ["izakaya", "alcohol"],
+  },
+  {
     id: "otaku",
     emoji: "🎮",
     label: "推し活・インドア型",
@@ -117,6 +125,14 @@ const TYPE_PRESETS: TypePreset[] = [
     chips: ["スキンケア", "メイク", "コスメ"],
     expenseCategories: ["美容・スキンケア"],
     preferenceTags: ["makeup", "skincare"],
+  },
+  {
+    id: "fashion",
+    emoji: "👗",
+    label: "ファッション・オシャレ型",
+    chips: ["ファッション", "ブランド", "百貨店"],
+    expenseCategories: ["衣服・ファッション"],
+    preferenceTags: ["casual-wear", "luxury-brand"],
   },
   {
     id: "travel",

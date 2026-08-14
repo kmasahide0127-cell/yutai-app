@@ -23,7 +23,8 @@ import {
   type PreferenceTag,
 } from "@/lib/matching";
 import type { VehicleType } from "@/store/onboarding-store";
-import type { Yutai } from "@/lib/yutai-data";
+import { useDismissedStore } from "@/store/dismissed-store";
+import { YUTAI_LIST, DATA_LAST_UPDATED, type Yutai } from "@/lib/yutai-data";
 
 const ALL_PREFERENCE_TAGS_FLAT = Object.values(PREFERENCE_TAGS).flat();
 
@@ -34,6 +35,13 @@ function findTagInfo(tagId: PreferenceTag) {
 function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
 }
+
+function formatJapaneseDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-");
+  return `${y}年${Number(m)}月${Number(d)}日`;
+}
+
+const DATA_LAST_UPDATED_JP = formatJapaneseDate(DATA_LAST_UPDATED);
 
 function formatInvestmentLabel(amount: number): string {
   const man = Math.round(amount / 10000);
@@ -98,13 +106,39 @@ export function ResultsClient({
     return 2;
   }, [expenseCategoryCount]);
 
-  const hasAnyResults = groupedResults.some((g) => g.results.length > 0);
+  // 「興味なし」と評価された優待は以後の提案から除外し、代わりに次点の候補を繰り上げる
+  const dismissedCodes = useDismissedStore((s) => s.dismissedCodes);
+  const dismiss = useDismissedStore((s) => s.dismiss);
+  const restore = useDismissedStore((s) => s.restore);
+  const restoreAll = useDismissedStore((s) => s.restoreAll);
+  const dismissedSet = useMemo(() => new Set(dismissedCodes), [dismissedCodes]);
+
+  const visibleGroupedResults = useMemo(
+    () =>
+      groupedResults.map(({ category, results }) => ({
+        category,
+        results: results.filter((r) => !dismissedSet.has(r.yutai.code)),
+      })),
+    [groupedResults, dismissedSet]
+  );
+
+  const visibleBudgetCandidates = useMemo(
+    () => budgetCandidates.filter((y) => !dismissedSet.has(y.code)),
+    [budgetCandidates, dismissedSet]
+  );
+
+  const dismissedYutaiList = useMemo(
+    () => dismissedCodes.map((code) => YUTAI_LIST.find((y) => y.code === code)).filter((y): y is Yutai => !!y),
+    [dismissedCodes]
+  );
+
+  const hasAnyResults = visibleGroupedResults.some((g) => g.results.length > 0);
 
   const { totalSavings, totalInvestment, totalUnique } = useMemo(() => {
     const seen = new Set<string>();
     let savings = 0;
     let investment = 0;
-    for (const { results } of groupedResults) {
+    for (const { results } of visibleGroupedResults) {
       for (const r of results.slice(0, perCategoryLimit)) {
         if (!seen.has(r.yutai.id)) {
           seen.add(r.yutai.id);
@@ -114,7 +148,7 @@ export function ResultsClient({
       }
     }
     return { totalSavings: savings, totalInvestment: investment, totalUnique: seen.size };
-  }, [groupedResults, perCategoryLimit]);
+  }, [visibleGroupedResults, perCategoryLimit]);
 
   // 予算スライダー。初期値はオンボーディングの investmentLimit
   const [budget, setBudget] = useState(investmentLimit);
@@ -143,8 +177,8 @@ export function ResultsClient({
 
   // 予算・保有株変更のたびにカレンダーを再計算(confirmed累積制約 + ghost候補)
   const cal = useMemo(
-    () => buildBudgetAwareCalendarPackage(budgetCandidates, budget, preferenceTags, heldYutai.map((y) => y.code)),
-    [budgetCandidates, budget, preferenceTags, heldYutai]
+    () => buildBudgetAwareCalendarPackage(visibleBudgetCandidates, budget, preferenceTags, heldYutai.map((y) => y.code)),
+    [visibleBudgetCandidates, budget, preferenceTags, heldYutai]
   );
 
   const calendarYield = cal.confirmedYield.toFixed(1);
@@ -192,7 +226,7 @@ export function ResultsClient({
   return (
     <div className="space-y-8 min-w-0">
       {/* ── 年間優待カレンダー + 予算スライダー(統合) ── */}
-      {budgetCandidates.length > 0 && (
+      {visibleBudgetCandidates.length > 0 && (
         <section className="rounded-xl border-2 border-primary bg-primary/5 p-4">
           <div className="mb-4">
             <h2 className="flex items-center gap-2 text-xl font-bold">
@@ -416,13 +450,13 @@ export function ResultsClient({
           </div>
 
           <p className="mt-3 text-xs text-muted-foreground">
-            ※ 権利確定月は2026年5月27日時点の情報。権利確定後、実際に優待品が届くまでには通常2〜4ヶ月程度かかります(企業により異なります)。実際の優待発送は各企業の方針により異なりますので、詳細は各企業のIR情報をご確認ください。
+            ※ 権利確定月は{DATA_LAST_UPDATED_JP}時点の情報。権利確定後、実際に優待品が届くまでには通常2〜4ヶ月程度かかります(企業により異なります)。実際の優待発送は各企業の方針により異なりますので、詳細は各企業のIR情報をご確認ください。
           </p>
         </section>
       )}
 
       {/* ── アフィリエイトバナー ── */}
-      {budgetCandidates.length > 0 && (
+      {visibleBudgetCandidates.length > 0 && (
         <section className="space-y-2" aria-label="証券口座のご案内">
           <h2 className="text-base font-bold">証券口座をお持ちでない方へ</h2>
           <AffiliateBanner />
@@ -442,13 +476,13 @@ export function ResultsClient({
             必要投資額の合計: 約{Math.round(totalInvestment / 10000)}万円
           </p>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            優待情報の取得日: 2026年5月27日 | 全銘柄共通
+            優待情報の取得日: {DATA_LAST_UPDATED_JP} | 全銘柄共通
           </p>
         </div>
       )}
 
       {/* ── 全カテゴリ該当なし ── */}
-      {!hasAnyResults && budgetCandidates.length === 0 && (
+      {!hasAnyResults && visibleBudgetCandidates.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">
             選んだ出費カテゴリに該当する優待銘柄が見つかりませんでした。他のカテゴリも試してみてください。
@@ -457,7 +491,7 @@ export function ResultsClient({
       )}
 
       {/* ── カテゴリ別セクション ── */}
-      {groupedResults.map(({ category, results }) => {
+      {visibleGroupedResults.map(({ category, results }) => {
         const isCarCategory = category === CAR_EXPENSE_CATEGORY;
         const isEvUser = vehicleType === "ev";
 
@@ -565,7 +599,7 @@ export function ResultsClient({
                   <li key={yutai.id}>
                     <Card>
                       <CardHeader className="pb-3">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-start gap-3">
                           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                             {idx + 1}
                           </div>
@@ -598,6 +632,14 @@ export function ResultsClient({
                               </div>
                             )}
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => dismiss(yutai.code)}
+                            className="shrink-0 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                            aria-label={`${yutai.name}を興味なしにして提案から外す`}
+                          >
+                            🚫 興味なし
+                          </button>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
@@ -646,6 +688,40 @@ export function ResultsClient({
         );
       })}
 
+      {/* ── 興味なしにした優待の復元 ── */}
+      {dismissedYutaiList.length > 0 && (
+        <details className="rounded-xl border border-border bg-card overflow-hidden">
+          <summary className="px-4 py-3 text-sm font-medium text-foreground cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            🚫 興味なしにした優待({dismissedYutaiList.length}件)
+          </summary>
+          <div className="px-4 pb-4 space-y-2">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={restoreAll}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                すべて提案に戻す
+              </button>
+            </div>
+            <ul className="space-y-1.5">
+              {dismissedYutaiList.map((y) => (
+                <li key={y.code} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate text-muted-foreground">{y.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => restore(y.code)}
+                    className="shrink-0 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    ↩ 提案に戻す
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
+      )}
+
       {/* ── シェア・コピーボタン ── */}
       {cal.confirmedYutaiCount > 0 && (
         <ShareSection
@@ -671,7 +747,7 @@ export function ResultsClient({
           <Link href="/contact" className="hover:underline">お問い合わせ</Link>
           <Link href="/about" className="hover:underline">このサイトについて</Link>
         </div>
-        <p className="mt-2">© 2026 優待アプリ | データ取得日: 2026年5月27日</p>
+        <p className="mt-2">© 2026 優待アプリ | データ取得日: {DATA_LAST_UPDATED_JP}</p>
       </footer>
     </div>
   );
