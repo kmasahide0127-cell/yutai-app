@@ -5,6 +5,11 @@
 //   "verified" - 運営者が高い確度で内容を把握している主要銘柄
 //   "ai_generated" - 過去公開情報に基づく参考データ
 //                    最新情報は必ず各企業のIRページで確認してください
+//
+// lastVerified vs priceUpdatedAt:
+//   lastVerified    - 優待の「内容」を一次情報(企業IR等)で確認した日。人手でのみ更新する。
+//   priceUpdatedAt  - 株価(approxInvestment/yieldPercent)を自動スクリプトで再取得した日。
+//                      価格の新旧を表すだけで、内容が再検証されたことは意味しない。
 
 export type PreferenceTag =
   | "cafe" | "noodles" | "japanese" | "family-restaurant" | "izakaya"
@@ -31,7 +36,10 @@ type Yutai = {
   description: string;
   rightsMonths: number[];
   dataQuality: "verified" | "ai_generated";
+  // 運営者が優待の「内容」を一次情報で確認した日。価格更新スクリプトはこの値を書き換えない。
   lastVerified: string;
+  // 株価(approxInvestment/yieldPercent)を機械的に再取得した日。内容の検証日とは別物。
+  priceUpdatedAt?: string;
   preferenceTags?: PreferenceTag[];
 };
 
@@ -44,8 +52,8 @@ export const YUTAI_LIST: Yutai[] = [
   // ============================================================
 
   // ---- EC・通信 ----
-  { id: "4755", code: "4755", name: "楽天グループ", brands: ["楽天市場", "楽天モバイル", "楽天カード", "楽天銀行", "楽天証券", "楽天ポイント", "楽天トラベル", "楽天ペイ", "楽天ブックス", "eSIM"], categories: ["EC", "通信", "金融"], lifestyleTags: ["楽天経済圏", "ネットショッピング多用", "固定費を抑えたい", "通信費を抑えたい"], minShares: 100, approxInvestment: 76380, annualValue: 36000, yieldPercent: 47.1, description: "楽天モバイル30GB/月の音声+データeSIM(100株で1回線、年間36,000円相当)。200株以上で複数回線可", rightsMonths: [12], dataQuality: V, lastVerified: "2026-08-14" },
-  { id: "9433", code: "9433", name: "KDDI", brands: ["au", "UQ mobile", "povo", "auでんき", "auじぶん銀行", "auPAY"], categories: ["通信", "金融"], lifestyleTags: ["通信費を抑えたい", "固定費を抑えたい", "auユーザー"], minShares: 100, approxInvestment: 287750, annualValue: 3000, yieldPercent: 1.0, description: "au PAYマーケット3,000円相当カタログギフト(5年以上保有で5,000円相当)", rightsMonths: [3], dataQuality: V, lastVerified: "2026-08-14" },
+  { id: "4755", code: "4755", name: "楽天グループ", brands: ["楽天市場", "楽天モバイル", "楽天カード", "楽天銀行", "楽天証券", "楽天ポイント", "楽天トラベル", "楽天ペイ", "楽天ブックス", "eSIM"], categories: ["EC", "通信", "金融"], lifestyleTags: ["楽天経済圏", "ネットショッピング多用", "固定費を抑えたい", "通信費を抑えたい"], minShares: 100, approxInvestment: 76380, annualValue: 18000, yieldPercent: 23.6, description: "100株以上保有で楽天モバイル音声+データ30GB/月プランが6ヶ月間無料(約18,000円相当)。継続保有条件(基準日をまたぐ2回の株主名簿に同一株主番号で記録)を満たすと追加6ヶ月延長、最大12ヶ月・約36,000円相当。同一楽天IDでの複数回線取得は不可(公式IR確認済み)。", rightsMonths: [12], dataQuality: V, lastVerified: "2026-08-14" },
+  { id: "9433", code: "9433", name: "KDDI", brands: ["au", "UQ mobile", "povo", "auでんき", "auじぶん銀行", "auPAY"], categories: ["通信", "金融"], lifestyleTags: ["通信費を抑えたい", "固定費を抑えたい", "auユーザー"], minShares: 100, approxInvestment: 287750, annualValue: 2000, yieldPercent: 0.7, description: "au PAYマーケットで使えるPontaポイント。1年以上5年未満保有で2,000円相当、5年以上保有で3,000円相当(公式IR確認済み)。", rightsMonths: [3], dataQuality: V, lastVerified: "2026-08-14" },
   { id: "9434", code: "9434", name: "ソフトバンク", brands: ["ソフトバンク", "ワイモバイル", "LINEMO", "PayPay", "ヤフー", "Yahoo!ショッピング"], categories: ["通信", "EC"], lifestyleTags: ["通信費を抑えたい", "PayPayユーザー"], minShares: 100, approxInvestment: 23490, annualValue: 1000, yieldPercent: 4.3, description: "PayPayポイント1,000円相当(1年以上保有)", rightsMonths: [3], dataQuality: V, lastVerified: "2026-08-14" },
   { id: "9432", code: "9432", name: "NTT", brands: ["NTT", "ドコモ", "ahamo", "irumo", "dカード", "dポイント"], categories: ["通信"], lifestyleTags: ["通信費を抑えたい", "ドコモユーザー"], minShares: 100, approxInvestment: 16270, annualValue: 1500, yieldPercent: 9.2, description: "100株でdポイント1,500p(2年以上保有)、3,000p(5年以上)", rightsMonths: [3], dataQuality: V, lastVerified: "2026-08-14" },
 

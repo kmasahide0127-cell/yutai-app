@@ -1,3 +1,4 @@
 jquants-api-client>=2.1.0
 python-dotenv>=1.0.0
 pandas>=2.0.0
+yfinance>=0.2.40
