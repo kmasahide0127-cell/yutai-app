@@ -321,7 +321,7 @@ export function ResultsClient({
 
           {/* 月別カレンダー */}
           <p className="mb-2 text-xs text-muted-foreground/70">
-            すでに持っている銘柄にチェックを入れると、提案から外して「保有済み」として扱います
+            すでに持っている銘柄にチェックを入れると、提案から外して「保有済み」として扱います。🚫を押すと興味なしとして除外し、他の候補に差し替えます
           </p>
           <div className="space-y-1.5">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
@@ -406,6 +406,15 @@ export function ResultsClient({
                                 <span className="shrink-0 font-semibold text-primary tabular-nums">
                                   {formatYen(entry.yutai.annualValue)}
                                 </span>
+                                <button
+                                  type="button"
+                                  onClick={() => dismiss(entry.yutai.code)}
+                                  className="shrink-0 rounded px-1 py-0.5 text-xs text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors"
+                                  aria-label={`${entry.yutai.name}を興味なしにして他の候補に差し替える`}
+                                  title="興味なし・他の候補に差し替える"
+                                >
+                                  🚫
+                                </button>
                               </div>
                             ))}
                           </div>
@@ -436,6 +445,15 @@ export function ResultsClient({
                                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
                                     {formatYen(entry.yutai.approxInvestment)}
                                   </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => dismiss(entry.yutai.code)}
+                                    className="shrink-0 rounded px-1 py-0.5 text-xs text-muted-foreground/40 hover:bg-muted hover:text-foreground transition-colors"
+                                    aria-label={`${entry.yutai.name}を興味なしにして他の候補に差し替える`}
+                                    title="興味なし・他の候補に差し替える"
+                                  >
+                                    🚫
+                                  </button>
                                 </div>
                               </div>
                             ))}
