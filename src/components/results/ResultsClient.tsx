@@ -37,6 +37,10 @@ function formatYen(amount: number): string {
   return amount.toLocaleString("ja-JP") + "円";
 }
 
+function formatRightsMonths(months: number[]): string {
+  return months.map((m) => `${m}月`).join("・");
+}
+
 function formatJapaneseDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-");
   return `${y}年${Number(m)}月${Number(d)}日`;
@@ -407,7 +411,7 @@ export function ResultsClient({
                                 <span className="truncate text-sm text-muted-foreground flex-1">
                                   {y.name}
                                   <span className="ml-1 text-xs text-muted-foreground/70">
-                                    ({y.code})
+                                    ({y.code}・権利確定{formatRightsMonths(y.rightsMonths)})
                                   </span>
                                 </span>
                                 <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary/80">
@@ -435,8 +439,8 @@ export function ResultsClient({
                                 />
                                 <span className="truncate font-medium flex-1">
                                   {entry.yutai.name}
-                                  <span className="ml-1 text-xs text-muted-foreground">
-                                    ({entry.yutai.code})
+                                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                                    ({entry.yutai.code}・権利確定{formatRightsMonths(entry.yutai.rightsMonths)})
                                   </span>
                                 </span>
                                 <span className="shrink-0 font-semibold text-primary tabular-nums">
@@ -475,7 +479,7 @@ export function ResultsClient({
                                   <span className="truncate text-xs text-muted-foreground/60 flex-1">
                                     {entry.yutai.name}
                                     <span className="ml-1 text-muted-foreground/50">
-                                      ({entry.yutai.code})
+                                      ({entry.yutai.code}・権利確定{formatRightsMonths(entry.yutai.rightsMonths)})
                                     </span>
                                   </span>
                                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
