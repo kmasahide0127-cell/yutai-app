@@ -69,27 +69,49 @@ python -m fetch.fetch_financials --limit 0
 | `prices.json` | 株価日足 (始値・高値・安値・終値・出来高) |
 | `financials.json` | 財務情報(EPS等) + 配当情報 |
 
+## 週次自動更新(GitHub Actions)
+
+`.github/workflows/weekly-data-update.yml` が毎週日曜21:00 JSTに自動実行される
+(手動実行は Actions タブから workflow_dispatch でも可能)。APIキーは不要
+(yfinance・やのしんTDnet WEB-APIともに無料・無認証のため、GitHub Secretsの設定は不要)。
+
+1. `fetch.update_stock_prices` で全銘柄の現在株価を取得し、`yutai-data.ts` の
+   `approxInvestment`/`yieldPercent`/`priceUpdatedAt` を更新(優待「内容」やlastVerifiedには触れない)
+2. `fetch.check_yutai_disclosures` で直近1週間のTDnet適時開示から「優待」を含む
+   開示を検出し、PR本文で報告(内容は自動反映しない。人間またはClaudeセッションが
+   開示資料を読んで `yutai-data.ts` を手動修正する)
+3. 変更を Pull Request として作成(直接 main へはpushしない。price_update_summary.md
+   や検出された開示一覧はPR本文に記載され、マージ前にレビューできる)
+
+上記だけではカバーしきれない「TDnetに載らない/優待というキーワードを含まない」
+変更の見落とし対策として、`WEEKLY_MAINTENANCE.md` の手動ローテーション確認も
+引き続き併用する。
+
 ## Stage 2 以降の予定
 
 - **Stage 2**: 株主優待データの取得 (J-Quants には含まれないため別ソースを検討)
   - 候補: スクレイピング, 手動CSV管理, 別APIサービス
 - **Stage 3**: 取得データを `public/data/` 向けに変換・マージ
-- **Stage 4**: GitHub Actions でのスケジュール自動実行
+- ~~**Stage 4**: GitHub Actions でのスケジュール自動実行~~ → 実装済み(株価更新+優待変更検出、上記参照)
 
 ## ファイル構成
 
 ```
 scripts/
-├── requirements.txt        # 依存パッケージ
-├── README.md               # このファイル
-├── output/                 # 取得データの出力先 (.gitignore 対象)
+├── requirements.txt              # 依存パッケージ
+├── README.md                     # このファイル
+├── output/                       # 取得データの出力先 (.gitignore 対象)
 │   ├── listed.json
 │   ├── prices.json
-│   └── financials.json
+│   ├── financials.json
+│   ├── price_update_summary.md
+│   └── yutai_disclosure_report.md
 └── fetch/
     ├── __init__.py
-    ├── client.py           # ClientV2 初期化
-    ├── fetch_listed.py     # 上場銘柄一覧
-    ├── fetch_prices.py     # 株価日足
-    └── fetch_financials.py # 財務・配当
+    ├── client.py                    # ClientV2 初期化
+    ├── fetch_listed.py               # 上場銘柄一覧
+    ├── fetch_prices.py               # 株価日足
+    ├── fetch_financials.py           # 財務・配当
+    ├── update_stock_prices.py        # yutai-data.ts の株価を自動更新(週次実行対象)
+    └── check_yutai_disclosures.py    # TDnetから優待関連開示を検出(週次実行対象)
 ```

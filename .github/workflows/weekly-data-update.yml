@@ -1,0 +1,73 @@
+name: 週次データ自動更新
+
+# 毎週日曜 21:00 JST(=12:00 UTC、週末の取引終了後)に
+# 1) 全銘柄の現在株価を取得して yutai-data.ts の approxInvestment/yieldPercent を更新
+# 2) TDnet適時開示から「優待」関連の開示を検出してPR本文で報告
+# する。優待の「内容」自体は自動反映しない(WEEKLY_MAINTENANCE.md参照)。
+# APIキーは不要(yfinance・やのしんTDnet WEB-APIともに無料・無認証)。
+on:
+  schedule:
+    - cron: "0 12 * * 0"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: weekly-data-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: 依存パッケージのインストール
+        run: pip install -r scripts/requirements.txt
+
+      - name: 今日の日付を取得
+        id: date
+        run: echo "today=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      - name: 株価データ更新(yutai-data.ts)
+        working-directory: scripts
+        run: python -m fetch.update_stock_prices
+
+      - name: 優待関連の適時開示チェック(TDnet)
+        working-directory: scripts
+        run: python -m fetch.check_yutai_disclosures
+
+      - name: PR本文の組み立て
+        id: report
+        run: |
+          {
+            echo "body<<REPORT_EOF"
+            echo "## 株価自動更新"
+            cat scripts/output/price_update_summary.md
+            echo ""
+            cat scripts/output/yutai_disclosure_report.md
+            echo ""
+            echo "---"
+            echo "自動生成されたPRです。優待「内容」の変更は自動反映されていないため、"
+            echo "上記の開示が見つかった場合は内容を確認してyutai-data.tsを手動で修正してください。"
+            echo "REPORT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Pull Requestを作成
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: 株価データ自動更新 (${{ steps.date.outputs.today }})"
+          title: "chore: 週次データ自動更新 (${{ steps.date.outputs.today }})"
+          body: ${{ steps.report.outputs.body }}
+          branch: auto/weekly-data-update
+          delete-branch: true
+          add-paths: src/lib/yutai-data.ts
+          labels: automated
