@@ -22,6 +22,8 @@ type SearchParams = Promise<{
   household?: string;
   vehicleType?: string;
   preferenceTags?: string;
+  totalBudget?: string;
+  planYears?: string;
 }>;
 
 const BASE_URL = "https://yutai-match.com";
@@ -84,6 +86,8 @@ export default async function ResultsPage({
     household: householdParam,
     vehicleType: vehicleTypeParam,
     preferenceTags: preferenceTagsParam,
+    totalBudget: totalBudgetParam,
+    planYears: planYearsParam,
   } = await searchParams;
 
   const expenseCategories = (
@@ -94,6 +98,14 @@ export default async function ResultsPage({
   const vehicleType = (["gasoline", "ev", "none"].includes(vehicleTypeParam ?? "")
     ? vehicleTypeParam
     : null) as VehicleType;
+
+  // 長期プラン(任意): 総額・年数がともに有効な値の場合のみ有効化
+  const parsedTotalBudget = totalBudgetParam ? parseInt(totalBudgetParam, 10) : null;
+  const parsedPlanYears = planYearsParam ? parseInt(planYearsParam, 10) : null;
+  const totalStockBudget =
+    parsedTotalBudget && parsedTotalBudget > 0 ? parsedTotalBudget : null;
+  const planYears =
+    parsedPlanYears === 5 || parsedPlanYears === 10 ? parsedPlanYears : null;
 
   // 型ガードで不正値を除外
   const preferenceTags = (
@@ -163,6 +175,8 @@ export default async function ResultsPage({
           preferenceTags={preferenceTags}
           preferenceTagCounts={preferenceTagCounts}
           shareUrl={shareUrl}
+          totalStockBudget={totalStockBudget}
+          planYears={planYears}
         />
       </div>
     </div>

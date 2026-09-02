@@ -16,6 +16,7 @@ import { HoldingsInput } from "./HoldingsInput";
 import AffiliateBanner from "@/components/AffiliateBanner";
 import {
   buildBudgetAwareCalendarPackage,
+  buildMultiYearCalendarPlan,
   simulateFamilyShare,
   inferPreferenceTags,
   PREFERENCE_TAGS,
@@ -90,6 +91,8 @@ type Props = {
   preferenceTags: PreferenceTag[];
   preferenceTagCounts: Partial<Record<PreferenceTag, number>>;
   shareUrl: string;
+  totalStockBudget: number | null;
+  planYears: 5 | 10 | null;
 };
 
 export function ResultsClient({
@@ -102,6 +105,8 @@ export function ResultsClient({
   preferenceTags,
   preferenceTagCounts,
   shareUrl,
+  totalStockBudget,
+  planYears,
 }: Props) {
   const perCategoryLimit = useMemo(() => {
     if (expenseCategoryCount <= 1) return 8;
@@ -185,6 +190,18 @@ export function ResultsClient({
     () => buildBudgetAwareCalendarPackage(visibleBudgetCandidates, budget, preferenceTags, heldYutai.map((y) => y.code)),
     [visibleBudgetCandidates, budget, preferenceTags, heldYutai]
   );
+
+  // 長期プラン(任意): 総額・年数が入力されている場合のみ、年ごとの買い足し計画を計算
+  const multiYearPlan = useMemo(() => {
+    if (totalStockBudget === null || planYears === null) return null;
+    return buildMultiYearCalendarPlan(
+      visibleBudgetCandidates,
+      totalStockBudget,
+      planYears,
+      preferenceTags,
+      heldYutai
+    );
+  }, [totalStockBudget, planYears, visibleBudgetCandidates, preferenceTags, heldYutai]);
 
   const calendarYield = cal.confirmedYield.toFixed(1);
 
@@ -512,6 +529,96 @@ export function ResultsClient({
 
           <p className="mt-3 text-xs text-muted-foreground">
             ※ 権利確定月は{DATA_LAST_UPDATED_JP}時点の情報。権利確定後、実際に優待品が届くまでには通常2〜4ヶ月程度かかります(企業により異なります)。実際の優待発送は各企業の方針により異なりますので、詳細は各企業のIR情報をご確認ください。
+          </p>
+        </section>
+      )}
+
+      {/* ── 長期プラン(任意): 5年/10年かけての投資カレンダー ── */}
+      {multiYearPlan && (
+        <section className="rounded-xl border-2 border-accent bg-accent/5 p-4">
+          <div className="mb-3">
+            <h2 className="flex items-center gap-2 text-xl font-bold">
+              🗓️ {multiYearPlan.planYears}年プランの投資カレンダー
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              総額{formatInvestmentLabel(multiYearPlan.totalBudget)}を{multiYearPlan.planYears}年に分けて、
+              無理のないペースで優待カレンダーを完成させる計画です。急いで一度に揃える必要はありません。
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              年間の推奨予算: 約{formatInvestmentLabel(multiYearPlan.recommendedAnnualBudget)}
+              (総額 ÷ {multiYearPlan.planYears}年、1万円単位で計算)
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            {multiYearPlan.years.map((yearEntry) => {
+              const newYutaiCodes = new Set(yearEntry.newEntries.map((e) => e.yutai.code));
+              const newYutaiList = Array.from(newYutaiCodes).map(
+                (code) => yearEntry.newEntries.find((e) => e.yutai.code === code)!.yutai
+              );
+              return (
+                <details
+                  key={yearEntry.year}
+                  className="rounded-lg border border-border bg-background overflow-hidden"
+                  open={yearEntry.year <= 2}
+                >
+                  <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
+                    <span className="text-sm font-semibold">{yearEntry.year}年目</span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {newYutaiList.length > 0 ? `新規${newYutaiList.length}銘柄` : "新規なし"}
+                      <span className="font-medium text-accent">
+                        累計{yearEntry.cumulativeCoveredMonths}/12ヶ月
+                      </span>
+                    </span>
+                  </summary>
+                  <div className="border-t border-border px-3 py-2.5 space-y-2">
+                    {newYutaiList.length > 0 ? (
+                      <ul className="space-y-1">
+                        {newYutaiList.map((yutai) => (
+                          <li key={yutai.code} className="flex items-center justify-between gap-2 text-xs">
+                            <span className="truncate">
+                              {yutai.name}
+                              <span className="ml-1 text-muted-foreground">
+                                (権利確定{formatRightsMonths(yutai.rightsMonths)})
+                              </span>
+                            </span>
+                            <span className="shrink-0 tabular-nums text-muted-foreground">
+                              {formatYen(yutai.approxInvestment)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        この年は新たに買い足す候補がありません(予算に余裕があれば翌年に繰り越します)
+                      </p>
+                    )}
+                    <div className="flex justify-between border-t border-border pt-2 text-xs text-muted-foreground">
+                      <span>この年の投資額: {formatYen(yearEntry.yearInvestment)}</span>
+                      <span>累計投資額: {formatYen(yearEntry.cumulativeInvestment)}</span>
+                    </div>
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 rounded-lg bg-background p-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              {multiYearPlan.planYears}年後の見込み
+            </p>
+            <p className="mt-1 text-sm font-bold">
+              <span className="text-accent">{multiYearPlan.finalCoveredMonths}/12ヶ月</span>
+              カバー・年間優待価値{" "}
+              <span className="text-accent">{formatYen(multiYearPlan.finalAnnualValue)}</span>
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              累計投資額: 約{formatInvestmentLabel(multiYearPlan.finalInvestment)}
+            </p>
+          </div>
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            ※ この長期プランは入力された総額をもとにした目安の試算です。実際の株価変動・優待制度の変更により想定通りに進まない場合があります。投資判断はご自身の責任で行ってください。
           </p>
         </section>
       )}

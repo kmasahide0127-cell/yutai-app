@@ -568,6 +568,176 @@ export function buildBudgetAwareCalendarPackage(
   };
 }
 
+export type YearlyPlanEntry = {
+  year: number;
+  newEntries: Array<{ month: number; yutai: Yutai }>;
+  yearInvestment: number;
+  cumulativeInvestment: number;
+  cumulativeAnnualValue: number;
+  cumulativeCoveredMonths: number;
+};
+
+export type MultiYearCalendarPlan = {
+  totalBudget: number;
+  planYears: number;
+  recommendedAnnualBudget: number;
+  years: YearlyPlanEntry[];
+  finalCoveredMonths: number;
+  finalAnnualValue: number;
+  finalInvestment: number;
+};
+
+/**
+ * 総投資予算を複数年(5年・10年など)に分割し、年ごとに買い足しながら
+ * 12ヶ月の優待カレンダーを完成させていく計画を提案する。
+ *
+ * 資産に余裕がある人ほど「今すぐ全部揃える」必要はなく、無理のないペースで
+ * 買い進める方が現実的という前提のための機能。年間推奨予算は
+ * 総予算 ÷ プラン年数(1万円単位に丸め)で単純計算し、各年は
+ * buildBudgetAwareCalendarPackage と同じ2段階Greedy
+ * (未カバー月を安価優先で埋める → 残り予算で価値最大化)を、
+ * 前年までの確定銘柄・保有銘柄を除外しながら繰り返す。
+ * その年使い切れなかった予算は翌年に繰り越す。
+ */
+export function buildMultiYearCalendarPlan(
+  candidates: Yutai[],
+  totalBudget: number,
+  planYears: number,
+  preferenceTags: PreferenceTag[],
+  heldYutai: Yutai[] = []
+): MultiYearCalendarPlan {
+  const MAX_PER_MONTH = 2;
+  const recommendedAnnualBudget = Math.max(
+    10000,
+    Math.round(totalBudget / planYears / 10000) * 10000
+  );
+
+  const scoreYutai = (yutai: Yutai): number => {
+    let score = Math.min(yutai.annualValue / 1000, 50);
+    if (preferenceTags.length > 0) {
+      score += calculatePreferenceMatchScore(yutai, preferenceTags).score;
+    }
+    return score;
+  };
+
+  const eligibleCandidates = candidates.filter(
+    (y) => y.annualValue > 0 && y.rightsMonths && y.rightsMonths.length > 0
+  );
+  const scoredAll = eligibleCandidates
+    .map((y) => ({ yutai: y, score: scoreYutai(y) }))
+    .sort((a, b) => b.score - a.score);
+
+  const usedCodes = new Set<string>(heldYutai.map((y) => y.code));
+  const monthCoveredCount: Record<number, number> = {};
+  for (let m = 1; m <= 12; m++) monthCoveredCount[m] = 0;
+  for (const y of heldYutai) {
+    for (const m of y.rightsMonths) {
+      if (monthCoveredCount[m] < MAX_PER_MONTH) monthCoveredCount[m]++;
+    }
+  }
+
+  const years: YearlyPlanEntry[] = [];
+  let cumulativeInvestment = 0;
+  let cumulativeAnnualValue = heldYutai.reduce((sum, y) => sum + y.annualValue, 0);
+  let carryOver = 0;
+
+  for (let year = 1; year <= planYears; year++) {
+    const yearBudget = recommendedAnnualBudget + carryOver;
+    const PASS1_MAX_COST = Math.floor(yearBudget * 0.3);
+
+    const newEntries: Array<{ month: number; yutai: Yutai }> = [];
+    const newYutaiList: Yutai[] = [];
+    let spent = 0;
+
+    // Pass 1: まだ1件もない月を、安価な銘柄優先で埋める
+    const uncoveredMonthsByCost = Array.from({ length: 12 }, (_, i) => i + 1)
+      .filter((m) => monthCoveredCount[m] === 0)
+      .map((m) => {
+        const cheapest = eligibleCandidates.reduce(
+          (min, y) =>
+            !usedCodes.has(y.code) && y.rightsMonths.includes(m) && y.approxInvestment <= PASS1_MAX_COST
+              ? Math.min(min, y.approxInvestment)
+              : min,
+          Infinity
+        );
+        return { m, cheapest };
+      })
+      .filter(({ cheapest }) => cheapest < Infinity)
+      .sort((a, b) => a.cheapest - b.cheapest);
+
+    for (const { m } of uncoveredMonthsByCost) {
+      if (monthCoveredCount[m] > 0) continue;
+
+      const eligible = scoredAll.filter(
+        ({ yutai }) =>
+          !usedCodes.has(yutai.code) &&
+          yutai.approxInvestment <= PASS1_MAX_COST &&
+          spent + yutai.approxInvestment <= yearBudget &&
+          yutai.rightsMonths.includes(m)
+      );
+      if (eligible.length === 0) continue;
+
+      const best = eligible.reduce((a, b) => {
+        if (a.yutai.approxInvestment !== b.yutai.approxInvestment)
+          return a.yutai.approxInvestment < b.yutai.approxInvestment ? a : b;
+        return a.score >= b.score ? a : b;
+      });
+
+      const { yutai } = best;
+      const usableMonths = yutai.rightsMonths.filter((rm) => monthCoveredCount[rm] < MAX_PER_MONTH);
+      for (const rm of usableMonths) {
+        newEntries.push({ month: rm, yutai });
+        monthCoveredCount[rm]++;
+      }
+      newYutaiList.push(yutai);
+      usedCodes.add(yutai.code);
+      spent += yutai.approxInvestment;
+    }
+
+    // Pass 2: 残り予算で価値を最大化(スコア順Greedy)
+    for (const { yutai } of scoredAll) {
+      if (usedCodes.has(yutai.code)) continue;
+      if (spent + yutai.approxInvestment > yearBudget) continue;
+      const usableMonths = yutai.rightsMonths.filter((m) => monthCoveredCount[m] < MAX_PER_MONTH);
+      if (usableMonths.length === 0) continue;
+
+      for (const m of usableMonths) {
+        newEntries.push({ month: m, yutai });
+        monthCoveredCount[m]++;
+      }
+      newYutaiList.push(yutai);
+      usedCodes.add(yutai.code);
+      spent += yutai.approxInvestment;
+    }
+
+    carryOver = yearBudget - spent;
+    cumulativeInvestment += spent;
+    cumulativeAnnualValue += newYutaiList.reduce((sum, y) => sum + y.annualValue, 0);
+    const cumulativeCoveredMonths = Object.values(monthCoveredCount).filter((c) => c > 0).length;
+
+    years.push({
+      year,
+      newEntries: newEntries.sort((a, b) => a.month - b.month),
+      yearInvestment: spent,
+      cumulativeInvestment,
+      cumulativeAnnualValue,
+      cumulativeCoveredMonths,
+    });
+  }
+
+  const lastYear = years[years.length - 1];
+
+  return {
+    totalBudget,
+    planYears,
+    recommendedAnnualBudget,
+    years,
+    finalCoveredMonths: lastYear?.cumulativeCoveredMonths ?? 0,
+    finalAnnualValue: lastYear?.cumulativeAnnualValue ?? 0,
+    finalInvestment: lastYear?.cumulativeInvestment ?? 0,
+  };
+}
+
 // ── 予算別おすすめパッケージ ────────────────────────────────────────
 
 /** ライフスタイルにマッチする候補銘柄を返す(予算フィルタなし・重複排除済み) */

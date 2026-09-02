@@ -13,7 +13,7 @@ import {
 import { ProgressBar } from "@/components/onboarding/ProgressBar";
 import { NavigationButtons } from "@/components/onboarding/NavigationButtons";
 import { useOnboardingStore } from "@/store/onboarding-store";
-import type { VehicleType } from "@/store/onboarding-store";
+import type { VehicleType, PlanYears } from "@/store/onboarding-store";
 import {
   EXPENSE_CATEGORIES,
   PREFERENCE_TAGS,
@@ -38,6 +38,11 @@ const VEHICLE_OPTIONS: { label: string; value: "gasoline" | "ev" }[] = [
   { label: "🔌 EV(電気自動車)・PHV", value: "ev" },
 ];
 
+const PLAN_YEARS_OPTIONS: { label: string; value: 5 | 10 }[] = [
+  { label: "5年プラン", value: 5 },
+  { label: "10年プラン", value: 10 },
+];
+
 // Step 4 でタグ ID → ラベル変換に使う一覧
 const ALL_PREFERENCE_TAGS_FLAT = Object.values(PREFERENCE_TAGS).flat();
 
@@ -46,7 +51,9 @@ function buildResultsUrl(
   maxInvestment: number | null,
   householdSize: number,
   vehicleType: VehicleType,
-  preferenceTags: PreferenceTag[]
+  preferenceTags: PreferenceTag[],
+  totalStockBudget: number | null,
+  planYears: PlanYears
 ): string {
   const params = new URLSearchParams();
   if (expenseCategories.length > 0) params.set("expenses", expenseCategories.join(","));
@@ -56,6 +63,10 @@ function buildResultsUrl(
     params.set("vehicleType", vehicleType);
   }
   if (preferenceTags.length > 0) params.set("preferenceTags", preferenceTags.join(","));
+  if (totalStockBudget !== null && planYears !== null) {
+    params.set("totalBudget", String(totalStockBudget));
+    params.set("planYears", String(planYears));
+  }
   return `/results?${params.toString()}`;
 }
 
@@ -179,12 +190,16 @@ function OnboardingContent() {
     maxInvestment,
     vehicleType,
     preferenceTags,
+    totalStockBudget,
+    planYears,
     setExpenseCategories,
     setHouseholdSize,
     setMaxInvestment,
     setVehicleType,
     setPreferenceTags,
     togglePreferenceTag,
+    setTotalStockBudget,
+    setPlanYears,
   } = useOnboardingStore();
 
   // 投資額入力: 万円単位の文字列。store には円単位で保存。
@@ -192,9 +207,15 @@ function OnboardingContent() {
     maxInvestment !== null ? String(maxInvestment / 10000) : ""
   );
 
+  // 総投資予算入力(任意・長期プラン用): 万円単位の文字列。store には円単位で保存。
+  const [totalBudgetInput, setTotalBudgetInput] = useState<string>(() =>
+    totalStockBudget !== null ? String(totalStockBudget / 10000) : ""
+  );
+
   // ステップ変化時にストアの値と同期(「戻る」で戻ってきた場合など)
   useEffect(() => {
     setInvestmentInput(maxInvestment !== null ? String(maxInvestment / 10000) : "");
+    setTotalBudgetInput(totalStockBudget !== null ? String(totalStockBudget / 10000) : "");
   // currentStep が変わったタイミングのみ再同期。タイピング中は不要。
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
@@ -220,6 +241,37 @@ function OnboardingContent() {
     }
   };
 
+  const parsedTotalBudgetManYen = parseInt(totalBudgetInput, 10);
+  const isTotalBudgetValid =
+    totalBudgetInput.length > 0 &&
+    !isNaN(parsedTotalBudgetManYen) &&
+    parsedTotalBudgetManYen > 0 &&
+    parsedTotalBudgetManYen <= INVESTMENT_MAX_MAN_YEN;
+
+  const handleTotalBudgetInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cleaned = e.target.value.replace(/[^0-9]/g, "");
+    setTotalBudgetInput(cleaned);
+    const parsed = parseInt(cleaned, 10);
+    if (cleaned.length > 0 && !isNaN(parsed) && parsed > 0 && parsed <= INVESTMENT_MAX_MAN_YEN) {
+      setTotalStockBudget(parsed * 10000);
+    } else {
+      setTotalStockBudget(null);
+    }
+  };
+
+  // 長期プランの年間推奨予算(総額 ÷ プラン年数、1万円単位に丸め)
+  const recommendedAnnualManYen =
+    isTotalBudgetValid && planYears
+      ? Math.max(1, Math.round((parsedTotalBudgetManYen / planYears) * 10) / 10)
+      : null;
+
+  const applyRecommendedAnnualBudget = () => {
+    if (recommendedAnnualManYen === null) return;
+    const rounded = Math.max(1, Math.round(recommendedAnnualManYen));
+    setInvestmentInput(String(rounded));
+    setMaxInvestment(rounded * 10000);
+  };
+
   const handleExpenseCategoryChange = (item: string) => {
     const next = toggle(expenseCategories, item);
     setExpenseCategories(next);
@@ -237,7 +289,15 @@ function OnboardingContent() {
 
   const resultsHref =
     currentStep === 4
-      ? buildResultsUrl(expenseCategories, maxInvestment, householdSize, vehicleType, preferenceTags)
+      ? buildResultsUrl(
+          expenseCategories,
+          maxInvestment,
+          householdSize,
+          vehicleType,
+          preferenceTags,
+          totalStockBudget,
+          planYears
+        )
       : undefined;
 
   const hasCarCategory = expenseCategories.includes(CAR_CATEGORY);
@@ -475,6 +535,67 @@ function OnboardingContent() {
                   </p>
                 )}
               </div>
+
+              {/* 長期プラン(任意): 資産に余裕があり、急いで揃える必要がない人向け */}
+              <div className="rounded-lg border border-border p-4 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">じっくり時間をかけて完成させたい方へ(任意)</p>
+                  <p className="text-xs text-muted-foreground">
+                    まとまった資産がある場合、無理に今年で揃える必要はありません。株式に使ってもよい総額の目安を入力すると、5年・10年かけて優待カレンダーを完成させる年間の推奨予算を計算します。
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={totalBudgetInput}
+                    onChange={handleTotalBudgetInputChange}
+                    placeholder="例: 1000"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring placeholder:text-muted-foreground/40"
+                  />
+                  <span className="shrink-0 text-sm text-muted-foreground">万円(総額)</span>
+                </div>
+
+                {isTotalBudgetValid && (
+                  <div className="flex gap-2">
+                    {PLAN_YEARS_OPTIONS.map(({ label, value }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setPlanYears(planYears === value ? null : value)}
+                        className={cn(
+                          "flex-1 rounded-md border px-3 py-2 text-sm transition-colors",
+                          planYears === value
+                            ? "border-primary bg-primary/10 font-medium"
+                            : "border-border hover:bg-muted/50"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {isTotalBudgetValid && recommendedAnnualManYen !== null && (
+                  <div className="rounded-md bg-muted/50 p-3 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      {formatInvestmentLabel(parsedTotalBudgetManYen * 10000)} ÷ {planYears}年 ={" "}
+                      <span className="font-semibold text-foreground">
+                        年間の目安 約{formatInvestmentLabel(Math.round(recommendedAnnualManYen) * 10000)}
+                      </span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyRecommendedAnnualBudget}
+                      className="text-xs font-medium text-accent hover:underline"
+                    >
+                      この金額を今年度の予算に反映する →
+                    </button>
+                  </div>
+                )}
+              </div>
             </section>
           )}
 
@@ -594,6 +715,30 @@ function OnboardingContent() {
                   </p>
                 </CardContent>
               </Card>
+
+              {totalStockBudget !== null && planYears !== null && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>長期プラン</CardTitle>
+                      <button
+                        onClick={() => router.push("/onboarding?step=3")}
+                        className="text-xs text-accent hover:underline"
+                      >
+                        修正
+                      </button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm font-medium">
+                      総額 {formatInvestmentLabel(totalStockBudget)} を{planYears}年プランで完成
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      結果画面で年ごとの投資カレンダーを提案します
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </section>
           )}
         </div>

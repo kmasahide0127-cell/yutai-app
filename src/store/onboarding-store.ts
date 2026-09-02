@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type { PreferenceTag } from "@/lib/matching";
 
 export type VehicleType = "gasoline" | "ev" | "none" | null;
+export type PlanYears = 5 | 10 | null;
 
 type OnboardingState = {
   currentStep: number;
@@ -14,6 +15,10 @@ type OnboardingState = {
   maxInvestment: number | null;
   vehicleType: VehicleType;
   preferenceTags: PreferenceTag[];
+  // 株式投資に使ってもよい総額の目安(円)。5年/10年プランの年間推奨予算算出に使う。
+  totalStockBudget: number | null;
+  // 優待カレンダーを何年かけて完成させるか。急いで埋める必要のない資産に余裕がある人向け。
+  planYears: PlanYears;
   setCurrentStep: (step: number) => void;
   setExpenseCategories: (categories: string[]) => void;
   setHouseholdSize: (n: number) => void;
@@ -22,6 +27,8 @@ type OnboardingState = {
   setVehicleType: (type: VehicleType) => void;
   setPreferenceTags: (tags: PreferenceTag[]) => void;
   togglePreferenceTag: (tag: PreferenceTag) => void;
+  setTotalStockBudget: (amount: number | null) => void;
+  setPlanYears: (years: PlanYears) => void;
   reset: () => void;
 };
 
@@ -33,6 +40,8 @@ const initialState = {
   maxInvestment: null,
   vehicleType: null as VehicleType,
   preferenceTags: [] as PreferenceTag[],
+  totalStockBudget: null as number | null,
+  planYears: null as PlanYears,
 };
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -52,11 +61,13 @@ export const useOnboardingStore = create<OnboardingState>()(
             ? state.preferenceTags.filter((t) => t !== tag)
             : [...state.preferenceTags, tag],
         })),
+      setTotalStockBudget: (totalStockBudget) => set({ totalStockBudget }),
+      setPlanYears: (planYears) => set({ planYears }),
       reset: () => set(initialState),
     }),
     {
       name: "yutai-onboarding",
-      version: 5, // preferenceTags追加(v4→v5)で旧localStorageを自動破棄
+      version: 6, // totalStockBudget/planYears追加(v5→v6)で旧localStorageを自動破棄
       storage: createJSONStorage(() =>
         typeof window !== "undefined"
           ? localStorage
