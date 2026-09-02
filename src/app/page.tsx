@@ -60,6 +60,10 @@ const FEATURES = [
     title: "登録不要・ブラウザ完結",
     body: "メール登録・ログイン不要。入力データはすべてブラウザ内に保存され、サーバーに個人情報は送信されません。",
   },
+  {
+    title: "長期的に買い足してカレンダーを完成",
+    body: "今年度の予算で無理に12ヶ月を埋める必要はありません。今年埋まらない月は来年度以降の買い足し候補として表示し、複数年かけて年間優待カレンダーを完成させていくことをサポートします。",
+  },
 ];
 
 const FAQ_ITEMS = [
@@ -81,7 +85,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "どんな情報を入力すればいいですか？",
-    a: "毎月の出費カテゴリ(外食、通信費など)と、株式投資に充てられる目安の金額帯を選ぶだけです。氏名・住所・メールアドレス等の個人情報は一切不要です。",
+    a: "毎月の出費カテゴリ(外食、通信費など)と、今年度優待に充てられる目安の予算を選ぶだけです。氏名・住所・メールアドレス等の個人情報は一切不要です。",
   },
 ];
 
@@ -99,6 +103,9 @@ export default function Home() {
         </header>
         <p className="text-xl text-muted-foreground max-w-sm">
           あなたの生活に合う株主優待を見つけます
+        </p>
+        <p className="text-sm text-muted-foreground max-w-sm mt-2">
+          今年度の予算で組めるところから始めて、来年以降も少しずつ買い足しながら年間優待カレンダーを完成させていけます
         </p>
         <div className="flex flex-col items-center gap-3 mt-8">
           <Link href="/onboarding" className={buttonVariants({ size: "lg" })}>
@@ -166,12 +173,12 @@ export default function Home() {
               {
                 step: "2",
                 title: "条件を入力する",
-                body: "投資可能な目安額と世帯構成を選びます。個人情報の入力は不要です。",
+                body: "今年度、優待に使える予算の目安と世帯構成を選びます。個人情報の入力は不要です。",
               },
               {
                 step: "3",
-                title: "マッチした優待を確認する",
-                body: "あなたの生活に合う株主優待銘柄が一覧で表示されます。銘柄ページで詳細も確認できます。",
+                title: "年間優待カレンダーを組み立てる",
+                body: "予算内で権利確定月が分散する組み合わせを自動提案。今年埋まらない月は来年以降の買い足し候補として表示し、1年かけてカレンダーを完成させていけます。",
               },
             ].map(({ step, title, body }) => (
               <li key={step} className="flex gap-4 items-start p-4 rounded-xl border border-border bg-card">

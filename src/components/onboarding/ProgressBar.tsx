@@ -12,7 +12,7 @@ type StepMeta = {
 const STEPS: StepMeta[] = [
   { icon: Receipt, label: "出費", step: 1 },
   { icon: Users, label: "世帯", step: 2 },
-  { icon: Wallet, label: "投資額", step: 3 },
+  { icon: Wallet, label: "今年の予算", step: 3 },
   { icon: CircleCheck, label: "確認", step: 4 },
 ];
 

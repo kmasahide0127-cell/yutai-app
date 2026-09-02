@@ -273,14 +273,17 @@ export function ResultsClient({
               📅 年間優待カレンダー
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              投資予算内で権利確定月が分散するパッケージを自動構成します
+              今年度の予算内で権利確定月が分散するパッケージを自動構成します
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              一度に12ヶ月を埋める必要はありません。今年埋まらない月は「来年度の追加候補」として表示するので、来年以降も少しずつ買い足しながらカレンダーを完成させていけます。
             </p>
           </div>
 
           {/* 予算スライダー */}
           <div className="mb-4 rounded-lg bg-background p-3">
             <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">予算</span>
+              <span className="text-muted-foreground">今年度の予算</span>
               <span className="text-lg font-bold tabular-nums">{formatInvestmentLabel(budget)}</span>
             </div>
             <input

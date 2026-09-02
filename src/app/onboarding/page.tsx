@@ -424,13 +424,16 @@ function OnboardingContent() {
             </section>
           )}
 
-          {/* Step 3: 投資額 */}
+          {/* Step 3: 今年度の優待予算 */}
           {currentStep === 3 && (
             <section className="space-y-4">
               <div className="space-y-1">
-                <h2 className="text-xl font-bold">投資可能な金額は?</h2>
+                <h2 className="text-xl font-bold">今年度、優待に使える予算は?</h2>
                 <p className="text-sm text-muted-foreground">
-                  半角数字で入力してください(例: 150 → 150万円)
+                  総資産ではなく、今年新たに優待用に投資できる金額の目安です。半角数字で入力してください(例: 150 → 150万円)
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  今年の予算で埋まらない月があっても大丈夫。来年以降も少しずつ買い足しながら、1年かけて優待カレンダーを完成させていけます。
                 </p>
               </div>
               <div
@@ -574,7 +577,7 @@ function OnboardingContent() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>投資可能額</CardTitle>
+                    <CardTitle>今年度の優待予算</CardTitle>
                     <button
                       onClick={() => router.push("/onboarding?step=3")}
                       className="text-xs text-accent hover:underline"
