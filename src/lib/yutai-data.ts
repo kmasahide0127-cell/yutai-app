@@ -41,7 +41,32 @@ type Yutai = {
   // 株価(approxInvestment/yieldPercent)を機械的に再取得した日。内容の検証日とは別物。
   priceUpdatedAt?: string;
   preferenceTags?: PreferenceTag[];
+
+  // ---- 取得可能最短日の算出用 ----
+  // 継続保有の判定で株主名簿への記録が必要な月。優待そのものの基準日(rightsMonths)とは
+  // 別の月でも判定される会社があるため分離している。
+  // 例: MTG(7806) は優待の基準日は9月末だけだが、継続保有は3月末・9月末の両方で記録される。
+  // 未指定なら rightsMonths と同じ(= 優待の基準日でのみ判定される)とみなす。
+  recordMonths?: number[];
+  // 継続保有要件を満たすために必要な「連続した名簿記録回数」。
+  // 1(未指定時の既定値) = 継続保有要件なし。1回記録されれば対象になる。
+  // 例: MTG(7806) の「継続1年以上」は3月末・9月末に連続3回記録 → 3
+  requiredConsecutiveRecords?: number;
+  // 基準日から優待が実際に手元に届く(ポイントが付与される)までの月数。
+  // 未指定なら3ヶ月(一般的な「権利確定の2〜3ヶ月後に到着」を踏まえた既定値)。
+  receiptLagMonths?: number;
+
+  // ---- 優待制度の状態 ----
+  // 未指定は "active" とみなす。"abolished" は制度が廃止された銘柄。
+  // 廃止銘柄は非表示にせず「いつの権利分で終わったか」を事実として表示する。
+  status?: "active" | "abolished";
+  // 廃止銘柄の最後の権利確定月("YYYY-MM")
+  lastRecordDate?: string;
+  // 廃止に関する補足表示(優待券の発行時期など)
+  abolishedNote?: string;
 };
+
+export type YutaiStatus = NonNullable<Yutai["status"]>;
 
 const V = "verified" as const;
 const A = "ai_generated" as const;
@@ -142,7 +167,7 @@ export const YUTAI_LIST: Yutai[] = [
 
   // ---- 家電・百貨店 ----
   { id: "9831", code: "9831", name: "ヤマダHD", brands: ["ヤマダ電機", "LABI", "テックランド", "大塚家具"], categories: ["家電", "小売"], lifestyleTags: ["家電購入予定", "ガジェット好き"], minShares: 100, approxInvestment: 70420, annualValue: 1000, yieldPercent: 1.4, description: "ヤマダ電機で使える1,000円分の優待券。少額投資で実用的", rightsMonths: [3, 9], dataQuality: V, lastVerified: "2026-08-14", priceUpdatedAt: "2026-09-02" },
-  { id: "3048", code: "3048", name: "ビックカメラ", brands: ["ビックカメラ", "ソフマップ", "コジマ"], categories: ["家電"], lifestyleTags: ["家電購入予定", "ガジェット好き"], minShares: 100, approxInvestment: 175100, annualValue: 3000, yieldPercent: 1.7, description: "年3,000円分の買物優待券(年2回・各)", rightsMonths: [2, 8], dataQuality: V, lastVerified: "2026-08-14", priceUpdatedAt: "2026-09-02" },
+  { id: "3048", code: "3048", name: "ビックカメラ", brands: ["ビックカメラ", "ソフマップ", "コジマ", "ビックカメラ.com"], categories: ["家電"], lifestyleTags: ["家電購入予定", "ガジェット好き"], minShares: 100, approxInvestment: 175100, annualValue: 3000, yieldPercent: 1.7, description: "100株以上で買物優待券。2月末基準日に2,000円分(1,000円券×2枚・5月発送)、8月末基準日に1,000円分(1,000円券×1枚・11月発送)で年間3,000円分。さらに8月末時点で1年以上継続保有(2月末・8月末の名簿に連続3回以上記録)で1,000円分、2年以上継続保有(連続5回以上記録)で2,000円分が追加。ビックカメラ各店・ソフマップ・コジマ・自社ネットショップで利用可(公式IR確認済み)", rightsMonths: [2, 8], recordMonths: [2, 8], requiredConsecutiveRecords: 1, receiptLagMonths: 3, status: "active", dataQuality: V, lastVerified: "2026-09-12", priceUpdatedAt: "2026-09-02" },
   { id: "2730", code: "2730", name: "エディオン", brands: ["エディオン"], categories: ["家電"], lifestyleTags: ["家電購入予定"], minShares: 100, approxInvestment: 249100, annualValue: 3000, yieldPercent: 1.2, description: "3,000円分のギフトカード(年2回・各)", rightsMonths: [3, 9], dataQuality: V, lastVerified: "2026-08-14", priceUpdatedAt: "2026-09-02" },
   { id: "8233", code: "8233", name: "高島屋", brands: ["高島屋", "タカシマヤ", "高島屋オンラインストア"], categories: ["百貨店", "小売"], lifestyleTags: ["ファッション好き", "贈答品を買う", "プレゼント購入", "百貨店利用"], minShares: 100, approxInvestment: 225850, annualValue: 10000, yieldPercent: 4.4, description: "株主ご優待カード(10%割引)。100株以上で年間お買物15万円分まで適用可(最大節約15,000円)。高島屋・タカシマヤオンラインで使用可。年間節約額は利用状況による参考値。", rightsMonths: [2, 8], dataQuality: A, lastVerified: "2026-08-14", priceUpdatedAt: "2026-09-02" },
   { id: "3099", code: "3099", name: "三越伊勢丹HD", brands: ["三越", "伊勢丹", "三越伊勢丹オンライン"], categories: ["百貨店", "小売"], lifestyleTags: ["ファッション好き", "贈答品を買う", "プレゼント購入", "百貨店利用"], minShares: 100, approxInvestment: 330800, annualValue: 10000, yieldPercent: 3.0, description: "株主ご優待カード(10%割引)。100株以上で年間30万円分まで適用可(最大節約30,000円)。三越・伊勢丹各店舗・オンラインストアで利用可。年間節約額は利用状況による参考値。", rightsMonths: [3, 9], dataQuality: A, lastVerified: "2026-08-14", priceUpdatedAt: "2026-09-02" },
@@ -395,6 +420,15 @@ export const YUTAI_LIST: Yutai[] = [
   { id: "3046", code: "3046", name: "ジンズホールディングス", brands: ["JINS", "ジンズ"], categories: ["医療", "ファッション"], lifestyleTags: ["視力ケア", "ファッション好き"], minShares: 100, approxInvestment: 549000, annualValue: 9000, yieldPercent: 1.6, description: "100株以上保有で自社店舗・オンラインショップで使える9,000円分の割引券(年1回)", rightsMonths: [8], dataQuality: A, lastVerified: "2026-08-14", priceUpdatedAt: "2026-09-02" },
   { id: "9166", code: "9166", name: "GENDA", brands: ["GiGO", "ジーゴ", "カラオケBanBan"], categories: ["エンタメ"], lifestyleTags: ["ゲーム好き", "デート"], minShares: 100, approxInvestment: 69100, annualValue: 4000, yieldPercent: 5.8, description: "GiGO・カラオケBanBanで使える自社アプリポイント優待。100株以上(6ヶ月以上保有)で年2回・各2,000円相当(年間4,000円相当)、300株以上・500株以上でさらに増額。2026年8月17日開示の優待拡充により2027年1月31日基準日分から金額が1.5倍(年間約6,000円相当)に増額予定(公式IR確認済み)", rightsMonths: [1, 7], dataQuality: V, lastVerified: "2026-09-04", priceUpdatedAt: "2026-09-02" },
   { id: "9278", code: "9278", name: "ブックオフグループホールディングス", brands: ["ブックオフ", "BOOKOFF", "ハグオール", "aidect", "Rehello"], categories: ["小売", "リユース"], lifestyleTags: ["中古品", "コスパ志向", "読書好き", "古着好き"], minShares: 100, approxInvestment: 296600, annualValue: 2000, yieldPercent: 0.7, description: "年1回(5月末基準日)、100株以上でブックオフグループ店舗買物券2,000円分+書籍買取20%アップクーポン2枚。200株以上で3,000円分、500株以上で5,000円分、3年以上継続保有でさらに増額(公式IR確認済み)", rightsMonths: [5], dataQuality: V, lastVerified: "2026-09-04", priceUpdatedAt: "2026-09-04" },
+
+  // ---- 商品名からの逆引き(ブランド辞書)対応で追加 ----
+  // MTG: 優待の基準日は9月末のみだが、継続保有の判定は3月末・9月末の両方で行われる。
+  // 2026年9月実施分より継続保有1年未満は対象外になったため、今から買う人の
+  // 初回受取は「3月末・9月末に連続3回記録」を満たした後になる。
+  { id: "7806", code: "7806", name: "MTG", brands: ["ReFa", "リファ", "SIXPAD", "シックスパッド", "MTG", "ReFa BEAUTECH", "美顔ローラー"], categories: ["美容", "家電"], lifestyleTags: ["美容ケア", "美容意識高い", "ジム通い", "健康意識高い"], minShares: 100, approxInvestment: 765000, annualValue: 7000, yieldPercent: 0.9, description: "MTG公式オンラインショップで使えるポイント(1ポイント=1円)を9月末基準日で贈呈。2026年9月実施分より継続保有1年未満は対象外となり、100株では継続保有1年以上3年未満で7,000ポイント、3年以上で10,000ポイント。継続保有の判定は毎年3月末・9月末の株主名簿に同一株主番号で連続3回以上(3年以上は連続7回以上)記録されること。ポイント付与は基準日翌年の1月中旬ごろ。ReFa・SIXPADなどの自社ブランド商品に利用可(公式IR確認済み)", rightsMonths: [9], recordMonths: [3, 9], requiredConsecutiveRecords: 3, receiptLagMonths: 4, status: "active", dataQuality: V, lastVerified: "2026-09-12", priceUpdatedAt: "2026-09-12", preferenceTags: ["skincare", "gym"] },
+  // あさひ: 優待は廃止済み。検索でヒットしたときに「無言で0件」にせず廃止の事実を返すため、
+  // annualValue 0(= マッチング対象外)のまま status: "abolished" として残している。
+  { id: "3333", code: "3333", name: "あさひ", brands: ["あさひ", "サイクルベースあさひ", "自転車", "シクロクロス"], categories: ["小売", "自転車"], lifestyleTags: ["コスパ志向"], minShares: 100, approxInvestment: 129000, annualValue: 0, yieldPercent: 0.0, description: "株主優待制度は2023年4月3日の開示により廃止されました。以前は2月権利分で「サイクルベースあさひ」店舗・オンラインストアで使える優待券が贈呈されていましたが、現在は配当による還元(年2回)に集約されています。", rightsMonths: [2], status: "abolished", lastRecordDate: "2023-02", abolishedNote: "2023年5月発行分を最後に廃止", dataQuality: V, lastVerified: "2026-09-12", priceUpdatedAt: "2026-09-12" },
 
   // 注: J-Quants/TDnet 自動取得基盤構築後にさらに拡張予定
 ];

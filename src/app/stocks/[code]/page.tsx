@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { getMatchingExpenseCategoriesForYutai, getRelatedYutai, EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
+import { estimateFirstReceipt, getAbolishedNotice, isAbolished } from "@/lib/product-search";
 import { AppHeader } from "@/components/AppHeader";
+import { FirstReceiptNote } from "@/components/search/StockResultCard";
 import { buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
@@ -12,6 +14,10 @@ import AffiliateBanner from "@/components/AffiliateBanner";
 export async function generateStaticParams() {
   return YUTAI_LIST.map((yutai) => ({ code: yutai.code }));
 }
+
+// 「初回受取見込み」は今日の日付に依存する(権利付最終日を過ぎると1サイクル先にずれる)。
+// 週次のデータ更新ビルドだけに任せると最大1週間ずれるため、12時間ごとに再生成する。
+export const revalidate = 43200;
 
 export async function generateMetadata({
   params,
@@ -24,15 +30,20 @@ export async function generateMetadata({
 
   const rightsStr = yutai.rightsMonths.map((m) => `${m}月`).join("・");
   const brandStr = yutai.brands.slice(0, 3).join("・");
-  const description =
-    `${yutai.name}(${yutai.code})の株主優待。` +
-    `${brandStr ? brandStr + "など。" : ""}` +
-    `年間優待価値${yutai.annualValue.toLocaleString()}円相当、権利確定月: ${rightsStr}。` +
-    `${yutai.dataQuality === "verified" ? "検証済み銘柄。" : ""}` +
-    `${yutai.description.slice(0, 60)}`;
+  const abolished = isAbolished(yutai);
+  const description = abolished
+    ? `${yutai.name}(${yutai.code})の株主優待は${getAbolishedNotice(yutai)}されています。` +
+      `${brandStr ? brandStr + "など。" : ""}${yutai.description.slice(0, 80)}`
+    : `${yutai.name}(${yutai.code})の株主優待。` +
+      `${brandStr ? brandStr + "など。" : ""}` +
+      `年間優待価値${yutai.annualValue.toLocaleString()}円相当、権利確定月: ${rightsStr}。` +
+      `${yutai.dataQuality === "verified" ? "検証済み銘柄。" : ""}` +
+      `${yutai.description.slice(0, 60)}`;
 
   return {
-    title: `${yutai.name}(${yutai.code}) 株主優待 | 優待マッチ`,
+    title: abolished
+      ? `${yutai.name}(${yutai.code}) 株主優待【廃止済み】 | 優待マッチ`
+      : `${yutai.name}(${yutai.code}) 株主優待 | 優待マッチ`,
     description,
     alternates: { canonical: `/stocks/${yutai.code}` },
     openGraph: {
@@ -66,8 +77,13 @@ export default async function StockDetailPage({
   const { code } = await params;
   const yutai = YUTAI_LIST.find((y) => y.code === code);
   if (!yutai) notFound();
-  if (yutai.annualValue <= 0) notFound();
+  // 廃止銘柄は「2023年2月権利分をもって廃止」という事実を返す必要があるため、
+  // 優待価値0でも 404 にしない。単に優待を実施していない銘柄のみ 404 とする。
+  const abolished = isAbolished(yutai);
+  if (yutai.annualValue <= 0 && !abolished) notFound();
 
+  const abolishedNotice = getAbolishedNotice(yutai);
+  const firstReceipt = estimateFirstReceipt(yutai);
   const matchingExpenseCategories = getMatchingExpenseCategoriesForYutai(yutai);
   const relatedYutai = getRelatedYutai(yutai, YUTAI_LIST);
 
@@ -120,6 +136,11 @@ export default async function StockDetailPage({
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold">{yutai.name}</h1>
             <span className="text-sm text-muted-foreground tabular-nums">({yutai.code})</span>
+            {abolished && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-xs font-medium">
+                優待廃止
+              </span>
+            )}
             {yutai.dataQuality === "verified" ? (
               <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium">
                 ✓ 検証済み
@@ -130,29 +151,69 @@ export default async function StockDetailPage({
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">株主優待の詳細情報と該当する出費カテゴリ</p>
+          <p className="text-sm text-muted-foreground">
+            {abolished
+              ? "株主優待制度は廃止されています。過去の制度内容を記録として掲載しています。"
+              : "株主優待の詳細情報と該当する出費カテゴリ"}
+          </p>
         </header>
 
-        {/* 数値サマリー */}
-        <section className="rounded-xl border-2 border-primary bg-primary/5 p-5" aria-label="優待概要">
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">年間優待価値</p>
-              <p className="text-lg font-bold tabular-nums">{formatYen(yutai.annualValue)}</p>
+        {/* 廃止済み銘柄: 非表示にせず「いつの権利分で終わったか」を明示する */}
+        {abolished && (
+          <section
+            className="rounded-xl border border-dashed border-border bg-muted/40 p-4 space-y-1"
+            aria-label="株主優待の廃止について"
+          >
+            <p className="text-sm font-bold">株主優待は{abolishedNotice}</p>
+            {yutai.abolishedNote && (
+              <p className="text-sm text-muted-foreground">{yutai.abolishedNote}</p>
+            )}
+            <p className="text-xs text-muted-foreground pt-1">
+              現在この銘柄で優待を受け取ることはできません。制度が再開される場合もあるため、
+              最新情報は企業のIRページでご確認ください。
+            </p>
+          </section>
+        )}
+
+        {/* 数値サマリー(廃止銘柄では「年間0円」の表示が誤解を招くため出さない) */}
+        {!abolished && (
+          <section className="rounded-xl border-2 border-primary bg-primary/5 p-5" aria-label="優待概要">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">年間優待価値</p>
+                <p className="text-lg font-bold tabular-nums">{formatYen(yutai.annualValue)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">必要投資額（目安）</p>
+                <p className="text-lg font-bold tabular-nums">{formatYen(yutai.approxInvestment)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">優待利回り</p>
+                <p className="text-lg font-bold tabular-nums">{yutai.yieldPercent}%</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">必要投資額（目安）</p>
-              <p className="text-lg font-bold tabular-nums">{formatYen(yutai.approxInvestment)}</p>
+            <div className="mt-3 pt-3 border-t border-primary/20 text-xs text-muted-foreground text-center">
+              最低 {yutai.minShares}株 / 権利確定月: {formatMonths(yutai.rightsMonths)}
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">優待利回り</p>
-              <p className="text-lg font-bold tabular-nums">{yutai.yieldPercent}%</p>
-            </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-primary/20 text-xs text-muted-foreground text-center">
-            最低 {yutai.minShares}株 / 権利確定月: {formatMonths(yutai.rightsMonths)}
-          </div>
-        </section>
+          </section>
+        )}
+
+        {/* 取得可能最短日: 今から買った場合に初回の優待を受け取れる見込み時期 */}
+        {firstReceipt && (
+          <section
+            className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2"
+            aria-labelledby="first-receipt-heading"
+          >
+            <h2 id="first-receipt-heading" className="text-base font-bold">
+              今から購入した場合の初回受取見込み
+            </h2>
+            <FirstReceiptNote estimate={firstReceipt} yutai={yutai} />
+            <p className="text-xs text-muted-foreground">
+              基準日の月末と権利付最終日(基準日の2営業日前)をもとにした概算で、祝日の並びは考慮していません。
+              優待の発送・付与時期は企業ごとに異なります。参考情報としてご利用ください。
+            </p>
+          </section>
+        )}
 
         {/* 優待内容 */}
         <section className="space-y-2" aria-labelledby="yutai-detail-heading">
@@ -166,7 +227,9 @@ export default async function StockDetailPage({
 
         {/* 権利確定月 */}
         <section className="space-y-2" aria-labelledby="rights-months-heading">
-          <h2 id="rights-months-heading" className="text-base font-bold">権利確定月</h2>
+          <h2 id="rights-months-heading" className="text-base font-bold">
+            {abolished ? "過去の権利確定月" : "権利確定月"}
+          </h2>
           <div className="flex flex-wrap gap-2">
             {yutai.rightsMonths.map((m) => (
               <span
@@ -178,7 +241,9 @@ export default async function StockDetailPage({
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            権利確定月の最終営業日時点で{yutai.minShares}株以上保有している場合に優待を受け取れます（参考情報）。
+            {abolished
+              ? `制度が実施されていた当時の権利確定月です。現在この基準日で優待を受け取ることはできません（参考情報）。`
+              : `権利確定月の最終営業日時点で${yutai.minShares}株以上保有している場合に優待を受け取れます（参考情報）。`}
           </p>
         </section>
 
@@ -197,7 +262,7 @@ export default async function StockDetailPage({
         )}
 
         {/* 対応出費カテゴリ */}
-        {matchingExpenseCategories.length > 0 && (
+        {!abolished && matchingExpenseCategories.length > 0 && (
           <section className="space-y-2" aria-labelledby="expense-cats-heading">
             <h2 id="expense-cats-heading" className="text-base font-bold">この優待で削減できる出費</h2>
             <div className="flex flex-wrap gap-2">
@@ -223,8 +288,14 @@ export default async function StockDetailPage({
 
         {/* CTA */}
         <section className="rounded-xl border-2 border-primary bg-primary text-primary-foreground p-5 text-center space-y-3">
-          <h2 className="text-lg font-bold">あなたにこの優待は合う?</h2>
-          <p className="text-sm opacity-90">生活スタイルから、あなたに本当に合う優待を診断します（無料・1分）</p>
+          <h2 className="text-lg font-bold">
+            {abolished ? "ほかの優待を探しますか?" : "あなたにこの優待は合う?"}
+          </h2>
+          <p className="text-sm opacity-90">
+            {abolished
+              ? "この優待は廃止されています。生活スタイルから、いま実施中の優待の候補を表示します（無料・1分）"
+              : "生活スタイルから、あなたに本当に合う優待を診断します（無料・1分）"}
+          </p>
           <Link href="/onboarding" className={buttonVariants({ size: "lg", variant: "secondary" })}>
             無料で診断する
           </Link>

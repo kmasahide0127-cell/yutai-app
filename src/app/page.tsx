@@ -6,6 +6,7 @@ import { DATA_LAST_UPDATED, VERIFIED_COUNT, TOTAL_COUNT, YUTAI_LIST } from "@/li
 import { EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
+import { ProductSearchForm } from "@/components/search/ProductSearchForm";
 
 export const metadata: Metadata = {
   title: "優待マッチ - 生活逆引き型 株主優待マッチング",
@@ -47,6 +48,10 @@ const FEATURES = [
   {
     title: "生活から逆引き検索",
     body: "優待ありきではなく、毎月の出費カテゴリから逆引きでマッチングします。実際に使える優待が見つかりやすいのが特徴です。",
+  },
+  {
+    title: "商品名からの逆引き",
+    body: "「ReFa が欲しい」「AR グラスが気になる」といった商品起点でも探せます。ブランドを展開する会社が非上場の場合も0件にせず、非上場である事実と、その商品を買える小売の優待を候補として表示します。",
   },
   {
     title: "14カテゴリ対応",
@@ -116,6 +121,17 @@ export default function Home() {
             データ最終更新: {formatDate(DATA_LAST_UPDATED)}<br />
             全{TOTAL_COUNT}銘柄（検証済み {VERIFIED_COUNT}銘柄）
           </p>
+        </div>
+      </section>
+
+      {/* ── 1.5 商品名からの逆引き(欲しい物が決まっている人の入口) ── */}
+      <section className="w-full px-4 pb-10">
+        <div className="mx-auto max-w-md space-y-2 text-left">
+          <h2 className="text-sm font-bold">欲しい商品が決まっている場合</h2>
+          <p className="text-xs text-muted-foreground">
+            商品名・ブランド名から、関係する優待銘柄の候補を逆引きできます。
+          </p>
+          <ProductSearchForm />
         </div>
       </section>
 

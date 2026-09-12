@@ -23,6 +23,9 @@ export function AppHeader() {
             <span className="text-xl">🎁</span>
             <span className="font-bold">優待マッチ</span>
           </Link>
+          <Link href="/search" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            商品名で探す
+          </Link>
           <Link href="/stocks" className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
             銘柄一覧
           </Link>

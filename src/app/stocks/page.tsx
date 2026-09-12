@@ -7,7 +7,10 @@ import {
   GIFT_CARD_FILTER_KEY,
   type StockListFilter,
 } from "@/lib/matching";
+import { isAbolished } from "@/lib/product-search";
 import { AppHeader } from "@/components/AppHeader";
+import { ProductSearchForm } from "@/components/search/ProductSearchForm";
+import { StockResultCard } from "@/components/search/StockResultCard";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -33,6 +36,13 @@ export default async function StocksListPage({
   const validYutai = YUTAI_LIST.filter((y) => y.annualValue > 0).sort(
     (a, b) => b.annualValue - a.annualValue
   );
+
+  // 廃止済み銘柄は一覧から消さず、active と分けた別セクションで事実を表示する。
+  // 件数・カテゴリチップは active のみで数えるため、上の validYutai とは混ぜない。
+  const abolishedYutai = filterYutaiByStockListFilter(
+    YUTAI_LIST.filter(isAbolished),
+    activeFilter
+  ).sort((a, b) => (b.lastRecordDate ?? "").localeCompare(a.lastRecordDate ?? ""));
 
   const categoryCounts = countYutaiByCategory(validYutai);
   const giftCardCount = filterYutaiByStockListFilter(validYutai, GIFT_CARD_FILTER_KEY).length;
@@ -81,6 +91,8 @@ export default async function StocksListPage({
             投資判断はご自身の責任でお願いします。
           </p>
         </section>
+
+        <ProductSearchForm />
 
         <p className="text-xs text-muted-foreground p-3 rounded-lg bg-muted/50">
           💡 各銘柄をタップすると詳細ページが開きます。あなたに合う優待は<Link href="/onboarding" className="underline font-medium">診断</Link>で見つかります。
@@ -131,6 +143,24 @@ export default async function StocksListPage({
             </Link>
           ))}
         </div>
+
+        {/* ── 廃止済み銘柄(検索で辿り着いた人に事実を残すため、非表示にしない) ── */}
+        {abolishedYutai.length > 0 && (
+          <section className="space-y-2" aria-labelledby="abolished-heading">
+            <h2 id="abolished-heading" className="text-base font-bold">
+              優待が廃止された銘柄({abolishedYutai.length}件)
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              優待を探していて辿り着いたときに分かるよう、廃止の事実を記録として掲載しています。
+              上の一覧(実施中)とは分けて表示しています。
+            </p>
+            <div className="space-y-2">
+              {abolishedYutai.map((yutai) => (
+                <StockResultCard key={yutai.id} yutai={yutai} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: baseUrl, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
     { url: `${baseUrl}/onboarding`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/stocks`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/search`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${baseUrl}/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
@@ -24,8 +25,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
+  // 廃止銘柄の詳細ページも「廃止された」事実を伝える価値があるため含める
   const stockPages: MetadataRoute.Sitemap = YUTAI_LIST
-    .filter((y) => y.annualValue > 0)
+    .filter((y) => y.annualValue > 0 || y.status === "abolished")
     .map((yutai) => ({
       url: `${baseUrl}/stocks/${yutai.code}`,
       lastModified: yutai.lastVerified ? new Date(yutai.lastVerified) : now,
