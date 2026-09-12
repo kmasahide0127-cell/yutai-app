@@ -1,5 +1,6 @@
 // 開発用: タグ分布確認エンドポイント。本番では呼ばれない想定。
 import { debugTagDistribution } from "@/lib/matching";
+import { debugExperienceTagCoverage } from "@/lib/experience-matching";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 
 export function GET() {
@@ -10,6 +11,8 @@ export function GET() {
     origLog(...args);
   };
   debugTagDistribution(YUTAI_LIST);
+  console.log("");
+  debugExperienceTagCoverage(YUTAI_LIST);
   console.log = origLog;
   return new Response(lines.join("\n"), {
     headers: { "Content-Type": "text/plain; charset=utf-8" },

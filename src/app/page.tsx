@@ -54,6 +54,10 @@ const FEATURES = [
     body: "「ReFa が欲しい」「AR グラスが気になる」といった商品起点でも探せます。ブランドを展開する会社が非上場の場合も0件にせず、非上場である事実と、その商品を買える小売の優待を候補として表示します。",
   },
   {
+    title: "体験からの提案",
+    body: "クルーズ・温泉旅館・レストラン・ゴルフなど、したい体験から優待銘柄を提案します。投資可能額を入れると「届く特典」と「届かない特典」を分けて表示し、割引額の大きさと投資効率のどちらを優先するか切り替えられます。",
+  },
+  {
     title: "14カテゴリ対応",
     body: "外食・通信・旅行・美容・趣味・子育てなど、日常生活の出費カテゴリ全14種に対応しています。",
   },
@@ -124,14 +128,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 1.5 商品名からの逆引き(欲しい物が決まっている人の入口) ── */}
+      {/* ── 1.5 商品名からの逆引き・体験からの提案(欲しい物/したい体験が決まっている人の入口) ── */}
       <section className="w-full px-4 pb-10">
-        <div className="mx-auto max-w-md space-y-2 text-left">
-          <h2 className="text-sm font-bold">欲しい商品が決まっている場合</h2>
-          <p className="text-xs text-muted-foreground">
-            商品名・ブランド名から、関係する優待銘柄の候補を逆引きできます。
-          </p>
-          <ProductSearchForm />
+        <div className="mx-auto max-w-md space-y-4 text-left">
+          <div className="space-y-2">
+            <h2 className="text-sm font-bold">欲しい商品が決まっている場合</h2>
+            <p className="text-xs text-muted-foreground">
+              商品名・ブランド名から、関係する優待銘柄の候補を逆引きできます。
+            </p>
+            <ProductSearchForm />
+          </div>
+          <div className="space-y-2 border-t border-border pt-4">
+            <h2 className="text-sm font-bold">したい体験が決まっている場合</h2>
+            <p className="text-xs text-muted-foreground">
+              クルーズ・温泉旅館・レストラン・ゴルフなど、したい体験から優待銘柄の候補を提案します。
+            </p>
+            <Link
+              href="/experiences"
+              className={buttonVariants({ variant: "outline", className: "w-full" })}
+            >
+              🎐 体験から探す
+            </Link>
+          </div>
         </div>
       </section>
 

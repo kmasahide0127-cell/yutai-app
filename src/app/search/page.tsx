@@ -6,6 +6,7 @@ import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { BRAND_DATA_LAST_UPDATED } from "@/lib/brand-data";
 import { AppHeader } from "@/components/AppHeader";
 import { ProductSearchForm } from "@/components/search/ProductSearchForm";
+import { ModeTabs } from "@/components/search/ModeTabs";
 import {
   StockResultCard,
   FirstReceiptNote,
@@ -124,6 +125,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             欲しい商品やブランド名を入れると、その商品に関係する優待銘柄の候補を表示します。
           </p>
         </header>
+
+        <ModeTabs active="product" />
 
         <ProductSearchForm defaultValue={query} />
 
