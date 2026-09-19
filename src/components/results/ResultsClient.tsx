@@ -443,7 +443,7 @@ export function ResultsClient({
           <p className="mb-2 text-xs text-muted-foreground/70">
             すでに持っている銘柄にチェックを入れると、提案から外して「保有済み」として扱います。✕を押すと興味なしとして除外し、他の候補に差し替えます
           </p>
-          <div className="grid grid-cols-1 items-start gap-2.5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-2">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
               const confirmedEntries = cal.confirmed.filter((e) => e.month === month);
               const ghostEntries = cal.ghost.filter((e) => e.month === month);
@@ -463,61 +463,75 @@ export function ResultsClient({
               }
 
               return (
-                <div key={month} className="glass-card px-3 py-2.5">
+                <div key={month} className="glass-card px-4 py-3">
                   <p className="mb-1.5 text-sm font-semibold">{month}月</p>
-                  <div className="min-w-0">
-                    <div className="space-y-1">
-                      {/* 保有済み銘柄 */}
-                      {isHeldCovered && (
-                        <div className="space-y-0.5">
-                          {heldForMonth.map((y) => (
-                            <div
-                              key={`h-${y.code}`}
-                              className="flex items-center gap-2"
-                            >
-                              <input
-                                type="checkbox"
-                                checked
-                                onChange={() => toggleHeld(y)}
-                                className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
-                                aria-label={`${y.name}の保有設定を解除`}
-                              />
-                              <span className="truncate text-sm text-muted-foreground flex-1">
-                                {y.name}
-                                <span className="ml-1 text-xs text-muted-foreground/70">
+                  <div className="space-y-2">
+                    {/* 保有済み銘柄 */}
+                    {isHeldCovered && (
+                      <div className="space-y-2">
+                        {heldForMonth.map((y) => (
+                          <div key={`h-${y.code}`} className="flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked
+                              onChange={() => toggleHeld(y)}
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
+                              aria-label={`${y.name}の保有設定を解除`}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-baseline gap-x-1.5">
+                                <Link
+                                  href={`/stocks/${y.code}`}
+                                  className="text-sm text-muted-foreground hover:underline"
+                                >
+                                  {y.name}
+                                </Link>
+                                <span className="text-xs text-muted-foreground/70">
                                   ({y.code}・権利確定{formatRightsMonths(y.rightsMonths)})
                                 </span>
-                              </span>
-                              <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary/80">
-                                保有済み
-                              </span>
+                              </div>
+                              <p className="line-clamp-2 text-xs text-muted-foreground/80 sm:line-clamp-1">
+                                {y.description}
+                              </p>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            <span className="mt-0.5 shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary/80">
+                              保有済み
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                      {/* 確定銘柄 */}
-                      {hasConfirmed && (
-                        <div className="space-y-0.5">
-                          {confirmedEntries.map((entry, idx) => (
-                            <div
-                              key={`c-${entry.yutai.id}-${idx}`}
-                              className="flex items-center gap-2 text-sm"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={false}
-                                onChange={() => toggleHeld(entry.yutai)}
-                                className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
-                                aria-label={`${entry.yutai.name}を保有済みに設定`}
-                              />
-                              <span className="truncate font-medium flex-1">
-                                {entry.yutai.name}
-                                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    {/* 確定銘柄 */}
+                    {hasConfirmed && (
+                      <div className="space-y-2">
+                        {confirmedEntries.map((entry, idx) => (
+                          <div key={`c-${entry.yutai.id}-${idx}`} className="flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={false}
+                              onChange={() => toggleHeld(entry.yutai)}
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
+                              aria-label={`${entry.yutai.name}を保有済みに設定`}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-baseline gap-x-1.5">
+                                <Link
+                                  href={`/stocks/${entry.yutai.code}`}
+                                  className="text-sm font-medium hover:underline"
+                                >
+                                  {entry.yutai.name}
+                                </Link>
+                                <span className="text-xs font-normal text-muted-foreground">
                                   ({entry.yutai.code}・権利確定{formatRightsMonths(entry.yutai.rightsMonths)})
                                 </span>
-                              </span>
-                              <span className="shrink-0 font-semibold text-primary tabular-nums">
+                              </div>
+                              <p className="line-clamp-2 text-xs text-muted-foreground sm:line-clamp-1">
+                                {entry.yutai.description}
+                              </p>
+                            </div>
+                            <div className="mt-0.5 flex shrink-0 items-center gap-1">
+                              <span className="font-semibold text-primary tabular-nums">
                                 {formatYen(entry.yutai.annualValue)}
                               </span>
                               <button
@@ -530,33 +544,45 @@ export function ResultsClient({
                                 <X className="size-3.5" />
                               </button>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                      {/* ゴースト銘柄(確定がない月にのみ表示) */}
-                      {!hasConfirmed && hasGhost && (
-                        <div className="space-y-0.5">
-                          {ghostEntries.map((entry, idx) => (
-                            <div key={`g-${entry.yutai.id}-${idx}`} className="space-y-0">
-                              <p className="text-[10px] text-muted-foreground/70">
-                                💡 来年度の追加候補
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={false}
-                                  onChange={() => toggleHeld(entry.yutai)}
-                                  className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
-                                  aria-label={`${entry.yutai.name}を保有済みに設定`}
-                                />
-                                <span className="truncate text-xs text-muted-foreground/60 flex-1">
-                                  {entry.yutai.name}
-                                  <span className="ml-1 text-muted-foreground/50">
+                    {/* ゴースト銘柄(確定がない月にのみ表示) */}
+                    {!hasConfirmed && hasGhost && (
+                      <div className="space-y-2">
+                        {ghostEntries.map((entry, idx) => (
+                          <div key={`g-${entry.yutai.id}-${idx}`} className="space-y-0.5">
+                            <p className="text-[10px] text-muted-foreground/70">
+                              💡 来年度の追加候補
+                            </p>
+                            <div className="flex items-start gap-2">
+                              <input
+                                type="checkbox"
+                                checked={false}
+                                onChange={() => toggleHeld(entry.yutai)}
+                                className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
+                                aria-label={`${entry.yutai.name}を保有済みに設定`}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-baseline gap-x-1.5">
+                                  <Link
+                                    href={`/stocks/${entry.yutai.code}`}
+                                    className="text-xs text-muted-foreground/60 hover:underline"
+                                  >
+                                    {entry.yutai.name}
+                                  </Link>
+                                  <span className="text-xs text-muted-foreground/50">
                                     ({entry.yutai.code}・権利確定{formatRightsMonths(entry.yutai.rightsMonths)})
                                   </span>
-                                </span>
-                                <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
+                                </div>
+                                <p className="line-clamp-2 text-xs text-muted-foreground/50 sm:line-clamp-1">
+                                  {entry.yutai.description}
+                                </p>
+                              </div>
+                              <div className="mt-0.5 flex shrink-0 items-center gap-1">
+                                <span className="text-xs tabular-nums text-muted-foreground/60">
                                   {formatYen(entry.yutai.approxInvestment)}
                                 </span>
                                 <button
@@ -570,10 +596,10 @@ export function ResultsClient({
                                 </button>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
