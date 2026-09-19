@@ -74,6 +74,14 @@ function toggle(list: string[], item: string): string[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
 
+// IMEオンのまま全角数字を打った場合に半角へ変換し、それ以外の文字(ひらがな・記号等)は除去する
+function normalizeDigitInput(value: string): string {
+  const halfWidth = value.replace(/[０-９]/g, (s) =>
+    String.fromCharCode(s.charCodeAt(0) - 0xfee0)
+  );
+  return halfWidth.replace(/[^0-9]/g, "");
+}
+
 function formatInvestmentLabel(amount: number): string {
   if (amount >= 100000000) {
     const oku = amount / 100000000;
@@ -236,8 +244,8 @@ function OnboardingContent() {
     parsedManYen <= INVESTMENT_MAX_MAN_YEN;
 
   const handleInvestmentInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // 半角数字のみ許可(全角は除去)
-    const cleaned = e.target.value.replace(/[^0-9]/g, "");
+    // 全角数字は半角に変換、それ以外の文字は除去
+    const cleaned = normalizeDigitInput(e.target.value);
     setInvestmentInput(cleaned);
     // 直接編集されたら、以後は下(総額)の変更による自動入力より優先する
     setIsAnnualManuallyEdited(true);
@@ -257,7 +265,8 @@ function OnboardingContent() {
     parsedTotalBudgetManYen <= INVESTMENT_MAX_MAN_YEN;
 
   const handleTotalBudgetInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const cleaned = e.target.value.replace(/[^0-9]/g, "");
+    // 全角数字は半角に変換、それ以外の文字は除去
+    const cleaned = normalizeDigitInput(e.target.value);
     setTotalBudgetInput(cleaned);
     const parsed = parseInt(cleaned, 10);
     if (cleaned.length > 0 && !isNaN(parsed) && parsed > 0 && parsed <= INVESTMENT_MAX_MAN_YEN) {
@@ -548,10 +557,12 @@ function OnboardingContent() {
                     onChange={handleInvestmentInputChange}
                     placeholder="例: 150"
                     autoFocus
+                    style={{ imeMode: "disabled" }}
                     className="w-full bg-transparent text-lg font-medium outline-none placeholder:text-muted-foreground/40"
                   />
                   <span className="shrink-0 text-sm font-medium text-muted-foreground">万円</span>
                 </div>
+                <p className="mt-1 text-[11px] text-muted-foreground/70">半角数字のみ入力できます</p>
                 {isInvestmentValid && (
                   <p className="mt-1.5 text-xs text-muted-foreground">
                     = {formatInvestmentLabel(parsedManYen * 10000)}
@@ -599,10 +610,12 @@ function OnboardingContent() {
                     value={totalBudgetInput}
                     onChange={handleTotalBudgetInputChange}
                     placeholder="例: 1000"
+                    style={{ imeMode: "disabled" }}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring placeholder:text-muted-foreground/40"
                   />
                   <span className="shrink-0 text-sm text-muted-foreground">万円(総額)</span>
                 </div>
+                <p className="text-[11px] text-muted-foreground/70">半角数字のみ入力できます</p>
 
                 {isTotalBudgetValid && (
                   <div className="flex gap-2">
