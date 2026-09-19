@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
@@ -166,6 +166,22 @@ export function ResultsClient({
   // 保有株
   const [heldYutai, setHeldYutai] = useState<Yutai[]>([]);
 
+  // サマリーが sticky で画面上部に張り付いたかどうか(張り付いたらコンパクト表示にする)
+  const summarySentinelRef = useRef<HTMLDivElement>(null);
+  const [isSummaryStuck, setIsSummaryStuck] = useState(false);
+
+  useEffect(() => {
+    const el = summarySentinelRef.current;
+    if (!el) return;
+    // sticky top-14(56px)の位置を通過した瞬間にコンパクト化する
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsSummaryStuck(!entry.isIntersecting),
+      { rootMargin: "-56px 0px 0px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // 月 → 保有済み銘柄のマップ
   const heldCalendarEntries = useMemo(() => {
     const map = new Map<number, Yutai[]>();
@@ -324,32 +340,76 @@ export function ResultsClient({
           </div>
 
           {/* パッケージサマリー */}
+          {/* サマリーが sticky で張り付いたタイミングを検知するためのセンチネル(見た目には影響しない) */}
+          <div ref={summarySentinelRef} />
           {cal.confirmedYutaiCount > 0 ? (
             <>
-              <div className="mb-3 grid grid-cols-4 gap-2 rounded-lg bg-background p-3">
+              <div
+                className={cn(
+                  "glass-card sticky top-14 z-20 mb-3 grid grid-cols-4 gap-2 transition-[padding] duration-200",
+                  isSummaryStuck ? "gap-1 p-1.5" : "gap-2 p-3"
+                )}
+              >
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground">
+                  <p
+                    className={cn(
+                      "text-muted-foreground transition-[font-size]",
+                      isSummaryStuck ? "text-[10px] leading-tight" : "text-xs"
+                    )}
+                  >
                     {heldYutai.length > 0 ? "必要投資額(保有分を除く)" : "必要投資額"}
                   </p>
-                  <p className="text-sm font-bold tabular-nums">{formatYen(cal.confirmedTotalInvestment)}</p>
+                  <p className={cn("font-bold tabular-nums", isSummaryStuck ? "text-xs" : "text-sm")}>
+                    {formatYen(cal.confirmedTotalInvestment)}
+                  </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground">年間優待価値</p>
-                  <p className="text-sm font-bold text-primary tabular-nums">{formatYen(cal.confirmedAnnualValue)}</p>
+                  <p
+                    className={cn(
+                      "text-muted-foreground transition-[font-size]",
+                      isSummaryStuck ? "text-[10px] leading-tight" : "text-xs"
+                    )}
+                  >
+                    年間優待価値
+                  </p>
+                  <p
+                    className={cn(
+                      "font-bold text-primary tabular-nums",
+                      isSummaryStuck ? "text-xs" : "text-sm"
+                    )}
+                  >
+                    {formatYen(cal.confirmedAnnualValue)}
+                  </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground">合計利回り</p>
-                  <p className="text-sm font-bold tabular-nums">{calendarYield}%</p>
+                  <p
+                    className={cn(
+                      "text-muted-foreground transition-[font-size]",
+                      isSummaryStuck ? "text-[10px] leading-tight" : "text-xs"
+                    )}
+                  >
+                    合計利回り
+                  </p>
+                  <p className={cn("font-bold tabular-nums", isSummaryStuck ? "text-xs" : "text-sm")}>
+                    {calendarYield}%
+                  </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground">カバー月数</p>
-                  <p className="text-sm font-bold tabular-nums">
+                  <p
+                    className={cn(
+                      "text-muted-foreground transition-[font-size]",
+                      isSummaryStuck ? "text-[10px] leading-tight" : "text-xs"
+                    )}
+                  >
+                    カバー月数
+                  </p>
+                  <p className={cn("font-bold tabular-nums", isSummaryStuck ? "text-xs" : "text-sm")}>
                     <span className={coveredMonthCount < 6 ? "text-muted-foreground" : "text-primary"}>
                       {coveredMonthCount}
                     </span>
                     <span className="text-xs text-muted-foreground">/12ヶ月</span>
                   </p>
-                  {heldOnlyMonthCount > 0 && (
+                  {heldOnlyMonthCount > 0 && !isSummaryStuck && (
                     <p className="text-[10px] text-muted-foreground/70">うち保有{heldOnlyMonthCount}ヶ月</p>
                   )}
                 </div>
@@ -383,7 +443,7 @@ export function ResultsClient({
           <p className="mb-2 text-xs text-muted-foreground/70">
             すでに持っている銘柄にチェックを入れると、提案から外して「保有済み」として扱います。✕を押すと興味なしとして除外し、他の候補に差し替えます
           </p>
-          <div className="space-y-1.5">
+          <div className="grid grid-cols-1 items-start gap-2.5 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => {
               const confirmedEntries = cal.confirmed.filter((e) => e.month === month);
               const ghostEntries = cal.ghost.filter((e) => e.month === month);
@@ -393,63 +453,96 @@ export function ResultsClient({
               const isHeldCovered = heldForMonth.length > 0;
               const isEmpty = !hasConfirmed && !hasGhost && !isHeldCovered;
 
-              return (
-                <div
-                  key={month}
-                  className={cn(
-                    "flex items-start gap-3 rounded-lg px-3 py-2",
-                    isEmpty ? "bg-muted/30" : "bg-background"
-                  )}
-                >
-                  <div className="w-8 shrink-0 text-center">
-                    <p className={cn("text-sm font-medium", isEmpty && "text-muted-foreground")}>
-                      {month}月
-                    </p>
+              // 候補がない月はカードを圧縮し、月名のみを控えめに表示する
+              if (isEmpty) {
+                return (
+                  <div key={month} className="rounded-2xl bg-muted/40 px-3 py-1.5 text-center">
+                    <p className="text-xs font-medium text-muted-foreground/50">{month}月</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    {isEmpty ? (
-                      <p className="text-xs italic text-muted-foreground">
-                        この月の優待は予算内では現状ありません
-                      </p>
-                    ) : (
-                      <div className="space-y-1">
-                        {/* 保有済み銘柄 */}
-                        {isHeldCovered && (
-                          <div className="space-y-0.5">
-                            {heldForMonth.map((y) => (
-                              <div
-                                key={`h-${y.code}`}
-                                className="flex items-center gap-2"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked
-                                  onChange={() => toggleHeld(y)}
-                                  className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
-                                  aria-label={`${y.name}の保有設定を解除`}
-                                />
-                                <span className="truncate text-sm text-muted-foreground flex-1">
-                                  {y.name}
-                                  <span className="ml-1 text-xs text-muted-foreground/70">
-                                    ({y.code}・権利確定{formatRightsMonths(y.rightsMonths)})
-                                  </span>
-                                </span>
-                                <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary/80">
-                                  保有済み
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                );
+              }
 
-                        {/* 確定銘柄 */}
-                        {hasConfirmed && (
-                          <div className="space-y-0.5">
-                            {confirmedEntries.map((entry, idx) => (
-                              <div
-                                key={`c-${entry.yutai.id}-${idx}`}
-                                className="flex items-center gap-2 text-sm"
+              return (
+                <div key={month} className="glass-card px-3 py-2.5">
+                  <p className="mb-1.5 text-sm font-semibold">{month}月</p>
+                  <div className="min-w-0">
+                    <div className="space-y-1">
+                      {/* 保有済み銘柄 */}
+                      {isHeldCovered && (
+                        <div className="space-y-0.5">
+                          {heldForMonth.map((y) => (
+                            <div
+                              key={`h-${y.code}`}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="checkbox"
+                                checked
+                                onChange={() => toggleHeld(y)}
+                                className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
+                                aria-label={`${y.name}の保有設定を解除`}
+                              />
+                              <span className="truncate text-sm text-muted-foreground flex-1">
+                                {y.name}
+                                <span className="ml-1 text-xs text-muted-foreground/70">
+                                  ({y.code}・権利確定{formatRightsMonths(y.rightsMonths)})
+                                </span>
+                              </span>
+                              <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary/80">
+                                保有済み
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 確定銘柄 */}
+                      {hasConfirmed && (
+                        <div className="space-y-0.5">
+                          {confirmedEntries.map((entry, idx) => (
+                            <div
+                              key={`c-${entry.yutai.id}-${idx}`}
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={false}
+                                onChange={() => toggleHeld(entry.yutai)}
+                                className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
+                                aria-label={`${entry.yutai.name}を保有済みに設定`}
+                              />
+                              <span className="truncate font-medium flex-1">
+                                {entry.yutai.name}
+                                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                                  ({entry.yutai.code}・権利確定{formatRightsMonths(entry.yutai.rightsMonths)})
+                                </span>
+                              </span>
+                              <span className="shrink-0 font-semibold text-primary tabular-nums">
+                                {formatYen(entry.yutai.annualValue)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => dismiss(entry.yutai.code)}
+                                className="shrink-0 rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors"
+                                aria-label={`${entry.yutai.name}を興味なしにして他の候補に差し替える`}
+                                title="興味なし・他の候補に差し替える"
                               >
+                                <X className="size-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* ゴースト銘柄(確定がない月にのみ表示) */}
+                      {!hasConfirmed && hasGhost && (
+                        <div className="space-y-0.5">
+                          {ghostEntries.map((entry, idx) => (
+                            <div key={`g-${entry.yutai.id}-${idx}`} className="space-y-0">
+                              <p className="text-[10px] text-muted-foreground/70">
+                                💡 来年度の追加候補
+                              </p>
+                              <div className="flex items-center gap-2">
                                 <input
                                   type="checkbox"
                                   checked={false}
@@ -457,70 +550,30 @@ export function ResultsClient({
                                   className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
                                   aria-label={`${entry.yutai.name}を保有済みに設定`}
                                 />
-                                <span className="truncate font-medium flex-1">
+                                <span className="truncate text-xs text-muted-foreground/60 flex-1">
                                   {entry.yutai.name}
-                                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                                  <span className="ml-1 text-muted-foreground/50">
                                     ({entry.yutai.code}・権利確定{formatRightsMonths(entry.yutai.rightsMonths)})
                                   </span>
                                 </span>
-                                <span className="shrink-0 font-semibold text-primary tabular-nums">
-                                  {formatYen(entry.yutai.annualValue)}
+                                <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
+                                  {formatYen(entry.yutai.approxInvestment)}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => dismiss(entry.yutai.code)}
-                                  className="shrink-0 rounded p-0.5 text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors"
+                                  className="shrink-0 rounded p-0.5 text-muted-foreground/40 hover:bg-muted hover:text-foreground transition-colors"
                                   aria-label={`${entry.yutai.name}を興味なしにして他の候補に差し替える`}
                                   title="興味なし・他の候補に差し替える"
                                 >
-                                  <X className="size-3.5" />
+                                  <X className="size-3" />
                                 </button>
                               </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* ゴースト銘柄(確定がない月にのみ表示) */}
-                        {!hasConfirmed && hasGhost && (
-                          <div className="space-y-0.5">
-                            {ghostEntries.map((entry, idx) => (
-                              <div key={`g-${entry.yutai.id}-${idx}`} className="space-y-0">
-                                <p className="text-[10px] text-muted-foreground/70">
-                                  💡 来年度の追加候補
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={false}
-                                    onChange={() => toggleHeld(entry.yutai)}
-                                    className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-stone-600"
-                                    aria-label={`${entry.yutai.name}を保有済みに設定`}
-                                  />
-                                  <span className="truncate text-xs text-muted-foreground/60 flex-1">
-                                    {entry.yutai.name}
-                                    <span className="ml-1 text-muted-foreground/50">
-                                      ({entry.yutai.code}・権利確定{formatRightsMonths(entry.yutai.rightsMonths)})
-                                    </span>
-                                  </span>
-                                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
-                                    {formatYen(entry.yutai.approxInvestment)}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => dismiss(entry.yutai.code)}
-                                    className="shrink-0 rounded p-0.5 text-muted-foreground/40 hover:bg-muted hover:text-foreground transition-colors"
-                                    aria-label={`${entry.yutai.name}を興味なしにして他の候補に差し替える`}
-                                    title="興味なし・他の候補に差し替える"
-                                  >
-                                    <X className="size-3" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

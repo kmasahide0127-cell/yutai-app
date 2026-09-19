@@ -40,7 +40,7 @@ export default function AffiliateBanner() {
   return (
     <div className="w-full overflow-hidden space-y-3">
       {BANNERS.map((banner) => (
-        <div key={banner.href} className="w-full overflow-hidden rounded-xl border border-border bg-card p-4">
+        <div key={banner.href} className="glass-card w-full overflow-hidden p-4">
           <span className="inline-block mb-2 px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground">
             PR
           </span>

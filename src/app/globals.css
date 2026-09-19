@@ -200,3 +200,31 @@ svg {
   border-radius: 4px;
   opacity: 0.3;
 }
+
+/*
+ * Liquid Glass 風カード(サマリー・月別カレンダー・アフィリエイトバナー用)
+ * backdrop-filter非対応ブラウザでは半透明背景だと文字が読めなくなるため、
+ * 既定はサイトのcardトークンで不透明にし、対応ブラウザのみ@supportsで
+ * 透過+ブラーを重ねる(プログレッシブエンハンスメント)。
+ */
+.glass-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .dark .glass-card {
+    background: rgba(30, 30, 30, 0.6);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.32);
+  }
+}
