@@ -526,14 +526,24 @@ function OnboardingContent() {
                     : "border-border"
                 )}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" data-credential-form="false">
                   <input
                     type="text"
+                    name="prevent-autofill"
+                    style={{ display: "none" }}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="text"
+                    name="budget-annual-yutai"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    autoComplete="off"
+                    autoComplete="one-time-code"
+                    data-form-type="other"
                     data-1p-ignore="true"
                     data-lpignore="true"
+                    data-protonpass-ignore="true"
                     value={investmentInput}
                     onChange={handleInvestmentInputChange}
                     placeholder="例: 150"
@@ -568,14 +578,24 @@ function OnboardingContent() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" data-credential-form="false">
                   <input
                     type="text"
+                    name="prevent-autofill"
+                    style={{ display: "none" }}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="text"
+                    name="budget-total-yutai"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    autoComplete="off"
+                    autoComplete="one-time-code"
+                    data-form-type="other"
                     data-1p-ignore="true"
                     data-lpignore="true"
+                    data-protonpass-ignore="true"
                     value={totalBudgetInput}
                     onChange={handleTotalBudgetInputChange}
                     placeholder="例: 1000"
