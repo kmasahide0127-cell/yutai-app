@@ -173,10 +173,10 @@ export function ResultsClient({
   useEffect(() => {
     const el = summarySentinelRef.current;
     if (!el) return;
-    // sticky top-14(56px)の位置を通過した瞬間にコンパクト化する
+    // sticky top-[65px](AppHeaderの実高さ)を通過した瞬間にコンパクト化する。値がずれるとコンパクト化が早すぎる/遅すぎるので、下のtop-[65px]と必ず揃える
     const observer = new IntersectionObserver(
       ([entry]) => setIsSummaryStuck(!entry.isIntersecting),
-      { rootMargin: "-56px 0px 0px 0px" }
+      { rootMargin: "-65px 0px 0px 0px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -346,8 +346,8 @@ export function ResultsClient({
             <>
               <div
                 className={cn(
-                  "glass-card sticky top-14 z-20 mb-3 grid grid-cols-4 gap-2 transition-[padding] duration-200",
-                  isSummaryStuck ? "gap-1 p-1.5" : "gap-2 p-3"
+                  "glass-card-sticky sticky top-[65px] z-30 mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4 transition-[padding,box-shadow] duration-200",
+                  isSummaryStuck ? "is-stuck gap-1.5 p-2" : "gap-2 p-3"
                 )}
               >
                 <div className="text-center">

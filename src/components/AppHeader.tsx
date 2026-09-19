@@ -16,7 +16,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-sm safe-top">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-sm safe-top">
       <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3 safe-left safe-right">
         <nav className="flex items-center gap-4" aria-label="メインナビゲーション">
           <Link href="/" className="flex items-center gap-2">

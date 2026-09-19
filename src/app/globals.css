@@ -228,3 +228,36 @@ svg {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.32);
   }
 }
+
+/*
+ * sticky表示するサマリーバー専用。スクロールする背後のカードと重なり続けるため、
+ * .glass-cardの0.6ではカードの文字が透けて判読できなくなる。ほぼ不透明にしつつ
+ * ブラーは残して質感だけ揃える。
+ */
+.glass-card-sticky {
+  /* var(--card)はダーク/ライト両テーマの値を自動解決するため、非対応ブラウザでも
+     フォールバックのまま色が破綻しない */
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass-card-sticky {
+    background: rgba(250, 248, 245, 0.95);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .dark .glass-card-sticky {
+    background: rgba(20, 18, 16, 0.94);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* サマリーバーがsticky位置に張り付いた時だけ、下に境目を強調する */
+.glass-card-sticky.is-stuck {
+  border-bottom-color: var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
