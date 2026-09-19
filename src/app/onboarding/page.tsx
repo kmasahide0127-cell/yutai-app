@@ -212,10 +212,16 @@ function OnboardingContent() {
     totalStockBudget !== null ? String(totalStockBudget / 10000) : ""
   );
 
+  // 上(今年の予算)を直接編集済みかどうか。true の間は下(総額)の変更で上書きしない。
+  const [isAnnualManuallyEdited, setIsAnnualManuallyEdited] = useState<boolean>(
+    () => maxInvestment !== null
+  );
+
   // ステップ変化時にストアの値と同期(「戻る」で戻ってきた場合など)
   useEffect(() => {
     setInvestmentInput(maxInvestment !== null ? String(maxInvestment / 10000) : "");
     setTotalBudgetInput(totalStockBudget !== null ? String(totalStockBudget / 10000) : "");
+    setIsAnnualManuallyEdited(maxInvestment !== null);
   // currentStep が変わったタイミングのみ再同期。タイピング中は不要。
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
@@ -233,6 +239,8 @@ function OnboardingContent() {
     // 半角数字のみ許可(全角は除去)
     const cleaned = e.target.value.replace(/[^0-9]/g, "");
     setInvestmentInput(cleaned);
+    // 直接編集されたら、以後は下(総額)の変更による自動入力より優先する
+    setIsAnnualManuallyEdited(true);
     const parsed = parseInt(cleaned, 10);
     if (cleaned.length > 0 && !isNaN(parsed) && parsed > 0 && parsed <= INVESTMENT_MAX_MAN_YEN) {
       setMaxInvestment(parsed * 10000);
@@ -254,8 +262,19 @@ function OnboardingContent() {
     const parsed = parseInt(cleaned, 10);
     if (cleaned.length > 0 && !isNaN(parsed) && parsed > 0 && parsed <= INVESTMENT_MAX_MAN_YEN) {
       setTotalStockBudget(parsed * 10000);
+      // 上(今年の予算)が未編集なら、5年で優待カレンダーを完成させる想定の推奨値を自動入力する
+      if (!isAnnualManuallyEdited) {
+        const recommended = Math.round(parsed / 5);
+        setInvestmentInput(String(recommended));
+        setMaxInvestment(recommended > 0 ? recommended * 10000 : null);
+      }
     } else {
       setTotalStockBudget(null);
+      // 上が未編集なら、下の自動入力もクリアする
+      if (!isAnnualManuallyEdited) {
+        setInvestmentInput("");
+        setMaxInvestment(null);
+      }
     }
   };
 
@@ -269,6 +288,7 @@ function OnboardingContent() {
     if (recommendedAnnualManYen === null) return;
     const rounded = Math.max(1, Math.round(recommendedAnnualManYen));
     setInvestmentInput(String(rounded));
+    setIsAnnualManuallyEdited(true);
     setMaxInvestment(rounded * 10000);
   };
 
@@ -511,6 +531,9 @@ function OnboardingContent() {
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
                     value={investmentInput}
                     onChange={handleInvestmentInputChange}
                     placeholder="例: 150"
@@ -550,6 +573,9 @@ function OnboardingContent() {
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
                     value={totalBudgetInput}
                     onChange={handleTotalBudgetInputChange}
                     placeholder="例: 1000"
