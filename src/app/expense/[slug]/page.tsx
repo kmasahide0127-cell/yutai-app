@@ -12,6 +12,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
 import AffiliateBanner from "@/components/AffiliateBanner";
+import { serializeJsonLd } from "@/lib/utils";
 
 export async function generateStaticParams() {
   return Object.values(EXPENSE_CATEGORY_SLUGS).map((slug) => ({ slug }));
@@ -172,7 +173,7 @@ export default async function ExpenseCategoryPage({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <div className="mx-auto max-w-2xl min-w-0 space-y-8 px-4 py-8">
 
         {/* パンくず */}

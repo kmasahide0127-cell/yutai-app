@@ -29,6 +29,7 @@ export function ProductSearchForm({
           <input
             type="search"
             name="q"
+            maxLength={100}
             defaultValue={defaultValue}
             placeholder="商品名・ブランド名で探す(例: ReFa)"
             aria-label="商品名・ブランド名で株主優待を探す"

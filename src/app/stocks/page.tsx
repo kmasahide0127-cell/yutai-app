@@ -31,7 +31,8 @@ export default async function StocksListPage({
   searchParams: SearchParams;
 }) {
   const { category } = await searchParams;
-  const activeFilter: StockListFilter | null = category ?? null;
+  // 同名パラメータの重複で配列が渡るケースを除外する
+  const activeFilter: StockListFilter | null = typeof category === "string" ? category : null;
 
   const validYutai = YUTAI_LIST.filter((y) => y.annualValue > 0).sort(
     (a, b) => b.annualValue - a.annualValue

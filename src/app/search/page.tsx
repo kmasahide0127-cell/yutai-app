@@ -21,6 +21,9 @@ export const metadata: Metadata = {
 
 type SearchParams = Promise<{ q?: string }>;
 
+// 商品名・ブランド名としては十分な長さ。極端に長い入力による検索負荷と表示崩れを防ぐ
+const MAX_QUERY_LENGTH = 100;
+
 /** ブランド辞書ヒット1件のカード */
 function BrandResolutionCard({ resolution }: { resolution: BrandResolution }) {
   const { brand, kind, yutai, firstReceipt, statusMessage, retailerRelays } = resolution;
@@ -104,7 +107,8 @@ function BrandResolutionCard({ resolution }: { resolution: BrandResolution }) {
 
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const { q } = await searchParams;
-  const query = (q ?? "").trim();
+  // 同名パラメータが複数あると配列で渡ってくるため文字列のみ受け付ける
+  const query = (typeof q === "string" ? q : "").trim().slice(0, MAX_QUERY_LENGTH);
   const result = query ? searchProducts(query, YUTAI_LIST) : null;
 
   return (

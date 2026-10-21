@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { DATA_LAST_UPDATED } from "@/lib/yutai-data";
+import { serializeJsonLd } from "@/lib/utils";
 
 function formatJapaneseDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-");
@@ -104,7 +105,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify([
+            __html: serializeJsonLd([
               {
                 "@context": "https://schema.org",
                 "@type": "WebSite",

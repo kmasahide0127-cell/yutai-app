@@ -6,53 +6,26 @@ import {
   isGasolineYutai,
   calculatePreferenceMatchScore,
   countYutaiByTag,
-  PREFERENCE_TAGS,
   type ExpenseCategory,
   type CategoryGroup,
   type UserExpenseLifestyle,
   type PreferenceTag,
 } from "@/lib/matching";
-import type { VehicleType } from "@/store/onboarding-store";
+import { parseResultParams, buildShareQuery, type RawResultParams } from "@/lib/result-params";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { ResultsClient } from "@/components/results/ResultsClient";
 
-type SearchParams = Promise<{
-  expenses?: string;
-  maxInvestment?: string;
-  household?: string;
-  vehicleType?: string;
-  preferenceTags?: string;
-  totalBudget?: string;
-  planYears?: string;
-}>;
+type SearchParams = Promise<RawResultParams>;
 
 const BASE_URL = "https://yutai-match.com";
-
-// 有効な PreferenceTag ID の集合(型ガード用)
-const VALID_TAG_IDS = new Set(
-  Object.values(PREFERENCE_TAGS).flat().map((t) => t.id)
-);
 
 export async function generateMetadata({
   searchParams,
 }: {
   searchParams: SearchParams;
 }): Promise<Metadata> {
-  const {
-    expenses: expensesParam,
-    maxInvestment: maxParam,
-    household: householdParam,
-    vehicleType: vehicleTypeParam,
-    preferenceTags: preferenceTagsParam,
-  } = await searchParams;
-
-  const qp = new URLSearchParams();
-  if (expensesParam) qp.set("expenses", expensesParam);
-  if (maxParam) qp.set("maxInvestment", maxParam);
-  if (householdParam) qp.set("household", householdParam);
-  if (vehicleTypeParam) qp.set("vehicleType", vehicleTypeParam);
-  if (preferenceTagsParam) qp.set("preferenceTags", preferenceTagsParam);
-  const qpStr = qp.toString();
+  // 未検証の値を OG 画像 URL に流さないよう、正規化済みの値だけで組み立てる
+  const qpStr = buildShareQuery(parseResultParams(await searchParams));
   const ogImageUrl = `${BASE_URL}/api/og${qpStr ? `?${qpStr}` : ""}`;
 
   return {
@@ -80,37 +53,16 @@ export default async function ResultsPage({
 }: {
   searchParams: SearchParams;
 }) {
+  const params = parseResultParams(await searchParams);
   const {
-    expenses: expensesParam,
-    maxInvestment: maxParam,
-    household: householdParam,
-    vehicleType: vehicleTypeParam,
-    preferenceTags: preferenceTagsParam,
-    totalBudget: totalBudgetParam,
-    planYears: planYearsParam,
-  } = await searchParams;
-
-  const expenseCategories = (
-    expensesParam?.split(",").filter(Boolean) ?? []
-  ) as ExpenseCategory[];
-  const maxInvestment = maxParam ? parseInt(maxParam, 10) : undefined;
-  const householdSize = householdParam ? Math.max(1, parseInt(householdParam, 10)) : 1;
-  const vehicleType = (["gasoline", "ev", "none"].includes(vehicleTypeParam ?? "")
-    ? vehicleTypeParam
-    : null) as VehicleType;
-
-  // 長期プラン(任意): 総額・年数がともに有効な値の場合のみ有効化
-  const parsedTotalBudget = totalBudgetParam ? parseInt(totalBudgetParam, 10) : null;
-  const parsedPlanYears = planYearsParam ? parseInt(planYearsParam, 10) : null;
-  const totalStockBudget =
-    parsedTotalBudget && parsedTotalBudget > 0 ? parsedTotalBudget : null;
-  const planYears =
-    parsedPlanYears === 5 || parsedPlanYears === 10 ? parsedPlanYears : null;
-
-  // 型ガードで不正値を除外
-  const preferenceTags = (
-    preferenceTagsParam?.split(",").filter(Boolean) ?? []
-  ).filter((id): id is PreferenceTag => VALID_TAG_IDS.has(id as PreferenceTag));
+    expenseCategories,
+    maxInvestment,
+    householdSize,
+    vehicleType,
+    preferenceTags,
+    totalStockBudget,
+    planYears,
+  } = params;
 
   const lifestyle: UserExpenseLifestyle = { expenseCategories, brands: [], maxInvestment };
 
@@ -148,13 +100,7 @@ export default async function ResultsPage({
       : baseGroupedResults;
 
   // 診断条件を含む結果URLを SSR で確定させる（ドメイン統一 + hydrationズレ防止のため案1採用）
-  const qp = new URLSearchParams();
-  if (expensesParam) qp.set("expenses", expensesParam);
-  if (maxParam) qp.set("maxInvestment", maxParam);
-  if (householdParam) qp.set("household", householdParam);
-  if (vehicleTypeParam) qp.set("vehicleType", vehicleTypeParam);
-  if (preferenceTagsParam) qp.set("preferenceTags", preferenceTagsParam);
-  const qpString = qp.toString();
+  const qpString = buildShareQuery(params);
   const shareUrl = qpString ? `${BASE_URL}/results?${qpString}` : BASE_URL;
 
   return (

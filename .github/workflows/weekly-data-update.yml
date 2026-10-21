@@ -22,9 +22,9 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
           cache: "pip"
@@ -47,9 +47,13 @@ jobs:
 
       - name: PR本文の組み立て
         id: report
+        # レポートには外部(TDnet)由来の文字列が入るため、固定の区切り文字だと
+        # 本文中に同じ行が現れた時点で GITHUB_OUTPUT に任意の出力を注入されうる。
+        # 実行ごとにランダムな区切り文字を使う。
         run: |
+          delimiter="REPORT_EOF_$(openssl rand -hex 16)"
           {
-            echo "body<<REPORT_EOF"
+            echo "body<<${delimiter}"
             echo "## 株価自動更新"
             cat scripts/output/price_update_summary.md
             echo ""
@@ -58,11 +62,11 @@ jobs:
             echo "---"
             echo "自動生成されたPRです。優待「内容」の変更は自動反映されていないため、"
             echo "上記の開示が見つかった場合は内容を確認してyutai-data.tsを手動で修正してください。"
-            echo "REPORT_EOF"
+            echo "${delimiter}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Pull Requestを作成
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
           commit-message: "chore: 株価データ自動更新 (${{ steps.date.outputs.today }})"
           title: "chore: 週次データ自動更新 (${{ steps.date.outputs.today }})"

@@ -3,18 +3,12 @@ import { NextRequest } from "next/server";
 import {
   filterCandidatesForBudget,
   buildBudgetAwareCalendarPackage,
-  PREFERENCE_TAGS,
-  type ExpenseCategory,
-  type PreferenceTag,
   type UserExpenseLifestyle,
 } from "@/lib/matching";
+import { parseResultParams } from "@/lib/result-params";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 
 export const dynamic = "force-dynamic";
-
-const VALID_TAG_IDS = new Set(
-  Object.values(PREFERENCE_TAGS).flat().map((t) => t.id)
-);
 
 // Google Fonts CSS API から Noto Sans JP のサブセット(TTF)を取得
 // Satori/vercel-og は TTF/OTF のみ対応。woff2 は非対応なので古い UA を使う
@@ -54,22 +48,18 @@ async function fetchJapaneseFont(): Promise<ArrayBuffer | null> {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const expensesParam = searchParams.get("expenses") ?? "";
-  const maxParam = searchParams.get("maxInvestment");
-  const vehicleTypeParam = searchParams.get("vehicleType");
-  const preferenceTagsParam = searchParams.get("preferenceTags") ?? "";
-
-  const expenseCategories = expensesParam
-    .split(",")
-    .filter(Boolean) as ExpenseCategory[];
-
-  const rawMax = maxParam ? parseInt(maxParam, 10) : 500000;
-  const budget = isNaN(rawMax) || rawMax <= 0 ? 500000 : rawMax;
-
-  const preferenceTags = preferenceTagsParam
-    .split(",")
-    .filter(Boolean)
-    .filter((id): id is PreferenceTag => VALID_TAG_IDS.has(id as PreferenceTag));
+  const {
+    expenseCategories,
+    maxInvestment,
+    vehicleType,
+    preferenceTags,
+  } = parseResultParams({
+    expenses: searchParams.get("expenses") ?? undefined,
+    maxInvestment: searchParams.get("maxInvestment") ?? undefined,
+    vehicleType: searchParams.get("vehicleType") ?? undefined,
+    preferenceTags: searchParams.get("preferenceTags") ?? undefined,
+  });
+  const budget = maxInvestment ?? 500000;
 
   const lifestyle: UserExpenseLifestyle = {
     expenseCategories,
@@ -84,7 +74,7 @@ export async function GET(req: NextRequest) {
   try {
     const candidates = filterCandidatesForBudget(lifestyle, YUTAI_LIST);
     const filtered =
-      vehicleTypeParam === "ev"
+      vehicleType === "ev"
         ? candidates.filter((y) => {
             const kw = ["ENEOS", "エネオス", "apollostation", "出光", "昭和シェル", "コスモ石油"];
             return !(
