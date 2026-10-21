@@ -1,0 +1,30 @@
+# 依存パッケージの更新PRを自動作成する。
+# 既知脆弱性の修正版は公開直後に攻撃が自動化されるため、検知から修正までを短くする。
+# 一方で、乗っ取られたパッケージの悪意あるバージョンは公開後数日で取り下げられることが多いため、
+# 通常の更新は cooldown で公開から7日待つ(セキュリティ修正の更新は cooldown の対象外で即時作成される)。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: pip
+    directory: /scripts
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

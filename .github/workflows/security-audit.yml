@@ -1,0 +1,27 @@
+name: セキュリティ監査
+
+# 本番に載る依存パッケージに既知の脆弱性(high以上)がないかを検査する。
+# 新しい脆弱性は依存を変えなくても日々公開されるため、push時に加えて毎日も実行する。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      # 開発ツール(shadcn CLI・ESLint)由来の脆弱性は本番に含まれないため --omit=dev で本番依存のみ対象にする。
+      # インストールせずロックファイルだけを検査するので、パッケージのスクリプトは実行されない
+      - name: npm audit (本番依存)
+        run: npm audit --omit=dev --audit-level=high

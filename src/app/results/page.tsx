@@ -24,8 +24,9 @@ export async function generateMetadata({
 }: {
   searchParams: SearchParams;
 }): Promise<Metadata> {
-  // 未検証の値を OG 画像 URL に流さないよう、正規化済みの値だけで組み立てる
-  const qpStr = buildShareQuery(parseResultParams(await searchParams));
+  // 未検証の値を OG 画像 URL に流さないよう、正規化済みの値だけで組み立てる。
+  // 世帯人数は画像に影響せず、/api/og は正規化 URL 以外をリダイレクトするため含めない
+  const qpStr = buildShareQuery({ ...parseResultParams(await searchParams), householdSize: 1 });
   const ogImageUrl = `${BASE_URL}/api/og${qpStr ? `?${qpStr}` : ""}`;
 
   return {

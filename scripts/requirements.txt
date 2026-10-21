@@ -1,4 +1,6 @@
-jquants-api-client>=2.1.0
-python-dotenv>=1.0.0
-pandas>=2.0.0
-yfinance>=0.2.40
+# サプライチェーン攻撃(侵害されたバージョンの自動取り込み)を避けるため完全一致で固定。
+# 更新は Dependabot の PR で差分を確認してから取り込む
+jquants-api-client==2.8.0
+python-dotenv==1.2.4
+pandas==3.0.6
+yfinance==1.7.0

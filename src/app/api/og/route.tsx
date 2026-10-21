@@ -5,10 +5,26 @@ import {
   buildBudgetAwareCalendarPackage,
   type UserExpenseLifestyle,
 } from "@/lib/matching";
-import { parseResultParams } from "@/lib/result-params";
+import { parseResultParams, buildShareQuery } from "@/lib/result-params";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 
 export const dynamic = "force-dynamic";
+
+// 画像はクエリが同じなら常に同じ内容。CDN にキャッシュさせ、ボットの大量アクセスで
+// 画像生成(CPU)と Google Fonts への外部取得が毎回走らないようにする
+const CACHE_CONTROL = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800";
+
+// フォントはインスタンス内で使い回す(取得失敗時は次回リクエストで再試行)
+let fontCache: Promise<ArrayBuffer | null> | null = null;
+function getJapaneseFont(): Promise<ArrayBuffer | null> {
+  if (!fontCache) {
+    fontCache = fetchJapaneseFont().then((data) => {
+      if (!data) fontCache = null;
+      return data;
+    });
+  }
+  return fontCache;
+}
 
 // Google Fonts CSS API から Noto Sans JP のサブセット(TTF)を取得
 // Satori/vercel-og は TTF/OTF のみ対応。woff2 は非対応なので古い UA を使う
@@ -46,19 +62,26 @@ async function fetchJapaneseFont(): Promise<ArrayBuffer | null> {
 //   - 複数の子を持つ要素は必ず display:"flex"
 //   - テキストと変数の混在は文字列テンプレートで結合
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+  const url = new URL(req.url);
+  const { searchParams } = url;
 
-  const {
-    expenseCategories,
-    maxInvestment,
-    vehicleType,
-    preferenceTags,
-  } = parseResultParams({
+  const params = parseResultParams({
     expenses: searchParams.get("expenses") ?? undefined,
     maxInvestment: searchParams.get("maxInvestment") ?? undefined,
     vehicleType: searchParams.get("vehicleType") ?? undefined,
     preferenceTags: searchParams.get("preferenceTags") ?? undefined,
   });
+
+  // 余計なパラメータや並び順の違いで URL を無限に変えれば CDN キャッシュを素通りして
+  // 毎回画像生成させられる。正規化した URL と異なる場合は正規 URL へ寄せる
+  const canonicalQuery = buildShareQuery({ ...params, householdSize: 1 });
+  if (url.search.replace(/^\?/, "") !== canonicalQuery) {
+    const canonical = new URL(url.pathname, url.origin);
+    canonical.search = canonicalQuery;
+    return Response.redirect(canonical, 308);
+  }
+
+  const { expenseCategories, maxInvestment, vehicleType, preferenceTags } = params;
   const budget = maxInvestment ?? 500000;
 
   const lifestyle: UserExpenseLifestyle = {
@@ -92,7 +115,7 @@ export async function GET(req: NextRequest) {
     console.error("[og] matching error:", e);
   }
 
-  const fontData = await fetchJapaneseFont();
+  const fontData = await getJapaneseFont();
   const fonts = fontData
     ? [{ name: "NotoSansJP", data: fontData, weight: 700 as const, style: "normal" as const }]
     : [];
@@ -320,6 +343,6 @@ export async function GET(req: NextRequest) {
         </div>
       </div>
     ),
-    { width: 1200, height: 630, fonts }
+    { width: 1200, height: 630, fonts, headers: { "Cache-Control": CACHE_CONTROL } }
   );
 }
