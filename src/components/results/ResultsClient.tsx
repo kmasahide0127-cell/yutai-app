@@ -14,6 +14,7 @@ import {
 import { ShareSection } from "./ShareSection";
 import { HoldingsInput } from "./HoldingsInput";
 import AffiliateBanner from "@/components/AffiliateBanner";
+import { ResetLink } from "@/components/ResetLink";
 import {
   buildBudgetAwareCalendarPackage,
   buildMultiYearCalendarPlan,
@@ -952,6 +953,10 @@ export function ResultsClient({
         >
           条件を変える
         </Link>
+        {/* 入力内容を消してオンボーディングに戻る操作は、ヘッダーではなくこのページ内にだけ置く */}
+        <div className="mt-3 text-center">
+          <ResetLink />
+        </div>
       </div>
 
       <footer className="mb-6 text-center text-xs text-muted-foreground">

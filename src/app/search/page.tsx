@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { searchProducts, type BrandResolution } from "@/lib/product-search";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { BRAND_DATA_LAST_UPDATED } from "@/lib/brand-data";
 import { AppHeader } from "@/components/AppHeader";
+import { AdSenseScript } from "@/components/common/AdSenseScript";
 import { ProductSearchForm } from "@/components/search/ProductSearchForm";
 import { ModeTabs } from "@/components/search/ModeTabs";
 import {
@@ -12,12 +14,13 @@ import {
   FirstReceiptNote,
 } from "@/components/search/StockResultCard";
 
-export const metadata: Metadata = {
+// /search?q=… も canonical は /search に向ける(検索語ごとのページを別URLとして扱わせない)
+export const metadata: Metadata = buildPageMetadata({
   title: "商品名から株主優待を逆引き検索",
   description:
     "ReFa・SIXPAD・ARグラスなど、欲しい商品やブランド名から該当する株主優待銘柄を逆引きします。非上場ブランドの場合は、その商品を買える小売の優待も参考として表示します。",
-  alternates: { canonical: "/search" },
-};
+  path: "/search",
+});
 
 type SearchParams = Promise<{ q?: string }>;
 
@@ -114,6 +117,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
+      {/* 入力画面(検索前・選択前)には広告タグを読み込まない */}
+      {result && <AdSenseScript />}
       <div className="mx-auto max-w-2xl min-w-0 space-y-6 px-4 py-8">
         <nav className="text-xs text-muted-foreground">
           <Link href="/" className="hover:underline">

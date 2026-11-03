@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
+import { AdSenseScript } from "@/components/common/AdSenseScript";
 import { DATA_LAST_UPDATED, DATA_STATS } from "@/lib/yutai-data";
 import { EXPENSE_CATEGORIES } from "@/lib/matching";
 import { buildPageMetadata } from "@/lib/seo";
@@ -40,6 +41,7 @@ export default function MethodPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
+      <AdSenseScript />
       <div className="mx-auto max-w-2xl min-w-0 space-y-8 px-4 py-8">
         <nav className="text-xs text-muted-foreground">
           <Link href="/" className="hover:underline">トップ</Link>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { DATA_STATS, YUTAI_LIST, hasActiveYutai, isAnnualizedYutai, type Yutai } from "@/lib/yutai-data";
 import {
@@ -14,15 +15,17 @@ import {
 } from "@/lib/matching";
 import { isAbolished } from "@/lib/product-search";
 import { AppHeader } from "@/components/AppHeader";
+import { AdSenseScript } from "@/components/common/AdSenseScript";
 import { ProductSearchForm } from "@/components/search/ProductSearchForm";
 import { StockResultCard } from "@/components/search/StockResultCard";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "株主優待 全銘柄一覧",
-  description: "優待マッチが収録している全銘柄の一覧。生活費削減に使える株主優待を全件閲覧できます。カテゴリで絞り込んで探すこともできます。",
-  alternates: { canonical: "/stocks" },
-};
+  description:
+    "優待マッチが収録している全銘柄の一覧。生活費削減に使える株主優待を全件閲覧できます。カテゴリで絞り込んで探すこともできます。",
+  path: "/stocks",
+});
 
 function formatYen(amount: number): string {
   return `${amount.toLocaleString()}円`;
@@ -110,6 +113,7 @@ export default async function StocksListPage({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
+      <AdSenseScript />
       <div className="mx-auto max-w-2xl min-w-0 space-y-6 px-4 py-8">
         <nav className="text-xs text-muted-foreground">
           <Link href="/" className="hover:underline">トップ</Link>

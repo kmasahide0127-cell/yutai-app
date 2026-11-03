@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 import { AppHeader } from "@/components/AppHeader";
 import { DATA_LAST_UPDATED } from "@/lib/yutai-data";
 
@@ -7,13 +8,12 @@ function formatJapaneseDate(isoDate: string): string {
   return `${y}年${Number(m)}月${Number(d)}日`;
 }
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "利用規約",
-  description: "優待マッチの利用規約をご確認ください。投資助言ではないこと・免責事項・禁止事項を明記しています。",
-  alternates: {
-    canonical: "/terms",
-  },
-};
+  description:
+    "優待マッチの利用規約をご確認ください。投資助言ではないこと・免責事項・禁止事項を明記しています。",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

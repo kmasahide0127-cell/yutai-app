@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
+import { AdSenseScript } from "@/components/common/AdSenseScript";
 import { CHANGELOG, groupChangelogByDate, type ChangelogKind } from "@/lib/changelog-data";
 import { buildPageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ export default function ChangelogPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
+      <AdSenseScript />
       <div className="mx-auto max-w-2xl min-w-0 space-y-8 px-4 py-8">
         <nav className="text-xs text-muted-foreground">
           <Link href="/" className="hover:underline">トップ</Link>

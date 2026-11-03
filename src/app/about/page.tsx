@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
+import { AdSenseScript } from "@/components/common/AdSenseScript";
 import { DATA_LAST_UPDATED, DATA_STATS } from "@/lib/yutai-data";
 
 function formatDate(dateStr: string): string {
@@ -8,13 +10,12 @@ function formatDate(dateStr: string): string {
   return `${y}年${parseInt(m)}月${parseInt(d)}日`;
 }
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "このサイトについて",
-  description: "個人開発の株主優待マッチングサービス「優待マッチ」のデータ品質・検証方法・運営方針・免責事項について詳しく説明します。",
-  alternates: {
-    canonical: "/about",
-  },
-};
+  description:
+    "個人開発の株主優待マッチングサービス「優待マッチ」のデータ品質・検証方法・運営方針・免責事項について詳しく説明します。",
+  path: "/about",
+});
 
 const ABOUT_FAQ = [
   {
@@ -51,6 +52,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
+      <AdSenseScript />
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
 
         {/* タイトル＆ミッション */}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { buttonVariants } from "@/components/ui/button";
-import { ResetLink } from "@/components/ResetLink";
+import { AppHeader } from "@/components/AppHeader";
 import { DATA_LAST_UPDATED, DATA_STATS, YUTAI_LIST, isAnnualizedYutai } from "@/lib/yutai-data";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { siteConfig } from "@/config/site";
@@ -103,6 +103,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <AppHeader />
 
       {/* ── 1. ヒーローセクション ──────────────────────────── */}
       <section className="w-full flex flex-col items-center text-center px-4 pt-16 pb-10">
@@ -120,7 +121,6 @@ export default function Home() {
           <Link href="/onboarding" className={buttonVariants({ size: "lg" })}>
             始める(無料・1分)
           </Link>
-          <ResetLink />
           <p className="text-xs text-muted-foreground text-center mt-2">
             データ最終更新: {formatDate(DATA_LAST_UPDATED)}<br />
             優待実施中 {DATA_STATS.active}銘柄（検証済み {DATA_STATS.activeVerified}銘柄）

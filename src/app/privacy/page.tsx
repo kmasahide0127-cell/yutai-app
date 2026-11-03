@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 import { AppHeader } from "@/components/AppHeader";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "プライバシーポリシー",
-  description: "優待マッチのプライバシーポリシー。Cookie・AdSense・localStorage の取り扱いを説明しています。",
-  alternates: {
-    canonical: "/privacy",
-  },
-};
+  description:
+    "優待マッチのプライバシーポリシー。Cookie・AdSense・localStorage の取り扱いを説明しています。",
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

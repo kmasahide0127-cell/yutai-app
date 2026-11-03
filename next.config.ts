@@ -21,6 +21,10 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Next.js 15.2+ は searchParams を使う動的ページの metadata を、ボット判定されない UA には
+  // ストリーミングで <body> 末尾に出す。<head> に title/description/canonical が出ないと
+  // 検索エンジン・広告審査で正しく読まれない場合があるため、全 UA でブロッキング出力にする。
+  htmlLimitedBots: /.*/,
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

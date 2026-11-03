@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { EXPERIENCE_TAGS, EXPERIENCE_DATA_LAST_UPDATED, type ExperienceTag } from "@/lib/experience-data";
@@ -11,16 +12,17 @@ import {
   type ExperienceSortMode,
 } from "@/lib/experience-matching";
 import { AppHeader } from "@/components/AppHeader";
+import { AdSenseScript } from "@/components/common/AdSenseScript";
 import { ModeTabs } from "@/components/search/ModeTabs";
 import { ExperienceInterestForm } from "@/components/experience/ExperienceInterestForm";
 import { ExperienceMatchCard } from "@/components/experience/ExperienceMatchCard";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "体験から株主優待を探す",
   description:
     "クルーズ・温泉旅館・レストラン・ゴルフなど、したい体験から株主優待銘柄を提案します。投資可能額を入れると「届く特典」と「届かない特典」を分けて表示します。",
-  alternates: { canonical: "/experiences" },
-};
+  path: "/experiences",
+});
 
 const VALID_INTERESTS: ExperienceInterest[] = ["unexperienced", "want-again", "not-interested"];
 
@@ -66,6 +68,8 @@ export default async function ExperiencesPage({ searchParams }: { searchParams: 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
+      {/* 入力画面(検索前・選択前)には広告タグを読み込まない */}
+      {submitted && <AdSenseScript />}
       <div className="mx-auto max-w-2xl min-w-0 space-y-6 px-4 py-8">
         <nav className="text-xs text-muted-foreground">
           <Link href="/" className="hover:underline">

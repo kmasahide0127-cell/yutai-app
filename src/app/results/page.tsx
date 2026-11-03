@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
+import { AdSenseScript } from "@/components/common/AdSenseScript";
 import {
   matchYutaiByExpenseGrouped,
   filterCandidatesForBudget,
@@ -107,6 +108,7 @@ export default async function ResultsPage({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
+      <AdSenseScript />
       <div className="mx-auto max-w-2xl min-w-0 space-y-6 px-4 py-8">
         <header>
           <h1 className="text-2xl font-bold">あなたの生活にマッチした優待</h1>

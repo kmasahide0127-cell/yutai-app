@@ -92,13 +92,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6624294914787679"
-          crossOrigin="anonymous"
-        />
-      </head>
+      {/* AdSense のタグはここに置かない。広告を出せるページだけが AdSenseScript を読み込む
+          (入力・ナビゲーション目的の画面に広告タグを載せないため) */}
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const corePages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
     { url: `${baseUrl}/onboarding`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${baseUrl}/expense`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${baseUrl}/stocks`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/search`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/experiences`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },

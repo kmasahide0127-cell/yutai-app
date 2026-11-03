@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ADSENSE_CLIENT, AdSenseScript } from "@/components/common/AdSenseScript";
 
 interface Props {
   slot?: string;
@@ -27,10 +28,11 @@ export default function AdUnit({ slot, format = "auto", className = "" }: Props)
 
   return (
     <div className={`overflow-hidden ${className}`}>
+      <AdSenseScript />
       <ins
         className="adsbygoogle"
         style={{ display: "block" }}
-        data-ad-client="ca-pub-6624294914787679"
+        data-ad-client={ADSENSE_CLIENT}
         data-ad-slot={slot ?? ""}
         data-ad-format={format}
         data-full-width-responsive="true"

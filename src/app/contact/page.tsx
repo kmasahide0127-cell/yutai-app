@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "お問い合わせ・よくある質問",
-  description: "優待マッチへのよくある質問・お問い合わせ窓口。機能リクエスト・銘柄追加・データ誤りのご報告はこちらからどうぞ。",
-  alternates: {
-    canonical: "/contact",
-  },
-};
+  description:
+    "優待マッチへのよくある質問・お問い合わせ窓口。機能リクエスト・銘柄追加・データ誤りのご報告はこちらからどうぞ。",
+  path: "/contact",
+});
 
 const CONTACT_FAQ = [
   {
