@@ -90,7 +90,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "このサービスは投資推奨ですか？",
-    a: "いいえ。本サービスは情報提供のみを目的としており、投資助言・投資勧誘ではありません。個別銘柄の売買推奨・目標株価の提示は行いません。投資判断はご自身の責任で行ってください。",
+    a: "いいえ。本サービスは情報提供のみを目的としており、個別銘柄の売買推奨・目標株価の提示は行いません。詳しくはページ下部の「重要な注意事項」をご覧ください。",
   },
   {
     q: "どんな情報を入力すればいいですか？",
@@ -171,9 +171,7 @@ export default function Home() {
               （うち<strong className="text-foreground">{DATA_STATS.activeVerified}銘柄</strong>は運営者が内容を確認した「検証済み」）。
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              本サービスは個人開発で運営しています。掲載情報は参考情報であり、
-              <strong className="text-foreground">投資助言・投資勧誘ではありません。</strong>
-              投資判断はご自身の責任でお願いします。
+              本サービスは個人開発で運営しています。
             </p>
             <div className="grid grid-cols-3 gap-3 pt-2">
               {(
@@ -375,9 +373,7 @@ export default function Home() {
       {/* ── 9. フッター ──────────────────────────────────── */}
       <footer className="mt-4 mb-6 text-center text-xs text-muted-foreground space-y-3 max-w-2xl mx-auto px-4">
         <p className="leading-relaxed">
-          本サイトは個人開発による情報提供サイトです。優待情報は{formatDate(DATA_LAST_UPDATED)}時点のもので、
-          最新でない可能性があります。投資判断はご自身の責任でお願いします。
-          詳細は<Link href="/terms" className="underline">利用規約</Link>をご確認ください。
+          ご利用にあたっては<Link href="/terms" className="underline">利用規約</Link>をご確認ください。
         </p>
         <nav aria-label="フッターナビゲーション">
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">

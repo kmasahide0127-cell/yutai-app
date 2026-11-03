@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DATA_STATS, YUTAI_LIST, hasActiveYutai, isAnnualizedYutai } from "@/lib/yutai-data";
+import { DATA_STATS, YUTAI_LIST, hasActiveYutai, isAnnualizedYutai, type Yutai } from "@/lib/yutai-data";
 import {
   countYutaiByCategory,
+  EXPENSE_CATEGORIES,
+  EXPENSE_CATEGORY_SLUGS,
   filterYutaiByStockListFilter,
+  getExpenseCategoryBySlug,
   GIFT_CARD_FILTER_KEY,
+  yutaiMatchesExpense,
+  type ExpenseCategory,
   type StockListFilter,
 } from "@/lib/matching";
 import { isAbolished } from "@/lib/product-search";
@@ -23,37 +28,76 @@ function formatYen(amount: number): string {
   return `${amount.toLocaleString()}円`;
 }
 
-type SearchParams = Promise<{ category?: string }>;
+// 優待利回りがこの値(%)を超える銘柄は、一覧上で算出根拠(年間優待価値・必要投資額・株価基準日)を併記する。
+// 高い利回りは株価の急落や優待価値の見積もりに左右されやすく、根拠なしに数字だけを見せないため。
+const YIELD_BASIS_THRESHOLD = 10;
+
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
+
+type SearchParams = Promise<{ category?: string; expense?: string; month?: string }>;
+
+type ListFilters = {
+  expense: ExpenseCategory | null;
+  month: number | null;
+  genre: StockListFilter | null;
+};
+
+function applyFilters(list: Yutai[], f: ListFilters): Yutai[] {
+  const byExpenseAndMonth = list.filter(
+    (y) =>
+      (!f.expense || yutaiMatchesExpense(y, f.expense)) &&
+      (!f.month || y.rightsMonths.includes(f.month))
+  );
+  return filterYutaiByStockListFilter(byExpenseAndMonth, f.genre);
+}
+
+/** 現在の絞り込みに1項目だけ差し替えた URL を作る(null でその項目を解除) */
+function buildHref(f: ListFilters, patch: Partial<ListFilters>): string {
+  const next = { ...f, ...patch };
+  const params = new URLSearchParams();
+  if (next.expense) params.set("expense", EXPENSE_CATEGORY_SLUGS[next.expense]);
+  if (next.month) params.set("month", String(next.month));
+  if (next.genre) params.set("category", next.genre);
+  const q = params.toString();
+  return q ? `/stocks?${q}` : "/stocks";
+}
 
 export default async function StocksListPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const { category } = await searchParams;
+  const { category, expense, month } = await searchParams;
   // 同名パラメータの重複で配列が渡るケースを除外する
-  const activeFilter: StockListFilter | null = typeof category === "string" ? category : null;
+  const monthNum = typeof month === "string" ? Number(month) : NaN;
+  const filters: ListFilters = {
+    expense: typeof expense === "string" ? getExpenseCategoryBySlug(expense) ?? null : null,
+    month: Number.isInteger(monthNum) && monthNum >= 1 && monthNum <= 12 ? monthNum : null,
+    genre: typeof category === "string" ? category : null,
+  };
+  const isFiltered = Boolean(filters.expense || filters.month || filters.genre);
 
   const validYutai = YUTAI_LIST.filter(isAnnualizedYutai).sort(
     (a, b) => b.annualValue - a.annualValue
   );
   // 継続保有の到達時に1回だけもらえる優待(NTT等)。年換算できないため年間価値の並びには混ぜない
-  const oneTimeYutai = filterYutaiByStockListFilter(
+  const oneTimeYutai = applyFilters(
     YUTAI_LIST.filter((y) => hasActiveYutai(y) && !isAnnualizedYutai(y)),
-    activeFilter
+    filters
   );
 
   // 廃止済み銘柄は一覧から消さず、active と分けた別セクションで事実を表示する。
   // 件数・カテゴリチップは active のみで数えるため、上の validYutai とは混ぜない。
-  const abolishedYutai = filterYutaiByStockListFilter(
-    YUTAI_LIST.filter(isAbolished),
-    activeFilter
-  ).sort((a, b) => (b.lastRecordDate ?? "").localeCompare(a.lastRecordDate ?? ""));
+  const abolishedYutai = applyFilters(YUTAI_LIST.filter(isAbolished), filters).sort((a, b) =>
+    (b.lastRecordDate ?? "").localeCompare(a.lastRecordDate ?? "")
+  );
 
+  // チップの件数は「他の絞り込みはそのまま、その項目だけ差し替えた場合」の件数
+  const countWith = (patch: Partial<ListFilters>) =>
+    applyFilters(validYutai, { ...filters, ...patch }).length;
   const categoryCounts = countYutaiByCategory(validYutai);
-  const giftCardCount = filterYutaiByStockListFilter(validYutai, GIFT_CARD_FILTER_KEY).length;
 
-  const displayedYutai = filterYutaiByStockListFilter(validYutai, activeFilter);
+  const displayedYutai = applyFilters(validYutai, filters);
 
   const chipClass = (isActive: boolean) =>
     cn(
@@ -75,7 +119,7 @@ export default async function StocksListPage({
         <header className="space-y-1">
           <h1 className="text-2xl font-bold">株主優待 全銘柄一覧</h1>
           <p className="text-sm text-muted-foreground">
-            {activeFilter
+            {isFiltered
               ? `${displayedYutai.length}銘柄(絞り込み中・全${validYutai.length}銘柄中)`
               : `${validYutai.length}銘柄(年間優待価値の高い順)`}
           </p>
@@ -111,35 +155,62 @@ export default async function StocksListPage({
           💡 各銘柄をタップすると詳細ページが開きます。あなたに合う優待は<Link href="/onboarding" className="underline font-medium">診断</Link>で見つかります。
         </p>
 
-        {/* ── カテゴリ絞り込み(「お酒だけ」「クオカードだけ」等、ジャンルを絞って探したい人向け) ── */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">ジャンルで絞り込む</p>
-          <div className="flex flex-wrap gap-1.5">
-            <Link href="/stocks" className={chipClass(activeFilter === null)}>
-              すべて({validYutai.length})
-            </Link>
-            <Link
-              href={`/stocks?category=${GIFT_CARD_FILTER_KEY}`}
-              className={chipClass(activeFilter === GIFT_CARD_FILTER_KEY)}
-            >
-              🎫 クオカード等の金券({giftCardCount})
-            </Link>
-            {categoryCounts.map(({ category: c, count }) => (
-              <Link
-                key={c}
-                href={`/stocks?category=${encodeURIComponent(c)}`}
-                className={chipClass(activeFilter === c)}
-              >
-                {c}({count})
+        {/* ── 絞り込み: 出費カテゴリ → 権利確定月 → 業種ジャンルの順(生活起点を先に置く) ── */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">出費カテゴリで絞り込む</p>
+            <div className="flex flex-wrap gap-1.5">
+              <Link href={buildHref(filters, { expense: null })} className={chipClass(filters.expense === null)}>
+                すべて({countWith({ expense: null })})
               </Link>
-            ))}
+              {EXPENSE_CATEGORIES.map((e) => (
+                <Link key={e} href={buildHref(filters, { expense: e })} className={chipClass(filters.expense === e)}>
+                  {e}({countWith({ expense: e })})
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">権利確定月で絞り込む</p>
+            <div className="flex flex-wrap gap-1.5">
+              <Link href={buildHref(filters, { month: null })} className={chipClass(filters.month === null)}>
+                すべて
+              </Link>
+              {MONTHS.map((m) => (
+                <Link key={m} href={buildHref(filters, { month: m })} className={chipClass(filters.month === m)}>
+                  {m}月({countWith({ month: m })})
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* 「お酒だけ」「クオカードだけ」等、業種ジャンルを絞って探したい人向け */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">業種ジャンルで絞り込む</p>
+            <div className="flex flex-wrap gap-1.5">
+              <Link href={buildHref(filters, { genre: null })} className={chipClass(filters.genre === null)}>
+                すべて
+              </Link>
+              <Link
+                href={buildHref(filters, { genre: GIFT_CARD_FILTER_KEY })}
+                className={chipClass(filters.genre === GIFT_CARD_FILTER_KEY)}
+              >
+                🎫 クオカード等の金券({countWith({ genre: GIFT_CARD_FILTER_KEY })})
+              </Link>
+              {categoryCounts.map(({ category: c }) => (
+                <Link key={c} href={buildHref(filters, { genre: c })} className={chipClass(filters.genre === c)}>
+                  {c}({countWith({ genre: c })})
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="space-y-2">
           {displayedYutai.length === 0 && (
             <p className="rounded-lg border border-border bg-card p-4 text-center text-sm text-muted-foreground">
-              このジャンルに該当する銘柄は現状ありません
+              この条件に該当する銘柄は現状ありません
             </p>
           )}
           {displayedYutai.map((yutai) => (
@@ -150,7 +221,15 @@ export default async function StocksListPage({
                     <p className="text-sm font-medium truncate">{yutai.name}</p>
                     <span className="text-xs text-muted-foreground tabular-nums shrink-0">({yutai.code})</span>
                   </div>
-                  <p className="text-xs text-muted-foreground tabular-nums mt-0.5">年間 {formatYen(yutai.annualValue)} / 利回り {yutai.yieldPercent}%</p>
+                  <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
+                    年間 {formatYen(yutai.annualValue)} / 利回り {yutai.yieldPercent}% / {yutai.rightsMonths.map((m) => `${m}月`).join("・")}確定
+                  </p>
+                  {yutai.yieldPercent > YIELD_BASIS_THRESHOLD && (
+                    <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
+                      算出根拠: 年間優待価値 {formatYen(yutai.annualValue)} ÷ 必要投資額 {formatYen(yutai.approxInvestment)}
+                      (株価基準日 {yutai.priceUpdatedAt ?? "未記録"}・{yutai.minShares}株)
+                    </p>
+                  )}
                 </div>
               </div>
             </Link>

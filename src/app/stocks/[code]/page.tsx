@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { YUTAI_LIST, hasActiveYutai, isAnnualizedYutai } from "@/lib/yutai-data";
-import { getMatchingExpenseCategoriesForYutai, getRelatedYutai, EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
+import {
+  describeCalendarPosition,
+  getMatchingExpenseCategoriesForYutai,
+  getRelatedYutai,
+  EXPENSE_CATEGORY_SLUGS,
+} from "@/lib/matching";
 import {
   estimateFirstReceipt,
   formatOneTimeBenefits,
@@ -105,6 +110,7 @@ export default async function StockDetailPage({
   const firstReceipt = estimateFirstReceipt(yutai);
   const matchingExpenseCategories = getMatchingExpenseCategoriesForYutai(yutai);
   const relatedYutai = getRelatedYutai(yutai, YUTAI_LIST);
+  const calendarPosition = abolished ? null : describeCalendarPosition(yutai, YUTAI_LIST);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -237,6 +243,10 @@ export default async function StockDetailPage({
                 最低 {yutai.minShares}株 / 権利確定月: {formatMonths(yutai.rightsMonths)}
                 {yutai.holdingRequirement ? ` / ${yutai.holdingRequirement}の継続保有が条件` : ""}
               </p>
+              {/* 必要投資額・利回りの株価基準日。記録がない場合は日付を作らず「未記録」と出す */}
+              <p>
+                株価基準日: {yutai.priceUpdatedAt ?? "未記録"}(必要投資額 = 株価 × {yutai.minShares}株)
+              </p>
             </div>
           </section>
         )}
@@ -294,6 +304,17 @@ export default async function StockDetailPage({
                 : `権利確定月の最終営業日時点で${yutai.minShares}株以上保有している場合に優待を受け取れます（参考情報）。`}
           </p>
         </section>
+
+        {/* カレンダー上の位置(掲載データから自動算出) */}
+        {calendarPosition && (
+          <section className="space-y-1" aria-labelledby="calendar-position-heading">
+            <h2 id="calendar-position-heading" className="text-base font-bold">カレンダー上の位置</h2>
+            <p className="text-sm leading-relaxed">{calendarPosition}</p>
+            <p className="text-xs text-muted-foreground">
+              当サイト掲載銘柄のうち、優待を実施中の銘柄を数えた結果です。
+            </p>
+          </section>
+        )}
 
         {/* 関連ブランド */}
         {yutai.brands && yutai.brands.length > 0 && (
@@ -384,13 +405,17 @@ export default async function StockDetailPage({
           </p>
           <p>
             ※ 最新の優待内容は
+            {/* 確認元URLがある銘柄は実際のIRページへ。未入力の銘柄は検索リンクで代替する */}
             <a
-              href={`https://www.google.com/search?q=${encodeURIComponent(yutai.name + " 株主優待 IR")}`}
+              href={
+                yutai.sourceUrl ??
+                `https://www.google.com/search?q=${encodeURIComponent(yutai.name + " 株主優待 IR")}`
+              }
               className="underline"
               target="_blank"
               rel="noopener noreferrer"
             >
-              企業IRページ等
+              {yutai.sourceUrl ? "企業IRページ" : "企業IRページ等(検索)"}
             </a>
             で必ずご確認ください。
           </p>

@@ -1,4 +1,4 @@
-import type { Yutai, PreferenceTag } from "./yutai-data";
+import { hasActiveYutai, type Yutai, type PreferenceTag } from "./yutai-data";
 export type { PreferenceTag };
 import type { MatchResult, UserLifestyle } from "@/types/matching";
 
@@ -842,15 +842,129 @@ export function getYutaiForExpenseCategory(
   const mapping = expenseToYutaiMatch[expense];
   if (!mapping) return [];
 
+  // 単発優待(NTT等)も「このカテゴリで使える優待」には含める。年間価値0扱いなので末尾に並ぶ
   return yutaiList
-    .filter((y) => y.annualValue > 0)
-    .filter((y) => {
-      const catMatch = y.categories.some((c) => mapping.categories.includes(c));
-      const tagMatch = y.lifestyleTags.some((t) => mapping.tags.includes(t));
-      return catMatch || tagMatch;
-    })
+    .filter(hasActiveYutai)
+    .filter((y) => yutaiMatchesExpense(y, expense))
     .sort((a, b) => b.annualValue - a.annualValue)
     .slice(0, limit);
+}
+
+/** 銘柄が出費カテゴリに対応するか(カテゴリ一致 or ライフスタイルタグ一致) */
+export function yutaiMatchesExpense(yutai: Yutai, expense: ExpenseCategory): boolean {
+  const mapping = expenseToYutaiMatch[expense];
+  if (!mapping) return false;
+  return (
+    yutai.categories.some((c) => mapping.categories.includes(c)) ||
+    yutai.lifestyleTags.some((t) => mapping.tags.includes(t))
+  );
+}
+
+// ── データから算出する事実(カテゴリページ・銘柄ページ用) ─────────────────
+// 定型の説明文ではなく、掲載データから数え上げた事実だけを文章にする。数値はハードコードしない。
+
+const ALL_MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
+
+function formatMonthList(months: number[]): string {
+  return months.map((m) => `${m}月`).join("・");
+}
+
+export type ExpenseCategoryFacts = {
+  expense: ExpenseCategory;
+  stockCount: number;
+  /** 月ごとの権利確定銘柄数(index 0 = 1月)。複数月に確定する銘柄は各月で数える */
+  monthCounts: number[];
+  /** 最も多い権利確定月とその銘柄数 */
+  peak: { months: number[]; count: number } | null;
+  /** このカテゴリの銘柄だけで権利確定月を最大何ヶ月カバーできるか(全銘柄の権利確定月の和集合) */
+  coverableMonthCount: number;
+  /** 該当銘柄が0の月と、その月をカバーできる他の出費カテゴリ(銘柄数の多い順・上位3件) */
+  emptyMonths: Array<{
+    month: number;
+    alternatives: Array<{ expense: ExpenseCategory; count: number }>;
+  }>;
+};
+
+/**
+ * 出費カテゴリの権利確定月の分布を算出する。
+ *
+ *   monthCounts[m-1]     = |{ y ∈ カテゴリ : m ∈ y.rightsMonths }|
+ *   coverableMonthCount  = |∪ y.rightsMonths|   (カテゴリ内の全銘柄を持った場合にカバーされる月数)
+ *   emptyMonths          = { m : monthCounts[m-1] = 0 }
+ *   alternatives(m)      = 他カテゴリ c ごとの |{ y ∈ c : m ∈ y.rightsMonths }| > 0 のもの
+ */
+export function buildExpenseCategoryFacts(
+  expense: ExpenseCategory,
+  yutaiList: Yutai[]
+): ExpenseCategoryFacts {
+  const stocks = getYutaiForExpenseCategory(expense, yutaiList, yutaiList.length);
+  const monthCounts = ALL_MONTHS.map(
+    (m) => stocks.filter((y) => y.rightsMonths.includes(m)).length
+  );
+  const maxCount = Math.max(0, ...monthCounts);
+  const peak =
+    maxCount > 0
+      ? { months: ALL_MONTHS.filter((m) => monthCounts[m - 1] === maxCount), count: maxCount }
+      : null;
+
+  const emptyMonths = ALL_MONTHS.filter((m) => monthCounts[m - 1] === 0).map((month) => {
+    const alternatives = EXPENSE_CATEGORIES.filter((e) => e !== expense)
+      .map((e) => ({
+        expense: e,
+        count: getYutaiForExpenseCategory(e, yutaiList, yutaiList.length).filter((y) =>
+          y.rightsMonths.includes(month)
+        ).length,
+      }))
+      .filter((a) => a.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+    return { month, alternatives };
+  });
+
+  return {
+    expense,
+    stockCount: stocks.length,
+    monthCounts,
+    peak,
+    coverableMonthCount: monthCounts.filter((c) => c > 0).length,
+    emptyMonths,
+  };
+}
+
+export function describePeakMonths(facts: ExpenseCategoryFacts): string | null {
+  if (!facts.peak) return null;
+  return `${facts.stockCount}銘柄中${facts.peak.count}銘柄が${formatMonthList(facts.peak.months)}確定`;
+}
+
+/**
+ * 銘柄ページの「カレンダー上の位置」を1文で返す。
+ *
+ * 銘柄が属する各出費カテゴリについて、同じ権利確定月を持つ銘柄数(自身を含む)を数え、
+ * 最も希少なカテゴリ(各月の銘柄数の合計が最小)を選んで文章にする。
+ *   全月で自身のみ → 「{カテゴリ}カテゴリで{月}に権利確定するのはこの銘柄のみ」
+ *   それ以外       → 「{カテゴリ}カテゴリ{N}銘柄のうち、{m}月確定は本銘柄を含め{c}銘柄 …」
+ */
+export function describeCalendarPosition(yutai: Yutai, yutaiList: Yutai[]): string | null {
+  if (!hasActiveYutai(yutai) || yutai.rightsMonths.length === 0) return null;
+  const expenses = getMatchingExpenseCategoriesForYutai(yutai);
+  if (expenses.length === 0) return null;
+
+  const candidates = expenses.map((expense) => {
+    const stocks = getYutaiForExpenseCategory(expense, yutaiList, yutaiList.length);
+    const perMonth = yutai.rightsMonths.map((m) => ({
+      month: m,
+      count: stocks.filter((y) => y.rightsMonths.includes(m)).length,
+    }));
+    return { expense, total: stocks.length, perMonth, sum: perMonth.reduce((s, p) => s + p.count, 0) };
+  });
+  candidates.sort((a, b) => a.sum - b.sum);
+  const best = candidates[0];
+
+  if (best.perMonth.every((p) => p.count <= 1)) {
+    return `${best.expense}カテゴリで${formatMonthList(yutai.rightsMonths)}に権利確定するのはこの銘柄のみです。`;
+  }
+  const parts = best.perMonth.map((p) => `${p.month}月確定は本銘柄を含め${p.count}銘柄`);
+  return `${best.expense}カテゴリ${best.total}銘柄のうち、${parts.join("、")}です。`;
 }
 
 // ── 銘柄個別ページ用ユーティリティ ───────────────────────────────
