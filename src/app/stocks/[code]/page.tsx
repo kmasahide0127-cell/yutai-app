@@ -246,6 +246,8 @@ export default async function StockDetailPage({
               {/* 必要投資額・利回りの株価基準日。記録がない場合は日付を作らず「未記録」と出す */}
               <p>
                 株価基準日: {yutai.priceUpdatedAt ?? "未記録"}(必要投資額 = 株価 × {yutai.minShares}株)
+                {" "}
+                <Link href="/method#yield" className="underline">算出方法</Link>
               </p>
             </div>
           </section>

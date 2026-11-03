@@ -262,7 +262,8 @@ export default async function StocksListPage({
             </h2>
             <p className="text-xs text-muted-foreground">
               優待を探していて辿り着いたときに分かるよう、廃止の事実を記録として掲載しています。
-              上の一覧(実施中)とは分けて表示しています。
+              上の一覧(実施中)とは分けて表示しています。日付ごとの記録は
+              <Link href="/changelog" className="underline">更新履歴</Link>にまとめています。
             </p>
             <div className="space-y-2">
               {abolishedYutai.map((yutai) => (

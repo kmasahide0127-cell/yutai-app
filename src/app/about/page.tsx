@@ -133,6 +133,8 @@ export default function AboutPage() {
               <li>データ基準日: <strong className="text-foreground">{formatDate(DATA_LAST_UPDATED)}</strong></li>
             </ul>
             <p className="text-xs">
+              年間優待価値・利回り・初回受取見込みの計算方法は<Link href="/method" className="text-primary underline">算出方法</Link>、
+              廃止・修正の記録は<Link href="/changelog" className="text-primary underline">更新履歴</Link>をご覧ください。
               優待内容は企業の判断により予告なく変更・廃止されることがあるため、
               最新情報は必ず各企業のIRページや公式発表でご確認ください。
             </p>
@@ -227,6 +229,8 @@ export default function AboutPage() {
             <li><Link href="/privacy" className="text-primary underline">プライバシーポリシー</Link></li>
             <li><Link href="/contact" className="text-primary underline">お問い合わせ</Link></li>
             <li><Link href="/stocks" className="text-primary underline">全銘柄一覧</Link></li>
+            <li><Link href="/method" className="text-primary underline">算出方法</Link></li>
+            <li><Link href="/changelog" className="text-primary underline">掲載データの更新履歴</Link></li>
           </ul>
         </section>
 

@@ -378,6 +378,8 @@ export default function Home() {
         <nav aria-label="フッターナビゲーション">
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
             <Link href="/stocks" className="hover:underline">銘柄一覧</Link>
+            <Link href="/method" className="hover:underline">算出方法</Link>
+            <Link href="/changelog" className="hover:underline">更新履歴</Link>
             <Link href="/about" className="hover:underline">このサイトについて</Link>
             <Link href="/contact" className="hover:underline">お問い合わせ</Link>
             <Link href="/terms" className="hover:underline">利用規約</Link>
