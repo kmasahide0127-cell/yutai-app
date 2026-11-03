@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { YUTAI_LIST } from "@/lib/yutai-data";
+import { YUTAI_LIST, hasActiveYutai, isAbolishedYutai } from "@/lib/yutai-data";
 import { EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { siteConfig } from "@/config/site";
 
@@ -28,7 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // 廃止銘柄の詳細ページも「廃止された」事実を伝える価値があるため含める
   const stockPages: MetadataRoute.Sitemap = YUTAI_LIST
-    .filter((y) => y.annualValue > 0 || y.status === "abolished")
+    .filter((y) => hasActiveYutai(y) || isAbolishedYutai(y))
     .map((yutai) => ({
       url: `${baseUrl}/stocks/${yutai.code}`,
       lastModified: yutai.lastVerified ? new Date(yutai.lastVerified) : now,

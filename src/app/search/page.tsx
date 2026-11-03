@@ -13,7 +13,7 @@ import {
 } from "@/components/search/StockResultCard";
 
 export const metadata: Metadata = {
-  title: "商品名から株主優待を逆引き検索 | 優待マッチ",
+  title: "商品名から株主優待を逆引き検索",
   description:
     "ReFa・SIXPAD・ARグラスなど、欲しい商品やブランド名から該当する株主優待銘柄を逆引きします。非上場ブランドの場合は、その商品を買える小売の優待も参考として表示します。",
   alternates: { canonical: "/search" },

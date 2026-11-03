@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
 
 export const metadata: Metadata = {
-  title: "プライバシーポリシー | 優待マッチ",
+  title: "プライバシーポリシー",
   description: "優待マッチのプライバシーポリシー。Cookie・AdSense・localStorage の取り扱いを説明しています。",
   alternates: {
     canonical: "/privacy",
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="font-semibold text-base mb-2">6. 第三者サービスのリンク</h2>
-            <p>本サービスには、外部サイト(企業IRページ、GitHub 等)へのリンクが含まれる場合があります。リンク先のプライバシーポリシーは各サービスのものが適用され、本ポリシーの対象外です。</p>
+            <p>本サービスには、外部サイト(企業IRページ等)へのリンクが含まれる場合があります。リンク先のプライバシーポリシーは各サービスのものが適用され、本ポリシーの対象外です。</p>
           </div>
 
           <div>
@@ -65,17 +65,16 @@ export default function PrivacyPage() {
           <div>
             <h2 className="font-semibold text-base mb-2">8. お問い合わせ</h2>
             <p>
-              本ポリシーに関するお問い合わせは、メールまたは GitHub Issues までお願いします。
+              本ポリシーに関するお問い合わせは、メールにてお願いします。
             </p>
             <ul className="list-none mt-2 space-y-1">
               <li>メール: <a href="mailto:yutaiinfoshare@gmail.com" className="text-primary underline">yutaiinfoshare@gmail.com</a></li>
-              <li>GitHub: <a href="https://github.com/kmasahide0127-cell/yutai-app/issues" className="text-primary underline" target="_blank" rel="noopener noreferrer">Issues ページ</a></li>
             </ul>
           </div>
 
           <p className="text-xs text-muted-foreground mt-8">
             ポリシー制定日: 2026年5月27日<br />
-            最終更新日: 2026年6月26日
+            最終更新日: 2026年11月3日
           </p>
         </section>
       </div>

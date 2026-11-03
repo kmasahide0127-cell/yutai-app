@@ -702,14 +702,6 @@ export function ResultsClient({
         </section>
       )}
 
-      {/* ── アフィリエイトバナー ── */}
-      {visibleBudgetCandidates.length > 0 && (
-        <section className="space-y-2" aria-label="証券口座のご案内">
-          <h2 className="text-base font-bold">証券口座をお持ちでない方へ</h2>
-          <AffiliateBanner />
-        </section>
-      )}
-
       {/* ── カテゴリ別サマリー ── */}
       {hasAnyResults && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-5">
@@ -945,6 +937,14 @@ export function ResultsClient({
         />
       )}
 
+      {/* ── アフィリエイトバナー(1ページ1本・本文の後) ── */}
+      {visibleBudgetCandidates.length > 0 && (
+        <section className="space-y-2" aria-label="証券口座のご案内">
+          <h2 className="text-base font-bold">証券口座をお持ちでない方へ</h2>
+          <AffiliateBanner />
+        </section>
+      )}
+
       <div className="pb-4">
         <Link
           href="/onboarding"
@@ -961,7 +961,7 @@ export function ResultsClient({
           <Link href="/contact" className="hover:underline">お問い合わせ</Link>
           <Link href="/about" className="hover:underline">このサイトについて</Link>
         </div>
-        <p className="mt-2">© 2026 優待アプリ | データ取得日: {DATA_LAST_UPDATED_JP}</p>
+        <p className="mt-2">© 2026 優待マッチ | データ取得日: {DATA_LAST_UPDATED_JP}</p>
       </footer>
     </div>
   );

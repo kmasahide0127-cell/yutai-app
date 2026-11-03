@@ -30,7 +30,7 @@ export async function generateMetadata({
   const description = `${expense}の株主優待まとめ。代表銘柄・活用例・全銘柄一覧を掲載。あなたに合う優待を無料で診断できます。`;
 
   return {
-    title: `${expense}に使える株主優待 | 優待マッチ`,
+    title: `${expense}に使える株主優待`,
     description,
     alternates: { canonical: `/expense/${slug}` },
     openGraph: {

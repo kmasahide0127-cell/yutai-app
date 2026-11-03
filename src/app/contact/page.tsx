@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 
 export const metadata: Metadata = {
-  title: "お問い合わせ・よくある質問 | 優待マッチ",
+  title: "お問い合わせ・よくある質問",
   description: "優待マッチへのよくある質問・お問い合わせ窓口。機能リクエスト・銘柄追加・データ誤りのご報告はこちらからどうぞ。",
   alternates: {
     canonical: "/contact",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const CONTACT_FAQ = [
   {
     q: "機能リクエスト・バグ報告はどこにすればいいですか？",
-    a: "メール（yutaiinfoshare@gmail.com）またはGitHub Issuesにてご連絡ください。GitHub Issuesは開発者が優先的に確認します。",
+    a: "メール（yutaiinfoshare@gmail.com）にてご連絡ください。",
   },
   {
     q: "銘柄追加のリクエストはできますか？",
@@ -113,24 +113,6 @@ export default function ContactPage() {
             <li>広告・掲載に関するお問い合わせ</li>
             <li>その他、サイトに関するご連絡</li>
           </ul>
-        </section>
-
-        {/* GitHub Issues */}
-        <section aria-labelledby="github-heading">
-          <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-            <h2 id="github-heading" className="font-semibold text-base">GitHub Issues（技術的なご報告）</h2>
-            <p className="text-sm text-muted-foreground">
-              バグ報告・技術的なフィードバックはGitHub Issuesもご利用いただけます。
-            </p>
-            <a
-              href="https://github.com/kmasahide0127-cell/yutai-app/issues"
-              className="inline-block text-primary underline break-all text-xs"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              https://github.com/kmasahide0127-cell/yutai-app/issues
-            </a>
-          </div>
         </section>
 
         <p className="text-xs text-muted-foreground">

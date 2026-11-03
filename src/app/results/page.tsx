@@ -36,13 +36,13 @@ export async function generateMetadata({
     alternates: { canonical: "/results" },
     robots: { index: false, follow: true },
     openGraph: {
-      title: "私の年間優待カレンダー | 優待アプリ",
+      title: "私の年間優待カレンダー | 優待マッチ",
       description: "毎月の出費から、削減できる株主優待を提案。",
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: "私の年間優待カレンダー" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "私の年間優待カレンダー | 優待アプリ",
+      title: "私の年間優待カレンダー | 優待マッチ",
       description: "毎月の出費から、削減できる株主優待を提案。",
       images: [ogImageUrl],
     },

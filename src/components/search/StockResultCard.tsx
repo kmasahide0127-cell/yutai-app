@@ -1,7 +1,10 @@
 import Link from "next/link";
 import type { Yutai } from "@/lib/yutai-data";
+import { isAnnualizedYutai } from "@/lib/yutai-data";
 import {
+  formatOneTimeBenefits,
   getAbolishedNotice,
+  getHoldingRequirementNotice,
   isAbolished,
   type FirstReceiptEstimate,
 } from "@/lib/product-search";
@@ -95,13 +98,20 @@ export function StockResultCard({
 
           {abolished ? (
             <p className="text-xs font-medium text-muted-foreground">
-              株主優待は{abolishedNotice}
+              {abolishedNotice}
               {yutai.abolishedNote ? `(${yutai.abolishedNote})` : ""}
             </p>
-          ) : (
+          ) : isAnnualizedYutai(yutai) ? (
             <p className="text-xs tabular-nums text-muted-foreground">
               年間 {yutai.annualValue.toLocaleString()}円相当 / 必要投資額 約
               {yutai.approxInvestment.toLocaleString()}円 / 利回り {yutai.yieldPercent}%
+              {yutai.holdingRequirement ? ` / ${yutai.holdingRequirement}の継続保有が条件` : ""}
+            </p>
+          ) : (
+            // 単発優待は毎年もらえないため年換算・利回りを出さない
+            <p className="text-xs tabular-nums text-muted-foreground">
+              {formatOneTimeBenefits(yutai)}(毎年ではありません・利回り算出対象外) / 必要投資額 約
+              {yutai.approxInvestment.toLocaleString()}円
             </p>
           )}
 
@@ -117,6 +127,11 @@ export function StockResultCard({
               yutai={yutai}
               className="pt-1"
             />
+          )}
+          {showFirstReceipt && !firstReceipt && getHoldingRequirementNotice(yutai) && (
+            <p className="pt-1 text-xs text-muted-foreground">
+              🗓 {getHoldingRequirementNotice(yutai)}
+            </p>
           )}
         </div>
       </div>

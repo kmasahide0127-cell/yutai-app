@@ -9,7 +9,13 @@
 // 重要な設計方針: 「該当0件」で黙って終わらせない。
 // 非上場・優待廃止・優待未収録はいずれも「検索結果なし」ではなく事実として返す。
 
-import { YUTAI_LIST, type Yutai } from "@/lib/yutai-data";
+import {
+  YUTAI_LIST,
+  hasActiveYutai,
+  hasOneTimeBenefit,
+  isAbolishedYutai,
+  type Yutai,
+} from "@/lib/yutai-data";
 import {
   BRANDS,
   RETAILERS,
@@ -111,15 +117,21 @@ function rightsLastTradingDay(year: number, month: number): Date {
  *
  * 受取見込み = 基準日 + receiptLagMonths(既定3ヶ月)。
  *
+ * 単発優待(oneTimeBenefits)の銘柄は、継続保有要件 = 最初の到達条件(例: NTT の2年)として
+ * 同じ2パスで計算し、ラベルに「1回目」であることを明記する。
+ *
  * 廃止銘柄・優待を実施していない銘柄・基準日が未定の銘柄は null を返す。
+ * 継続保有条件(holdingRequirement)があるのに名簿記録の判定ルールが未入力の銘柄も null を返す
+ * (条件を無視して計算すると実際より早い時期を表示してしまうため)。呼び出し側は
+ * getHoldingRequirementNotice() で「算出していない理由」を表示する。
  */
 export function estimateFirstReceipt(
   yutai: Yutai,
   today: Date = new Date()
 ): FirstReceiptEstimate | null {
-  if (isAbolished(yutai)) return null;
-  if (yutai.annualValue <= 0) return null;
+  if (!hasActiveYutai(yutai)) return null;
   if (!yutai.rightsMonths || yutai.rightsMonths.length === 0) return null;
+  if (yutai.holdingRequirement && !yutai.requiredConsecutiveRecords) return null;
 
   const recordMonths = yutai.recordMonths ?? yutai.rightsMonths;
   if (recordMonths.length === 0) return null;
@@ -168,7 +180,9 @@ export function estimateFirstReceipt(
     estimatedReceipt,
     monthsAway,
     missedCurrentCycle,
-    label: `今から購入した場合、初回受取見込みは${estimatedReceipt.year}年${estimatedReceipt.month}月頃`,
+    label: hasOneTimeBenefit(yutai) && yutai.oneTimeBenefits
+      ? `今から購入した場合、初回受取見込みは${estimatedReceipt.year}年${estimatedReceipt.month}月頃(保有${yutai.oneTimeBenefits[0].afterYears}年到達時の1回目)`
+      : `今から購入した場合、初回受取見込みは${estimatedReceipt.year}年${estimatedReceipt.month}月頃`,
   };
 }
 
@@ -176,22 +190,44 @@ export function formatYearMonth(ym: YearMonth): string {
   return `${ym.year}年${ym.month}月`;
 }
 
+/**
+ * 継続保有条件があるのに判定ルールが未入力で、初回受取見込みを算出していない場合の説明文。
+ * 該当しなければ null。
+ */
+export function getHoldingRequirementNotice(yutai: Yutai): string | null {
+  if (!hasActiveYutai(yutai) || !yutai.holdingRequirement) return null;
+  if (yutai.requiredConsecutiveRecords) return null;
+  return `優待の受取には${yutai.holdingRequirement}の継続保有が必要です。継続保有の判定方法(株主名簿の記録回数)を確認できていないため、初回受取見込みは算出していません。`;
+}
+
+/** 単発優待の表示文(例: 「2年保有で1回1,500円相当 / 5年保有で1回3,000円相当」)。該当しなければ null */
+export function formatOneTimeBenefits(yutai: Yutai): string | null {
+  if (!yutai.oneTimeBenefits || yutai.oneTimeBenefits.length === 0) return null;
+  return yutai.oneTimeBenefits
+    .map((b) => `${b.afterYears}年保有で1回${b.value.toLocaleString()}円相当`)
+    .join(" / ");
+}
+
 // ── 廃止フラグ ────────────────────────────────────────────────
 
 /** status 未指定の銘柄は active 扱い(既存データを書き換えずに済ませるため) */
 export function isAbolished(yutai: Yutai): boolean {
-  return yutai.status === "abolished";
+  return isAbolishedYutai(yutai);
 }
 
 /**
- * 廃止済み銘柄の表示文言。
+ * 廃止済み銘柄の表示文言(それだけで1文として完結する形で返す)。
  * 「いつの権利分で終わったか」を事実として返す。非表示にはしない。
+ * 呼び出し側で「株主優待は」等を前置しないこと(以前は前置して文言が重複していた)。
  */
 export function getAbolishedNotice(yutai: Yutai): string | null {
   if (!isAbolished(yutai)) return null;
+  if (yutai.abolishedKind === "delisted") {
+    return "上場廃止のため、現在は株式を取得できず株主優待も受けられません";
+  }
   if (!yutai.lastRecordDate) return "株主優待制度は廃止されています";
   const [year, month] = yutai.lastRecordDate.split("-");
-  return `${year}年${parseInt(month, 10)}月権利分をもって廃止`;
+  return `株主優待は${year}年${parseInt(month, 10)}月権利分をもって廃止されています`;
 }
 
 // ── 検索 ──────────────────────────────────────────────────────
@@ -259,7 +295,7 @@ function buildRetailerRelays(
     if (!retailer) continue;
     const yutai = findYutaiByCode(retailer.code, yutaiList);
     // 小売側に優待が無い(または廃止された)なら導線として意味をなさないので出さない
-    if (!yutai || yutai.annualValue <= 0 || isAbolished(yutai)) continue;
+    if (!yutai || !hasActiveYutai(yutai)) continue;
     relays.push({
       retailer,
       yutai,
@@ -306,11 +342,11 @@ function resolveBrand(
       kind: "listed-yutai-abolished",
       yutai,
       firstReceipt: null,
-      statusMessage: `${yutai.name}(${yutai.code})の株主優待は${getAbolishedNotice(yutai)}されています`,
+      statusMessage: `${yutai.name}(${yutai.code}): ${getAbolishedNotice(yutai)}`,
     };
   }
 
-  if (yutai.annualValue <= 0) {
+  if (!hasActiveYutai(yutai)) {
     return {
       ...base,
       kind: "listed-no-yutai",
@@ -381,7 +417,7 @@ export function searchProducts(
     if (shownCodes.has(yutai.code)) continue;
     // 優待を実施していない銘柄は検索に出さない。ただし廃止銘柄は
     // 「廃止された」という事実を返す必要があるので対象に含める。
-    if (yutai.annualValue <= 0 && !isAbolished(yutai)) continue;
+    if (!hasActiveYutai(yutai) && !isAbolished(yutai)) continue;
 
     const terms = [yutai.name, yutai.code, ...yutai.brands, ...yutai.categories, ...yutai.lifestyleTags];
     const matchedTerms: string[] = [];

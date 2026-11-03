@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
-import { DATA_LAST_UPDATED, TOTAL_COUNT, VERIFIED_COUNT } from "@/lib/yutai-data";
+import { DATA_LAST_UPDATED, DATA_STATS } from "@/lib/yutai-data";
 
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-");
@@ -9,7 +9,7 @@ function formatDate(dateStr: string): string {
 }
 
 export const metadata: Metadata = {
-  title: "このサイトについて | 優待マッチ",
+  title: "このサイトについて",
   description: "個人開発の株主優待マッチングサービス「優待マッチ」のデータ品質・検証方法・運営方針・免責事項について詳しく説明します。",
   alternates: {
     canonical: "/about",
@@ -105,9 +105,9 @@ export default function AboutPage() {
           <h2 className="font-bold text-base text-foreground">データ品質・検証方法</h2>
           <div className="space-y-3 text-muted-foreground">
             <p>
-              全{TOTAL_COUNT}銘柄の中から、運営者が実際に企業のIRページを確認し
+              優待実施中の{DATA_STATS.active}銘柄のうち、運営者が実際に企業のIRページを確認し
               内容を高い確度で把握した銘柄を
-              <strong className="text-foreground">「✓ 検証済み」({VERIFIED_COUNT}銘柄)</strong>
+              <strong className="text-foreground">「✓ 検証済み」({DATA_STATS.activeVerified}銘柄)</strong>
               と表記しています。
               残りは過去の公開情報をもとにした参考データ
               <strong className="text-foreground">（⚠ 参考情報）</strong>です。
@@ -115,11 +115,11 @@ export default function AboutPage() {
 
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <div>
-                <p className="font-semibold text-xs text-foreground mb-1">✓ 検証済み（{VERIFIED_COUNT}銘柄）</p>
+                <p className="font-semibold text-xs text-foreground mb-1">✓ 検証済み（{DATA_STATS.activeVerified}銘柄）</p>
                 <p className="text-xs">企業のIRページ・公式優待ページを直接確認。内容・金額・権利確定月を精査済みです。</p>
               </div>
               <div className="border-t border-border pt-3">
-                <p className="font-semibold text-xs text-foreground mb-1">⚠ 参考情報（{TOTAL_COUNT - VERIFIED_COUNT}銘柄）</p>
+                <p className="font-semibold text-xs text-foreground mb-1">⚠ 参考情報（{DATA_STATS.activeReference}銘柄）</p>
                 <p className="text-xs">
                   過去の公開情報をもとに作成。最新でない可能性があります。
                   選択肢を広げる目的で掲載していますが、必ずご自身で最新情報をご確認ください。
@@ -127,9 +127,12 @@ export default function AboutPage() {
               </div>
             </div>
 
+            <ul className="text-xs space-y-1">
+              <li>検証済み: <strong className="text-foreground">{DATA_STATS.activeVerified}銘柄</strong></li>
+              <li>参考情報: <strong className="text-foreground">{DATA_STATS.activeReference}銘柄</strong></li>
+              <li>データ基準日: <strong className="text-foreground">{formatDate(DATA_LAST_UPDATED)}</strong></li>
+            </ul>
             <p className="text-xs">
-              データ取得基準日: <strong className="text-foreground">{formatDate(DATA_LAST_UPDATED)}</strong>。
-              毎週25銘柄ペースで検証・更新を進めています。
               優待内容は企業の判断により予告なく変更・廃止されることがあるため、
               最新情報は必ず各企業のIRページや公式発表でご確認ください。
             </p>
@@ -228,7 +231,7 @@ export default function AboutPage() {
         </section>
 
         <p className="text-xs text-muted-foreground pt-2">
-          ページ更新日: 2026年6月26日
+          ページ更新日: 2026年11月3日
         </p>
       </div>
     </div>

@@ -16,7 +16,7 @@ import { ExperienceInterestForm } from "@/components/experience/ExperienceIntere
 import { ExperienceMatchCard } from "@/components/experience/ExperienceMatchCard";
 
 export const metadata: Metadata = {
-  title: "体験から株主優待を探す | 優待マッチ",
+  title: "体験から株主優待を探す",
   description:
     "クルーズ・温泉旅館・レストラン・ゴルフなど、したい体験から株主優待銘柄を提案します。投資可能額を入れると「届く特典」と「届かない特典」を分けて表示します。",
   alternates: { canonical: "/experiences" },

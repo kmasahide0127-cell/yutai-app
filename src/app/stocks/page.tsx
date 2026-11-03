@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { YUTAI_LIST } from "@/lib/yutai-data";
+import { DATA_STATS, YUTAI_LIST, hasActiveYutai, isAnnualizedYutai } from "@/lib/yutai-data";
 import {
   countYutaiByCategory,
   filterYutaiByStockListFilter,
@@ -14,8 +14,8 @@ import { StockResultCard } from "@/components/search/StockResultCard";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "全銘柄一覧 - 優待アプリ",
-  description: "優待アプリで提供している全銘柄の一覧。生活費削減に使える株主優待を全件閲覧できます。カテゴリで絞り込んで探すこともできます。",
+  title: "株主優待 全銘柄一覧",
+  description: "優待マッチが収録している全銘柄の一覧。生活費削減に使える株主優待を全件閲覧できます。カテゴリで絞り込んで探すこともできます。",
   alternates: { canonical: "/stocks" },
 };
 
@@ -34,8 +34,13 @@ export default async function StocksListPage({
   // 同名パラメータの重複で配列が渡るケースを除外する
   const activeFilter: StockListFilter | null = typeof category === "string" ? category : null;
 
-  const validYutai = YUTAI_LIST.filter((y) => y.annualValue > 0).sort(
+  const validYutai = YUTAI_LIST.filter(isAnnualizedYutai).sort(
     (a, b) => b.annualValue - a.annualValue
+  );
+  // 継続保有の到達時に1回だけもらえる優待(NTT等)。年換算できないため年間価値の並びには混ぜない
+  const oneTimeYutai = filterYutaiByStockListFilter(
+    YUTAI_LIST.filter((y) => hasActiveYutai(y) && !isAnnualizedYutai(y)),
+    activeFilter
   );
 
   // 廃止済み銘柄は一覧から消さず、active と分けた別セクションで事実を表示する。
@@ -73,6 +78,13 @@ export default async function StocksListPage({
             {activeFilter
               ? `${displayedYutai.length}銘柄(絞り込み中・全${validYutai.length}銘柄中)`
               : `${validYutai.length}銘柄(年間優待価値の高い順)`}
+          </p>
+          {/* トップの件数と食い違って見えないよう、収録件数の内訳を明示する */}
+          <p className="text-xs text-muted-foreground">
+            収録{DATA_STATS.total}件の内訳: 優待実施中{DATA_STATS.active}銘柄
+            (年間優待価値を算出できる{DATA_STATS.annualized}銘柄+継続保有で単発の優待{DATA_STATS.oneTimeOnly}銘柄)
+            / 優待廃止・上場廃止{DATA_STATS.abolished}件 / 優待なし{DATA_STATS.noYutai}件
+            (商品名検索で「優待なし」と案内するためにのみ収録。一覧には表示しません)
           </p>
         </header>
 
@@ -145,11 +157,29 @@ export default async function StocksListPage({
           ))}
         </div>
 
+        {/* ── 単発優待(年換算しない) ── */}
+        {oneTimeYutai.length > 0 && (
+          <section className="space-y-2" aria-labelledby="onetime-heading">
+            <h2 id="onetime-heading" className="text-base font-bold">
+              継続保有で1回だけもらえる優待({oneTimeYutai.length}銘柄)
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              保有年数の到達時に1回ずつ進呈される優待です。毎年もらえるものではないため、
+              年間優待価値・優待利回りは算出せず、上の一覧とは分けて表示しています。
+            </p>
+            <div className="space-y-2">
+              {oneTimeYutai.map((yutai) => (
+                <StockResultCard key={yutai.id} yutai={yutai} showFirstReceipt={false} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ── 廃止済み銘柄(検索で辿り着いた人に事実を残すため、非表示にしない) ── */}
         {abolishedYutai.length > 0 && (
           <section className="space-y-2" aria-labelledby="abolished-heading">
             <h2 id="abolished-heading" className="text-base font-bold">
-              優待が廃止された銘柄({abolishedYutai.length}件)
+              優待廃止・上場廃止の銘柄({abolishedYutai.length}件)
             </h2>
             <p className="text-xs text-muted-foreground">
               優待を探していて辿り着いたときに分かるよう、廃止の事実を記録として掲載しています。

@@ -2,14 +2,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { buttonVariants } from "@/components/ui/button";
 import { ResetLink } from "@/components/ResetLink";
-import { DATA_LAST_UPDATED, VERIFIED_COUNT, TOTAL_COUNT, YUTAI_LIST } from "@/lib/yutai-data";
-import { EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
+import { DATA_LAST_UPDATED, DATA_STATS, YUTAI_LIST, isAnnualizedYutai } from "@/lib/yutai-data";
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
 import { ProductSearchForm } from "@/components/search/ProductSearchForm";
 
 export const metadata: Metadata = {
-  title: "優待マッチ - 生活逆引き型 株主優待マッチング",
+  title: { absolute: "優待マッチ - 生活逆引き型 株主優待マッチング" },
   description: "毎月の外食・通信費・交通費などの出費から、実生活で使える株主優待銘柄を提案。個人開発の情報提供サービスです。",
   alternates: {
     canonical: siteConfig.url,
@@ -31,7 +31,7 @@ function buildCalendarData() {
   return MONTH_LABELS.map((label, i) => {
     const monthNum = i + 1;
     const matched = YUTAI_LIST.filter(
-      (y) => y.annualValue > 0 && y.rightsMonths.includes(monthNum)
+      (y) => isAnnualizedYutai(y) && y.rightsMonths.includes(monthNum)
     );
     const examples = matched
       .sort((a, b) => {
@@ -58,12 +58,12 @@ const FEATURES = [
     body: "クルーズ・温泉旅館・レストラン・ゴルフなど、したい体験から優待銘柄を提案します。投資可能額を入れると「届く特典」と「届かない特典」を分けて表示し、割引額の大きさと投資効率のどちらを優先するか切り替えられます。",
   },
   {
-    title: "14カテゴリ対応",
-    body: "外食・通信・旅行・美容・趣味・子育てなど、日常生活の出費カテゴリ全14種に対応しています。",
+    title: `${EXPENSE_CATEGORIES.length}カテゴリ対応`,
+    body: `外食・通信・旅行・美容・趣味・子育てなど、日常生活の出費カテゴリ全${EXPENSE_CATEGORIES.length}種に対応しています。`,
   },
   {
-    title: `${TOTAL_COUNT}銘柄掲載・${VERIFIED_COUNT}銘柄検証済み`,
-    body: `主要な優待銘柄を幅広くカバー。うち${VERIFIED_COUNT}銘柄は運営者が内容を高い確度で把握した「検証済み」です。`,
+    title: `優待実施中${DATA_STATS.active}銘柄・うち${DATA_STATS.activeVerified}銘柄検証済み`,
+    body: `優待を実施中の${DATA_STATS.active}銘柄を掲載。うち${DATA_STATS.activeVerified}銘柄は運営者が内容を確認した「検証済み」、${DATA_STATS.activeReference}銘柄は過去の公開情報にもとづく「参考情報」です。`,
   },
   {
     title: "登録不要・ブラウザ完結",
@@ -123,7 +123,7 @@ export default function Home() {
           <ResetLink />
           <p className="text-xs text-muted-foreground text-center mt-2">
             データ最終更新: {formatDate(DATA_LAST_UPDATED)}<br />
-            全{TOTAL_COUNT}銘柄（検証済み {VERIFIED_COUNT}銘柄）
+            優待実施中 {DATA_STATS.active}銘柄（検証済み {DATA_STATS.activeVerified}銘柄）
           </p>
         </div>
       </section>
@@ -166,9 +166,9 @@ export default function Home() {
               優待マッチは、毎月の生活費からそれを削減できる株主優待を
               <strong className="text-foreground">逆引きで探せる</strong>情報提供サービスです。
               外食、日用品、通信、旅行、美容、趣味など
-              <strong className="text-foreground">14カテゴリ</strong>から検索でき、
-              全<strong className="text-foreground">{TOTAL_COUNT}銘柄</strong>を掲載
-              （うち<strong className="text-foreground">{VERIFIED_COUNT}銘柄</strong>は運営者が内容を精査した「検証済み」）。
+              <strong className="text-foreground">{EXPENSE_CATEGORIES.length}カテゴリ</strong>から検索でき、
+              優待実施中の<strong className="text-foreground">{DATA_STATS.active}銘柄</strong>を掲載
+              （うち<strong className="text-foreground">{DATA_STATS.activeVerified}銘柄</strong>は運営者が内容を確認した「検証済み」）。
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
               本サービスは個人開発で運営しています。掲載情報は参考情報であり、
@@ -178,13 +178,13 @@ export default function Home() {
             <div className="grid grid-cols-3 gap-3 pt-2">
               {(
                 [
-                  { value: `${TOTAL_COUNT}`, label: "掲載銘柄数" },
-                  { value: `${VERIFIED_COUNT}`, label: "検証済み" },
-                  { value: "14", label: "カテゴリ数" },
+                  { value: `${DATA_STATS.active}`, unit: "銘柄", label: "優待実施中" },
+                  { value: `${DATA_STATS.activeVerified}`, unit: "銘柄", label: "検証済み" },
+                  { value: `${EXPENSE_CATEGORIES.length}`, unit: "カテゴリ", label: "出費カテゴリ数" },
                 ] as const
-              ).map(({ value, label }) => (
+              ).map(({ value, unit, label }) => (
                 <div key={label} className="text-center py-3 rounded-lg bg-muted/30">
-                  <div className="text-xl font-bold text-foreground">{value}<span className="text-xs font-normal">銘柄</span></div>
+                  <div className="text-xl font-bold text-foreground">{value}<span className="text-xs font-normal">{unit}</span></div>
                   <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
                 </div>
               ))}
@@ -296,7 +296,7 @@ export default function Home() {
           </div>
           <div className="mt-3 text-right">
             <Link href="/stocks" className="text-primary underline text-xs hover:opacity-80">
-              全{TOTAL_COUNT}銘柄の一覧を見る →
+              優待実施中{DATA_STATS.active}銘柄の一覧を見る →
             </Link>
           </div>
         </section>
