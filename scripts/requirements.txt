@@ -2,5 +2,5 @@
 # 更新は Dependabot の PR で差分を確認してから取り込む
 jquants-api-client==2.8.0
 python-dotenv==1.2.4
-pandas==3.0.6
+pandas==3.1.0
 yfinance==1.7.0
