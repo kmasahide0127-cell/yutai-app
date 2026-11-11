@@ -14,6 +14,7 @@ import {
   hasActiveYutai,
   hasOneTimeBenefit,
   isAbolishedYutai,
+  isVerifiedYutai,
   type Yutai,
 } from "@/lib/yutai-data";
 import {
@@ -197,7 +198,12 @@ export function formatYearMonth(ym: YearMonth): string {
 export function getHoldingRequirementNotice(yutai: Yutai): string | null {
   if (!hasActiveYutai(yutai) || !yutai.holdingRequirement) return null;
   if (yutai.requiredConsecutiveRecords) return null;
-  return `優待の受取には${yutai.holdingRequirement}の継続保有が必要です。継続保有の判定方法(株主名簿の記録回数)を確認できていないため、初回受取見込みは算出していません。`;
+  // 企業IRで照合済みの銘柄は「公式資料に判定方法が書かれていない」ことまで確認している。
+  // 証券会社の情報だけの銘柄は公式資料を見ていないため、「確認できていない」と区別して表示する。
+  const reason = isVerifiedYutai(yutai)
+    ? "公式に判定方法の記載がないため算出していません"
+    : "継続保有の判定方法(株主名簿の記録回数)を確認できていないため、初回受取見込みは算出していません";
+  return `優待の受取には${yutai.holdingRequirement}の継続保有が必要です。${reason}。`;
 }
 
 /** 単発優待の表示文(例: 「2年保有で1回1,500円相当 / 5年保有で1回3,000円相当」)。該当しなければ null */

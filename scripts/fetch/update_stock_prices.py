@@ -108,6 +108,10 @@ def main() -> int:
     for line in lines:
         if not entry_re.match(line):
             continue
+        # priceAutoUpdate: false は yfinance で株価が取れない銘柄(名証単独上場など)。
+        # 取得を試みると毎回「取得失敗」に混ざり、本当の上場廃止・コード変更を見落とすため対象から外す。
+        if "priceAutoUpdate: false" in line:
+            continue
         m = re.search(r'code: "([^"]+)"', line)
         if m:
             codes.append(m.group(1))

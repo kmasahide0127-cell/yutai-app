@@ -30,6 +30,8 @@
    - 株式分割・併合があった銘柄は、分割後の必要株数(`minShares`)と優待の対象株数を
      適時開示で確認してから、分割後の株価で再計算する。`update_stock_prices` は
      `lastVerified` より後の分割・併合を検出すると株価を据え置いてPR本文で報告する
+   - `priceAutoUpdate: false` の銘柄(名証単独上場のJBイレブン 3066 など)はスクリプトの対象外。
+     株価を手動で確認し、`approxInvestment`・`yieldPercent` と、その株価の日付を `priceUpdatedAt` に入れる
 4. 優待制度に変更があった銘柄は、`description`・`annualValue`・`rightsMonths` 等を
    実態に合わせて修正
 5. 廃止が確認された銘柄は、削除せず一旦 `dataQuality` を `"要確認"` 等にして

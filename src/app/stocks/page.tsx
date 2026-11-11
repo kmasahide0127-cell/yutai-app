@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { buildPageMetadata } from "@/lib/seo";
 import Link from "next/link";
-import { DATA_STATS, YUTAI_LIST, hasActiveYutai, isAnnualizedYutai, type Yutai } from "@/lib/yutai-data";
+import { DATA_STATS, YUTAI_LIST, formatPriceBasisDate, hasActiveYutai, isAnnualizedYutai, type Yutai } from "@/lib/yutai-data";
 import {
   countYutaiByCategory,
   EXPENSE_CATEGORIES,
@@ -231,7 +231,7 @@ export default async function StocksListPage({
                   {yutai.yieldPercent > YIELD_BASIS_THRESHOLD && (
                     <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
                       算出根拠: 年間優待価値 {formatYen(yutai.annualValue)} ÷ 必要投資額 {formatYen(yutai.approxInvestment)}
-                      (株価基準日 {yutai.priceUpdatedAt ?? "未記録"}・{yutai.minShares}株)
+                      (株価基準日 {formatPriceBasisDate(yutai)}・{yutai.minShares}株)
                     </p>
                   )}
                 </div>

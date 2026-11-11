@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { YUTAI_LIST, hasActiveYutai, isAnnualizedYutai, isVerifiedYutai } from "@/lib/yutai-data";
+import { YUTAI_LIST, formatPriceBasisDate, hasActiveYutai, isAnnualizedYutai, isVerifiedYutai } from "@/lib/yutai-data";
 import {
   describeCalendarPosition,
   getMatchingExpenseCategoriesForYutai,
@@ -247,7 +247,7 @@ export default async function StockDetailPage({
               </p>
               {/* 必要投資額・利回りの株価基準日。記録がない場合は日付を作らず「未記録」と出す */}
               <p>
-                株価基準日: {yutai.priceUpdatedAt ?? "未記録"}(必要投資額 = 株価 × {yutai.minShares}株)
+                株価基準日: {formatPriceBasisDate(yutai)}(必要投資額 = 株価 × {yutai.minShares}株)
                 {" "}
                 <Link href="/method#yield" className="underline">算出方法</Link>
               </p>
