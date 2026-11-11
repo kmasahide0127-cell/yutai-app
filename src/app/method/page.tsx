@@ -158,16 +158,17 @@ export default function MethodPage() {
           <ul className="list-disc space-y-1 pl-5">
             <li>
               <strong className="text-foreground">✓ 検証済み</strong>({DATA_STATS.activeVerified}銘柄):
-              運営者が企業のIRページ・公式の優待案内で内容を確認した銘柄です。確認した日を「優待情報取得日」として表示しています。
+              企業のIRページ・公式の優待案内・適時開示で内容を確認した銘柄です(確認元の種類: 企業IR)。確認したページのURLと確認日を銘柄ページに表示しています。
             </li>
             <li>
               <strong className="text-foreground">⚠ 参考情報</strong>({DATA_STATS.activeReference}銘柄):
-              過去の公開情報をもとに作成したデータで、内容が古い・不正確な可能性があります。
+              証券会社の優待ページで照合した銘柄({DATA_STATS.activeBrokerChecked}銘柄、確認元の種類: 証券会社)と、確認元が記録されていない銘柄です。
+              証券会社のページで照合した銘柄には確認日を記録し、銘柄ページに「証券会社の優待ページで照合（確認日: YYYY-MM-DD）」と表示しますが、検証済みには数えません。
               参考情報の銘柄ページには広告(PR)を表示していません。
             </li>
           </ul>
           <p>
-            区分は運営者が銘柄ごとに設定しており、自動判定ではありません。株価の自動更新は内容の確認とは別扱いで、区分や確認日は変わりません。
+            区分は銘柄ごとに記録した確認元の種類(企業IR/証券会社)で決まり、企業IRで確認した銘柄だけが検証済みになります。株価の自動更新は内容の確認とは別扱いで、区分や確認日は変わりません。
             上場廃止・優待廃止・掲載停止の記録は<Link href="/changelog" className="text-primary underline">更新履歴</Link>にまとめています。
           </p>
         </Section>

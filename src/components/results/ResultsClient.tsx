@@ -27,7 +27,7 @@ import {
 } from "@/lib/matching";
 import type { VehicleType } from "@/store/onboarding-store";
 import { useDismissedStore } from "@/store/dismissed-store";
-import { YUTAI_LIST, DATA_LAST_UPDATED, type Yutai } from "@/lib/yutai-data";
+import { YUTAI_LIST, DATA_LAST_UPDATED, isVerifiedYutai, type Yutai } from "@/lib/yutai-data";
 
 const ALL_PREFERENCE_TAGS_FLAT = Object.values(PREFERENCE_TAGS).flat();
 
@@ -848,7 +848,7 @@ export function ResultsClient({
                             <p className="mt-0.5 text-xs text-muted-foreground">
                               証券コード {yutai.code}
                               {" · "}
-                              {yutai.dataQuality === "verified" ? (
+                              {isVerifiedYutai(yutai) ? (
                                 <span className="text-green-600 dark:text-green-400">
                                   ✓ 検証済み({yutai.lastVerified.replace(/-/g, "/").slice(2)}時点)
                                 </span>

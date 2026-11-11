@@ -24,6 +24,7 @@ const KIND_STYLE: Record<ChangelogKind, string> = {
   上場廃止: "bg-muted text-muted-foreground",
   掲載停止: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   修正: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+  追加: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
 };
 
 export default function ChangelogPage() {
@@ -69,7 +70,7 @@ export default function ChangelogPage() {
                     ) : (
                       <span className="text-sm font-medium">{e.name}</span>
                     )}
-                    <span className="text-xs tabular-nums text-muted-foreground">({e.code})</span>
+                    {e.code && <span className="text-xs tabular-nums text-muted-foreground">({e.code})</span>}
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">{e.detail}</p>
                 </li>

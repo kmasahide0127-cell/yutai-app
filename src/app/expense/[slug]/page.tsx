@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { YUTAI_LIST, DATA_LAST_UPDATED, isAnnualizedYutai } from "@/lib/yutai-data";
+import { YUTAI_LIST, DATA_LAST_UPDATED, isAnnualizedYutai, isVerifiedYutai } from "@/lib/yutai-data";
 import {
   EXPENSE_CATEGORY_SLUGS,
   buildExpenseCategoryFacts,
@@ -186,7 +186,7 @@ export default async function ExpenseCategoryPage({
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold">{yutai.name}</p>
                         <span className="text-xs text-muted-foreground tabular-nums">({yutai.code})</span>
-                        {yutai.dataQuality === "verified" && (
+                        {isVerifiedYutai(yutai) && (
                           <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-md">
                             ✓ 検証済み
                           </span>
@@ -245,7 +245,7 @@ export default async function ExpenseCategoryPage({
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {yutai.dataQuality === "verified" ? (
+                    {isVerifiedYutai(yutai) ? (
                       <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-md hidden sm:inline">
                         ✓ 検証済み
                       </span>

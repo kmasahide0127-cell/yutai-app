@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { YUTAI_LIST, hasActiveYutai, isAnnualizedYutai } from "@/lib/yutai-data";
+import { YUTAI_LIST, hasActiveYutai, isAnnualizedYutai, isVerifiedYutai } from "@/lib/yutai-data";
 import {
   describeCalendarPosition,
   getMatchingExpenseCategoriesForYutai,
@@ -55,7 +55,7 @@ export async function generateMetadata({
     : `${yutai.name}(${yutai.code})の株主優待。` +
       `${brandStr ? brandStr + "など。" : ""}` +
       `${valueText}、権利確定月: ${rightsStr}。` +
-      `${yutai.dataQuality === "verified" ? "検証済み銘柄。" : ""}` +
+      `${isVerifiedYutai(yutai) ? "検証済み銘柄。" : ""}` +
       `${yutai.description.slice(0, 60)}`;
 
   return {
@@ -104,7 +104,7 @@ export default async function StockDetailPage({
   const oneTimeText = formatOneTimeBenefits(yutai);
   const holdingNotice = getHoldingRequirementNotice(yutai);
   // PR は検証済みの実施中銘柄だけに出す(参考情報・廃止銘柄のページで口座開設を促さない)
-  const showPr = !abolished && yutai.dataQuality === "verified";
+  const showPr = !abolished && isVerifiedYutai(yutai);
 
   const abolishedNotice = getAbolishedNotice(yutai);
   const firstReceipt = estimateFirstReceipt(yutai);
@@ -166,7 +166,7 @@ export default async function StockDetailPage({
                 {delisted ? "上場廃止" : "優待廃止"}
               </span>
             )}
-            {yutai.dataQuality === "verified" ? (
+            {isVerifiedYutai(yutai) ? (
               <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium">
                 ✓ 検証済み
               </span>
@@ -175,6 +175,7 @@ export default async function StockDetailPage({
                 ⚠ 参考情報
               </span>
             )}
+            <span className="text-xs text-muted-foreground">{verificationLabel(yutai)}</span>
           </div>
           <p className="text-sm text-muted-foreground">
             {abolished
@@ -402,22 +403,34 @@ export default async function StockDetailPage({
 
         {/* 掲載データ情報 */}
         <section className="pt-4 border-t border-border text-xs text-muted-foreground space-y-1" aria-label="掲載データ情報">
-          <p>※ 優待情報取得日: {yutai.lastVerified} /
-            {yutai.dataQuality === "verified" ? " 検証済み銘柄" : " 参考情報（未検証）"}
+          <p>
+            ※ {verificationLabel(yutai)}
+            {yutai.sourceUrl && (
+              <>
+                {" "}(
+                <a href={yutai.sourceUrl} className="underline" target="_blank" rel="noopener noreferrer">
+                  照合したページ
+                </a>
+                )
+              </>
+            )}
+            {" / "}
+            {isVerifiedYutai(yutai) ? "検証済み銘柄" : "参考情報（企業IRでは未確認）"}
           </p>
           <p>
             ※ 最新の優待内容は
-            {/* 確認元URLがある銘柄は実際のIRページへ。未入力の銘柄は検索リンクで代替する */}
+            {/* 企業IRで確認済みの銘柄はそのページへ。それ以外は検索リンクで代替する */}
             <a
               href={
-                yutai.sourceUrl ??
-                `https://www.google.com/search?q=${encodeURIComponent(yutai.name + " 株主優待 IR")}`
+                isVerifiedYutai(yutai) && yutai.sourceUrl
+                  ? yutai.sourceUrl
+                  : `https://www.google.com/search?q=${encodeURIComponent(yutai.name + " 株主優待 IR")}`
               }
               className="underline"
               target="_blank"
               rel="noopener noreferrer"
             >
-              {yutai.sourceUrl ? "企業IRページ" : "企業IRページ等(検索)"}
+              {isVerifiedYutai(yutai) && yutai.sourceUrl ? "企業IRページ" : "企業IRページ等(検索)"}
             </a>
             で必ずご確認ください。
           </p>
@@ -441,4 +454,14 @@ export default async function StockDetailPage({
       </div>
     </div>
   );
+}
+
+/**
+ * 照合元と確認日の表示文言。
+ * "broker" は証券会社の優待ページでの照合であり「検証済み」ではないことを明示する。
+ */
+function verificationLabel(yutai: (typeof YUTAI_LIST)[number]): string {
+  if (yutai.sourceType === "ir") return `企業IR・適時開示で確認（確認日: ${yutai.lastVerified}）`;
+  if (yutai.sourceType === "broker") return `証券会社の優待ページで照合（確認日: ${yutai.lastVerified}）`;
+  return `優待情報取得日: ${yutai.lastVerified}（確認元の記録なし）`;
 }

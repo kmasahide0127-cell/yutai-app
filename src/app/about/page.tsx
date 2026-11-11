@@ -28,7 +28,7 @@ const ABOUT_FAQ = [
   },
   {
     q: "「検証済み」と「参考情報」の違いは何ですか？",
-    a: "「検証済み」は運営者が企業のIRページを直接確認し、高い確度で内容を把握している銘柄です。「参考情報（⚠）」は過去の公開情報をもとに作成した参考データで、内容が古いまたは不正確な可能性があります。どちらの場合も、最新情報は必ず各企業のIRページでご確認ください。",
+    a: "「✓ 検証済み」は、企業のIRページ・公式優待ページ・適時開示で内容を確認した銘柄です。「参考情報（⚠）」は、証券会社の優待ページでの照合のみの銘柄と、確認元が記録されていない銘柄です。証券会社の優待ページで照合した銘柄は、銘柄ページに「証券会社の優待ページで照合（確認日: YYYY-MM-DD）」と表示しています。どちらの場合も、最新情報は必ず各企業のIRページでご確認ください。",
   },
   {
     q: "優待内容が古い・間違っている場合は？",
@@ -107,31 +107,32 @@ export default function AboutPage() {
           <h2 className="font-bold text-base text-foreground">データ品質・検証方法</h2>
           <div className="space-y-3 text-muted-foreground">
             <p>
-              優待実施中の{DATA_STATS.active}銘柄のうち、運営者が実際に企業のIRページを確認し
-              内容を高い確度で把握した銘柄を
+              優待実施中の{DATA_STATS.active}銘柄のうち、企業のIRページ・公式優待ページ・適時開示で
+              内容を確認した銘柄だけを
               <strong className="text-foreground">「✓ 検証済み」({DATA_STATS.activeVerified}銘柄)</strong>
               と表記しています。
-              残りは過去の公開情報をもとにした参考データ
-              <strong className="text-foreground">（⚠ 参考情報）</strong>です。
+              証券会社の優待ページでの照合のみの銘柄は、確認日があっても
+              <strong className="text-foreground">（⚠ 参考情報）</strong>として扱い、検証済みの件数には含めていません。
             </p>
 
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <div>
                 <p className="font-semibold text-xs text-foreground mb-1">✓ 検証済み（{DATA_STATS.activeVerified}銘柄）</p>
-                <p className="text-xs">企業のIRページ・公式優待ページを直接確認。内容・金額・権利確定月を精査済みです。</p>
+                <p className="text-xs">企業のIRページ・公式優待ページ・適時開示で内容・金額・権利確定月を確認済み。確認したページのURLと確認日を銘柄ページに表示しています。</p>
               </div>
               <div className="border-t border-border pt-3">
                 <p className="font-semibold text-xs text-foreground mb-1">⚠ 参考情報（{DATA_STATS.activeReference}銘柄）</p>
                 <p className="text-xs">
-                  過去の公開情報をもとに作成。最新でない可能性があります。
-                  選択肢を広げる目的で掲載していますが、必ずご自身で最新情報をご確認ください。
+                  証券会社の優待ページで照合した銘柄（{DATA_STATS.activeBrokerChecked}銘柄。銘柄ページに「証券会社の優待ページで照合（確認日: YYYY-MM-DD）」と表示）と、
+                  確認元が記録されていない銘柄です。企業の一次情報では未確認のため、最新でない・不正確な可能性があります。
+                  必ずご自身で最新情報をご確認ください。
                 </p>
               </div>
             </div>
 
             <ul className="text-xs space-y-1">
               <li>検証済み: <strong className="text-foreground">{DATA_STATS.activeVerified}銘柄</strong></li>
-              <li>参考情報: <strong className="text-foreground">{DATA_STATS.activeReference}銘柄</strong></li>
+              <li>参考情報: <strong className="text-foreground">{DATA_STATS.activeReference}銘柄</strong>（うち証券会社の優待ページで照合済み {DATA_STATS.activeBrokerChecked}銘柄）</li>
               <li>データ基準日: <strong className="text-foreground">{formatDate(DATA_LAST_UPDATED)}</strong></li>
             </ul>
             <p className="text-xs">

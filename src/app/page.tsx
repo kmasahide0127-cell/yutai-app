@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { buttonVariants } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
-import { DATA_LAST_UPDATED, DATA_STATS, YUTAI_LIST, isAnnualizedYutai } from "@/lib/yutai-data";
+import { DATA_LAST_UPDATED, DATA_STATS, YUTAI_LIST, isAnnualizedYutai, isVerifiedYutai } from "@/lib/yutai-data";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
@@ -35,8 +35,8 @@ function buildCalendarData() {
     );
     const examples = matched
       .sort((a, b) => {
-        if (a.dataQuality === "verified" && b.dataQuality !== "verified") return -1;
-        if (a.dataQuality !== "verified" && b.dataQuality === "verified") return 1;
+        if (isVerifiedYutai(a) && !isVerifiedYutai(b)) return -1;
+        if (!isVerifiedYutai(a) && isVerifiedYutai(b)) return 1;
         return b.annualValue - a.annualValue;
       })
       .slice(0, 2);
@@ -63,7 +63,7 @@ const FEATURES = [
   },
   {
     title: `優待実施中${DATA_STATS.active}銘柄・うち${DATA_STATS.activeVerified}銘柄検証済み`,
-    body: `優待を実施中の${DATA_STATS.active}銘柄を掲載。うち${DATA_STATS.activeVerified}銘柄は運営者が内容を確認した「検証済み」、${DATA_STATS.activeReference}銘柄は過去の公開情報にもとづく「参考情報」です。`,
+    body: `優待を実施中の${DATA_STATS.active}銘柄を掲載。うち${DATA_STATS.activeVerified}銘柄は企業IR・適時開示で内容を確認した「検証済み」、${DATA_STATS.activeReference}銘柄は証券会社の優待ページでの照合などによる「参考情報」です。`,
   },
   {
     title: "登録不要・ブラウザ完結",
@@ -168,7 +168,7 @@ export default function Home() {
               外食、日用品、通信、旅行、美容、趣味など
               <strong className="text-foreground">{EXPENSE_CATEGORIES.length}カテゴリ</strong>から検索でき、
               優待実施中の<strong className="text-foreground">{DATA_STATS.active}銘柄</strong>を掲載
-              （うち<strong className="text-foreground">{DATA_STATS.activeVerified}銘柄</strong>は運営者が内容を確認した「検証済み」）。
+              （うち<strong className="text-foreground">{DATA_STATS.activeVerified}銘柄</strong>は企業IR・適時開示で内容を確認した「検証済み」）。
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
               本サービスは個人開発で運営しています。
