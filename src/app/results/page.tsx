@@ -15,10 +15,9 @@ import {
 import { parseResultParams, buildShareQuery, type RawResultParams } from "@/lib/result-params";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 import { ResultsClient } from "@/components/results/ResultsClient";
+import { siteConfig } from "@/config/site";
 
 type SearchParams = Promise<RawResultParams>;
-
-const BASE_URL = "https://yutai-match.com";
 
 export async function generateMetadata({
   searchParams,
@@ -28,7 +27,7 @@ export async function generateMetadata({
   // 未検証の値を OG 画像 URL に流さないよう、正規化済みの値だけで組み立てる。
   // 世帯人数は画像に影響せず、/api/og は正規化 URL 以外をリダイレクトするため含めない
   const qpStr = buildShareQuery({ ...parseResultParams(await searchParams), householdSize: 1 });
-  const ogImageUrl = `${BASE_URL}/api/og${qpStr ? `?${qpStr}` : ""}`;
+  const ogImageUrl = `${siteConfig.url}/api/og${qpStr ? `?${qpStr}` : ""}`;
 
   return {
     title: "あなたにマッチする優待",
@@ -36,7 +35,12 @@ export async function generateMetadata({
       "毎月の出費から、削減できる株主優待を提案。あなたのライフスタイルにぴったりの優待が見つかります。",
     alternates: { canonical: "/results" },
     robots: { index: false, follow: true },
+    // 他ページ(buildPageMetadata)と同じく url 等を明示しないと、トップの og:url が継承される
     openGraph: {
+      type: "website",
+      locale: "ja_JP",
+      siteName: siteConfig.name,
+      url: `${siteConfig.url}/results`,
       title: "私の年間優待カレンダー | 優待マッチ",
       description: "毎月の出費から、削減できる株主優待を提案。",
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: "私の年間優待カレンダー" }],
@@ -103,7 +107,7 @@ export default async function ResultsPage({
 
   // 診断条件を含む結果URLを SSR で確定させる（ドメイン統一 + hydrationズレ防止のため案1採用）
   const qpString = buildShareQuery(params);
-  const shareUrl = qpString ? `${BASE_URL}/results?${qpString}` : BASE_URL;
+  const shareUrl = qpString ? `${siteConfig.url}/results?${qpString}` : siteConfig.url;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
