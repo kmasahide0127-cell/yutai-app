@@ -14,6 +14,21 @@ J-Quants無料プランは84日遅延があり「現在の株価」取得には�
 「本日検証済み」であるかのような誤ったシグナルを与えてしまったことが
 ある(2026-08-14、楽天グループ・KDDI等で発覚)。
 
+株式分割・併合について(2026-11-11 の不具合を受けて追加):
+  approxInvestment は「現在株価 × minShares」で計算するため、分割・併合の
+  前後で minShares(優待に必要な株数)と株価の基準がずれると桁ごと誤る。
+  - 株価だけ分割後・minShares は分割前のまま → 必要投資額が過小になる
+  - minShares は分割後・株価は分割前のまま   → 必要投資額が過大になる
+    (ほくほくFG: 分割後の2,500株 × 分割前株価8,592円 = 約2,148万円と表示)
+  そこで yfinance の分割履歴を取得し、lastVerified(minShares を含む優待内容を
+  確認した日)より後に分割・併合があった銘柄は株価を更新せず据え置き、
+  PR本文で「要確認」として報告する。開示で minShares・対象株数を確認して
+  lastVerified を更新すれば、次回から通常どおり更新される。
+  また、株価は必ずこのスクリプトで取得した当日の値を使うこと。過去に取得した
+  株価のファイル(scripts/output 配下の古いJSON等)から approxInvestment を
+  再計算してはならない(2026-11-11 に8月時点のキャッシュで全銘柄を再計算し、
+  分割済み銘柄の必要投資額を誤った)。
+
 使用例:
     python -m fetch.update_stock_prices
 """
@@ -22,7 +37,7 @@ from __future__ import annotations
 
 import re
 import sys
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 import yfinance as yf
@@ -41,22 +56,45 @@ RETRY_SLEEP_SECONDS = 2
 # 前回比でこの割合以上動いた場合はPR本文で注意喚起する(自動ブロックはしない)
 LARGE_CHANGE_THRESHOLD = 0.2
 
+# 1株あたり株価が前回からこの倍率以上(または逆数以下)に動いた場合、分割・併合が
+# yfinance の分割履歴に未反映の可能性があるとして別枠で警告する。
+# 通常の値動きで1週間に1.8倍/0.55倍はまれで、1:2以上の分割・併合はこの範囲を超えるため。
+SPLIT_LIKE_RATIO = 1.8
 
-def fetch_price(code: str) -> float | None:
+
+# (分割・併合の効力日, 比率)。比率は「1株が何株になったか」(併合なら1未満)。
+Split = tuple[date, float]
+
+
+def fetch_price_and_splits(code: str) -> tuple[float | None, list[Split]]:
     import time
 
     suffix = EXCHANGE_SUFFIX_OVERRIDES.get(code, ".T")
     ticker = f"{code}{suffix}"
     for attempt in range(RETRY_COUNT):
         try:
-            price = yf.Ticker(ticker).fast_info.last_price
+            t = yf.Ticker(ticker)
+            price = t.fast_info.last_price
             if price and price > 0:
-                return float(price)
+                splits: list[Split] = []
+                try:
+                    for ts, ratio in t.splits.items():
+                        splits.append((ts.date(), float(ratio)))
+                except Exception:
+                    # 分割履歴だけ取れない場合は空扱い(株価の大幅変動の警告で補う)
+                    pass
+                return float(price), splits
         except Exception:
             pass
         if attempt < RETRY_COUNT - 1:
             time.sleep(RETRY_SLEEP_SECONDS)
-    return None
+    return None, []
+
+
+def format_ratio(ratio: float) -> str:
+    if ratio >= 1:
+        return f"1株→{ratio:g}株の分割"
+    return f"{1 / ratio:g}株→1株の併合"
 
 
 def main() -> int:
@@ -77,11 +115,13 @@ def main() -> int:
 
     print(f"{len(unique_codes)}銘柄の株価を取得します...", file=sys.stderr)
     prices: dict[str, float] = {}
+    splits_by_code: dict[str, list[Split]] = {}
     failed: list[str] = []
     for i, code in enumerate(unique_codes):
-        price = fetch_price(code)
+        price, splits = fetch_price_and_splits(code)
         if price is not None:
             prices[code] = price
+            splits_by_code[code] = splits
         else:
             failed.append(code)
         if (i + 1) % 25 == 0:
@@ -89,6 +129,8 @@ def main() -> int:
 
     updated_names: list[str] = []
     large_changes: list[str] = []
+    split_pending: list[str] = []
+    split_like: list[str] = []
     out_lines: list[str] = []
 
     for line in lines:
@@ -113,7 +155,35 @@ def main() -> int:
         min_shares = int(m_shares.group(1))
         annual_value = int(m_annual.group(1))
         old_investment = int(m_investment.group(1))
+        label = f"{m_name.group(1)}({m_code.group(1)})"
+
+        # lastVerified より後の分割・併合は minShares に未反映の可能性がある。
+        # 誤った桁の必要投資額を出すより、確認されるまで前回値で据え置くほうが害が小さい。
+        m_verified = re.search(r'lastVerified: "(\d{4}-\d{2}-\d{2})"', line)
+        verified = date.fromisoformat(m_verified.group(1)) if m_verified else None
+        unconfirmed = [
+            (d, r) for d, r in splits_by_code.get(m_code.group(1), [])
+            if verified is None or d > verified
+        ]
+        if unconfirmed:
+            detail = "、".join(f"{d.isoformat()} {format_ratio(r)}" for d, r in unconfirmed)
+            split_pending.append(
+                f"{label}: {detail}(lastVerified {verified.isoformat() if verified else '未記録'})"
+            )
+            out_lines.append(line)
+            continue
+
         new_investment = round(price * min_shares)
+
+        # 1株あたりの株価が分割比率並みに動いた場合は、yfinance 側の分割履歴の
+        # 反映漏れ・遅れを疑う(更新はするが別枠で警告する)
+        if old_investment > 0 and min_shares > 0:
+            old_price = old_investment / min_shares
+            price_ratio = price / old_price
+            if price_ratio >= SPLIT_LIKE_RATIO or price_ratio <= 1 / SPLIT_LIKE_RATIO:
+                split_like.append(
+                    f"{label}: 1株 {old_price:,.0f}円 → {price:,.0f}円 (×{price_ratio:.2f})"
+                )
 
         if old_investment > 0:
             change = abs(new_investment - old_investment) / old_investment
@@ -150,6 +220,7 @@ def main() -> int:
     YUTAI_DATA_PATH.write_text(new_content, encoding="utf-8")
 
     print(f"更新: {len(updated_names)}銘柄", file=sys.stderr)
+    print(f"分割・併合の確認待ち(据え置き): {len(split_pending)}銘柄", file=sys.stderr)
     print(f"取得失敗(変更なし): {len(failed)}銘柄", file=sys.stderr)
 
     summary_path = Path(__file__).parent.parent / "output" / "price_update_summary.md"
@@ -157,7 +228,23 @@ def main() -> int:
     with open(summary_path, "w", encoding="utf-8") as f:
         f.write(f"## 株価自動更新サマリー({today})\n\n")
         f.write(f"- 更新: {len(updated_names)}銘柄\n")
+        f.write(f"- 分割・併合の確認待ち(据え置き): {len(split_pending)}銘柄\n")
         f.write(f"- 取得失敗(変更なし): {len(failed)}銘柄\n\n")
+        if split_pending:
+            f.write("### 🛑 株式分割・併合のため株価を据え置いた銘柄(要対応)\n\n")
+            f.write(
+                "優待内容の確認日(lastVerified)より後に分割・併合がありました。適時開示で"
+                "分割後の必要株数(minShares)と優待の対象株数を確認して修正し、lastVerified を"
+                "更新すると次回から株価が更新されます。\n\n"
+            )
+            for line in split_pending:
+                f.write(f"- {line}\n")
+            f.write("\n")
+        if split_like:
+            f.write("### ⚠️ 1株あたり株価が分割・併合並みに動いた銘柄(分割の反映漏れの可能性)\n\n")
+            for line in split_like:
+                f.write(f"- {line}\n")
+            f.write("\n")
         if large_changes:
             f.write(f"### ⚠️ 前回比{int(LARGE_CHANGE_THRESHOLD * 100)}%以上動いた銘柄(要確認)\n\n")
             for line in large_changes:

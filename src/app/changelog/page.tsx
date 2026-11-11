@@ -57,8 +57,9 @@ export default function ChangelogPage() {
               <span className="ml-2 text-xs font-normal text-muted-foreground">{items.length}件</span>
             </h2>
             <ul className="space-y-2">
-              {items.map((e) => (
-                <li key={`${e.code}-${e.kind}`} className="rounded-lg border border-border bg-card p-3 space-y-1">
+              {/* 同じ日に同じ銘柄・種類の記録が複数あり得るため、キーに位置も含める */}
+              {items.map((e, i) => (
+                <li key={`${e.code}-${e.kind}-${i}`} className="rounded-lg border border-border bg-card p-3 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={cn("rounded-md px-2 py-0.5 text-xs font-medium", KIND_STYLE[e.kind])}>
                       {e.kind}
