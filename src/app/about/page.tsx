@@ -28,7 +28,7 @@ const ABOUT_FAQ = [
   },
   {
     q: "「検証済み」と「参考情報」の違いは何ですか？",
-    a: "「✓ 検証済み」は、企業のIRページ・公式優待ページ・適時開示で内容を確認した銘柄です。「参考情報（⚠）」は、証券会社の優待ページでの照合のみの銘柄と、確認元が記録されていない銘柄です。証券会社の優待ページで照合した銘柄は、銘柄ページに「証券会社の優待ページで照合（確認日: YYYY-MM-DD）」と表示しています。どちらの場合も、最新情報は必ず各企業のIRページでご確認ください。",
+    a: "「✓ 検証済み」は、企業のIRページ・公式優待ページ・適時開示で、優待内容・必要株数・権利確定月・継続保有条件を確認した銘柄です。年間優待価値は当サイトの換算値のため判定に含めず、公式に金額の記載がない優待は銘柄ページで試算である旨を表示しています。「参考情報（⚠）」は、証券会社の優待ページでの照合のみの銘柄と、確認元が記録されていない銘柄です。証券会社の優待ページで照合した銘柄は、銘柄ページに「証券会社の優待ページで照合（確認日: YYYY-MM-DD）」と表示しています。どちらの場合も、最新情報は必ず各企業のIRページでご確認ください。",
   },
   {
     q: "優待内容が古い・間違っている場合は？",
@@ -108,7 +108,7 @@ export default function AboutPage() {
           <div className="space-y-3 text-muted-foreground">
             <p>
               優待実施中の{DATA_STATS.active}銘柄のうち、企業のIRページ・公式優待ページ・適時開示で
-              内容を確認した銘柄だけを
+              優待内容・必要株数・権利確定月・継続保有条件を確認した銘柄だけを
               <strong className="text-foreground">「✓ 検証済み」({DATA_STATS.activeVerified}銘柄)</strong>
               と表記しています。
               証券会社の優待ページでの照合のみの銘柄は、確認日があっても
@@ -118,7 +118,10 @@ export default function AboutPage() {
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <div>
                 <p className="font-semibold text-xs text-foreground mb-1">✓ 検証済み（{DATA_STATS.activeVerified}銘柄）</p>
-                <p className="text-xs">企業のIRページ・公式優待ページ・適時開示で内容・金額・権利確定月を確認済み。確認したページのURLと確認日を銘柄ページに表示しています。</p>
+                <p className="text-xs">
+                  企業のIRページ・公式優待ページ・適時開示で、公式資料に書かれている事実(優待内容・必要株数・権利確定月・継続保有条件)を確認済み。確認したページのURLと確認日を銘柄ページに表示しています。
+                  年間優待価値は当サイトの換算値のため判定には含めず、公式に金額の記載がない優待は銘柄ページで「当サイトの換算ルールによる試算」と表示しています(<Link href="/method#annual-value" className="text-primary underline">算出方法</Link>)。
+                </p>
               </div>
               <div className="border-t border-border pt-3">
                 <p className="font-semibold text-xs text-foreground mb-1">⚠ 参考情報（{DATA_STATS.activeReference}銘柄）</p>

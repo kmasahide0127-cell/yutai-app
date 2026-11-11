@@ -47,7 +47,7 @@ export async function generateMetadata({
   const abolished = isAbolished(yutai);
   const oneTimeText = formatOneTimeBenefits(yutai);
   const valueText = isAnnualizedYutai(yutai)
-    ? `年間優待価値${yutai.annualValue.toLocaleString()}円相当`
+    ? `年間優待価値${yutai.annualValue.toLocaleString()}円相当${yutai.annualValueIsEstimate ? "(当サイト試算)" : ""}`
     : oneTimeText ?? "";
   const description = abolished
     ? `${yutai.name}(${yutai.code}): ${getAbolishedNotice(yutai)}。` +
@@ -223,6 +223,16 @@ export default async function StockDetailPage({
                   <p className="text-xs text-muted-foreground mb-1">優待利回り</p>
                   <p className="text-lg font-bold tabular-nums">{yutai.yieldPercent}%</p>
                 </div>
+                {/* 公式に金額の記載がない優待は、年間価値・利回りが当サイトの試算であることを明示する */}
+                {yutai.annualValueIsEstimate && (
+                  <p className="col-span-3 text-xs text-muted-foreground">
+                    年間価値は当サイトの換算ルールによる試算です（公式資料に金額の記載がない優待のため。
+                    <Link href="/method#annual-value" className="text-primary underline">
+                      算出方法
+                    </Link>
+                    ）
+                  </p>
+                )}
               </div>
             ) : (
               // 単発優待: 毎年もらえないため年換算・利回りを出さない
