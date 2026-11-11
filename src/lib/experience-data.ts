@@ -137,4 +137,4 @@ export function getExperienceTagMeta(tag: ExperienceTag): ExperienceTagMeta {
   return meta;
 }
 
-export const EXPERIENCE_DATA_LAST_UPDATED = "2026-09-12";
+export const EXPERIENCE_DATA_LAST_UPDATED = "2026-11-11";

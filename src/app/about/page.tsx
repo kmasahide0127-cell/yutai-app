@@ -237,7 +237,7 @@ export default function AboutPage() {
         </section>
 
         <p className="text-xs text-muted-foreground pt-2">
-          ページ更新日: 2026年11月3日
+          ページ更新日: 2026年11月11日
         </p>
       </div>
     </div>
