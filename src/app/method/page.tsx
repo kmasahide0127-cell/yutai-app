@@ -164,7 +164,7 @@ export default function MethodPage() {
               <strong className="text-foreground">⚠ 参考情報</strong>({DATA_STATS.activeReference}銘柄):
               証券会社の優待ページで照合した銘柄({DATA_STATS.activeBrokerChecked}銘柄、確認元の種類: 証券会社)と、確認元が記録されていない銘柄です。
               証券会社のページで照合した銘柄には確認日を記録し、銘柄ページに「証券会社の優待ページで照合（確認日: YYYY-MM-DD）」と表示しますが、検証済みには数えません。
-              参考情報の銘柄ページには広告(PR)を表示していません。
+              確認元が記録されていない銘柄(企業IR・証券会社のどちらでも照合できていない銘柄)と廃止銘柄のページには広告(PR)を表示していません。
             </li>
           </ul>
           <p>

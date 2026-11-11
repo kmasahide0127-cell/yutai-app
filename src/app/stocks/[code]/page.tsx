@@ -103,8 +103,9 @@ export default async function StockDetailPage({
   const annualized = isAnnualizedYutai(yutai);
   const oneTimeText = formatOneTimeBenefits(yutai);
   const holdingNotice = getHoldingRequirementNotice(yutai);
-  // PR は検証済みの実施中銘柄だけに出す(参考情報・廃止銘柄のページで口座開設を促さない)
-  const showPr = !abolished && isVerifiedYutai(yutai);
+  // PR は確認元(企業IR または 証券会社の優待ページ)で照合済みの実施中銘柄に出す。
+  // どこでも照合できていない銘柄(sourceType 未設定)と廃止銘柄のページでは口座開設を促さない。
+  const showPr = !abolished && yutai.sourceType !== undefined;
 
   const abolishedNotice = getAbolishedNotice(yutai);
   const firstReceipt = estimateFirstReceipt(yutai);
@@ -440,7 +441,7 @@ export default async function StockDetailPage({
           </p>
         </section>
 
-        {/* アフィリエイトバナー(1ページ1本・本文の後。参考情報・廃止銘柄には出さない) */}
+        {/* アフィリエイトバナー(1ページ1本・本文の後。確認元が未記録の銘柄・廃止銘柄には出さない) */}
         {showPr && (
           <section className="space-y-2" aria-label="証券口座のご案内">
             <h2 className="text-base font-bold">この銘柄を購入するには証券口座が必要です</h2>
