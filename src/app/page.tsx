@@ -7,6 +7,7 @@ import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
 import { ProductSearchForm } from "@/components/search/ProductSearchForm";
+import { GUIDES } from "@/lib/guides";
 
 export const metadata: Metadata = {
   title: { absolute: "優待マッチ - 生活逆引き型 株主優待マッチング" },
@@ -349,6 +350,32 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* ── 6.4 ガイド記事(読み物)への導線 ── */}
+        <section aria-labelledby="guide-articles-heading">
+          <h2 id="guide-articles-heading" className="text-base font-bold text-foreground mb-2">
+            株主優待のガイド
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+            受け取るまでの流れ・権利付最終日と継続保有条件・権利確定月の分散・情報の確かめ方・変更や廃止の実例を、掲載データをもとに解説しています。
+          </p>
+          <ul className="space-y-2">
+            {GUIDES.map((g) => (
+              <li key={g.slug}>
+                <Link
+                  href={`/guide/${g.slug}`}
+                  className="block border border-border rounded-xl p-4 bg-card hover:bg-muted/50 transition-colors"
+                >
+                  <p className="font-semibold text-sm text-primary underline mb-1">{g.title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{g.description}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs">
+            <Link href="/guide" className="text-primary underline">ガイドの一覧へ</Link>
+          </p>
         </section>
 
         {/* ── 6.5 データの作り方(解説コンテンツへの導線) ── */}

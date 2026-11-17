@@ -50,3 +50,6 @@ next-env.d.ts
 
 # 作業用(スクリーンショット・調査結果など)
 .scratch/
+
+# local scratch
+/.scratch/

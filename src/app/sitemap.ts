@@ -2,6 +2,7 @@ import { MetadataRoute } from "next";
 import { YUTAI_LIST, hasActiveYutai, isAbolishedYutai } from "@/lib/yutai-data";
 import { EXPENSE_CATEGORY_SLUGS } from "@/lib/matching";
 import { siteConfig } from "@/config/site";
+import { GUIDES } from "@/lib/guides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = siteConfig.url;
@@ -15,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/stocks`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/search`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/experiences`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/guide`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/method`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/changelog`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${baseUrl}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
@@ -40,5 +42,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     }));
 
-  return [...corePages, ...expensePages, ...stockPages];
+  const guidePages: MetadataRoute.Sitemap = GUIDES.map((g) => ({
+    url: `${baseUrl}/guide/${g.slug}`,
+    lastModified: new Date(g.updated),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  return [...corePages, ...guidePages, ...expensePages, ...stockPages];
 }

@@ -23,6 +23,14 @@ import AdUnit from "@/components/common/AdUnit";
 import AffiliateBanner from "@/components/AffiliateBanner";
 import { serializeJsonLd } from "@/lib/utils";
 import { buildStockCommentary } from "@/lib/stock-commentary";
+import {
+  buildReceiptFlow,
+  buildShareTiers,
+  buildStockFaq,
+  buildUsageForms,
+  explainExpenseMatch,
+  getCategoryAlternatives,
+} from "@/lib/stock-guide";
 
 export async function generateStaticParams() {
   return YUTAI_LIST.filter((y) => hasActiveYutai(y) || isAbolished(y)).map((yutai) => ({
@@ -114,6 +122,20 @@ export default async function StockDetailPage({
   const relatedYutai = getRelatedYutai(yutai, YUTAI_LIST);
   const calendarPosition = abolished ? null : describeCalendarPosition(yutai, YUTAI_LIST);
   const commentary = buildStockCommentary(yutai, YUTAI_LIST);
+  const shareTiers = buildShareTiers(yutai);
+  const receiptFlow = buildReceiptFlow(yutai);
+  const usageForms = buildUsageForms(yutai);
+  const alternatives = getCategoryAlternatives(yutai, YUTAI_LIST);
+  const faq = buildStockFaq(yutai, YUTAI_LIST);
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map(({ q, a }) => ({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a },
+    })),
+  };
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -148,6 +170,9 @@ export default async function StockDetailPage({
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
+      {faq.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }} />
+      )}
       <div className="mx-auto max-w-2xl min-w-0 space-y-6 px-4 py-8">
 
         {/* パンくず */}
@@ -295,7 +320,113 @@ export default async function StockDetailPage({
         <section className="space-y-2" aria-labelledby="yutai-detail-heading">
           <h2 id="yutai-detail-heading" className="text-base font-bold">優待内容</h2>
           <p className="text-sm leading-relaxed">{yutai.description}</p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-lg border border-border bg-card p-3 text-xs">
+            <dt className="text-muted-foreground">必要株数</dt>
+            <dd>{yutai.minShares.toLocaleString()}株以上{abolished ? "(制度があった当時)" : ""}</dd>
+            <dt className="text-muted-foreground">権利確定月</dt>
+            <dd>{formatMonths(yutai.rightsMonths)}(年{yutai.rightsMonths.length}回)</dd>
+            <dt className="text-muted-foreground">継続保有条件</dt>
+            <dd>
+              {yutai.holdingRequirement
+                ? `${yutai.holdingRequirement}${yutai.requiredConsecutiveRecords ? `(${formatMonths(yutai.recordMonths ?? yutai.rightsMonths)}末の名簿に連続${yutai.requiredConsecutiveRecords}回記録)` : "(判定方法は未確認)"}`
+                : "なし(掲載データ時点)"}
+            </dd>
+            <dt className="text-muted-foreground">確認元</dt>
+            <dd>{verificationLabel(yutai)}</dd>
+          </dl>
         </section>
+
+        {/* 株数ティア一覧: 説明文に書かれた株数ごとの内容と、同じ株価で換算した必要投資額 */}
+        {shareTiers.length > 0 && (
+          <section className="space-y-2" aria-labelledby="tiers-heading">
+            <h2 id="tiers-heading" className="text-base font-bold">
+              {abolished ? "保有株数ごとの内容(制度があった当時)" : "保有株数ごとの優待内容と必要投資額"}
+            </h2>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[480px] text-left text-xs">
+                <thead className="bg-muted/50 text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-3 py-2 font-medium">保有株数</th>
+                    <th scope="col" className="px-3 py-2 font-medium">優待内容(優待内容の記載より)</th>
+                    <th scope="col" className="px-3 py-2 font-medium">年間換算</th>
+                    {!abolished && <th scope="col" className="px-3 py-2 font-medium">必要投資額の目安</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {shareTiers.map((row) => (
+                    <tr key={row.shares} className="border-t border-border align-top">
+                      <td className="px-3 py-2 tabular-nums whitespace-nowrap">
+                        {row.shares.toLocaleString()}株{row.isBase ? "(最低)" : ""}
+                      </td>
+                      <td className="px-3 py-2 leading-relaxed">{row.content}</td>
+                      <td className="px-3 py-2 tabular-nums">{abolished ? "—" : row.annualValueText}</td>
+                      {!abolished && <td className="px-3 py-2 tabular-nums whitespace-nowrap">{formatYen(row.investment)}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {shareTiers.length > 1
+                ? `優待内容の記載に${shareTiers.length}段階の株数が書かれています。年間換算額は当サイトで最低株数の分だけを入力しており、それ以外の株数は換算していません。`
+                : `株数による内容の違いは記載されていないため、最低株数の1行のみです${yutai.holdingRequirement ? `(${yutai.holdingRequirement}の継続保有が条件)` : ""}。`}
+              {!abolished &&
+                ` 必要投資額は株価基準日(${formatPriceBasisDate(yutai)})の株価 × 株数で計算した目安で、売買手数料は含めていません。`}
+            </p>
+          </section>
+        )}
+
+        {/* 受け取るまでの流れ: 次の基準日・権利付最終日・名簿記録の日程を、この銘柄の条件から算出 */}
+        {receiptFlow.length > 0 && (
+          <section className="space-y-3" aria-labelledby="flow-heading">
+            <h2 id="flow-heading" className="text-base font-bold">受け取るまでの流れと注意点</h2>
+            <ol className="space-y-2">
+              {receiptFlow.map((step) => (
+                <li key={step.title} className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-sm font-semibold">{step.title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              日付は今日を起点に、権利付最終日 = 基準日の2営業日前(土日のみ除外・祝日は考慮しない)として計算した概算です。
+              仕組みは<Link href="/guide/record-date" className="text-primary underline">権利付最終日・権利落ち日と継続保有条件の仕組み</Link>、
+              計算方法は<Link href="/method#first-receipt" className="text-primary underline">算出方法</Link>で説明しています。
+            </p>
+          </section>
+        )}
+
+        {/* 使い方: 優待内容の記載から読み取れる受け取り形式と、掲載データ上の利用先 */}
+        {!abolished && (
+          <section className="space-y-2" aria-labelledby="usage-heading">
+            <h2 id="usage-heading" className="text-base font-bold">優待の使い方</h2>
+            {usageForms.length > 0 ? (
+              <ul className="space-y-2">
+                {usageForms.map((u) => (
+                  <li key={u.quote} className="text-sm leading-relaxed">
+                    <span className="font-semibold">{u.form}</span>
+                    <span className="text-muted-foreground">: 「{u.quote}」— {u.note}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                優待内容の記載から受け取り形式を特定できなかったため、内容は上の「優待内容」の記載のとおりです。
+              </p>
+            )}
+            {yutai.brands.length > 0 && (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                掲載データで対応付けている利用先・関連サービスは{yutai.brands.slice(0, 6).join("、")}
+                {yutai.brands.length > 6 ? `など${yutai.brands.length}件` : ""}です。
+                {matchingExpenseCategories.length > 0 &&
+                  `家計の出費では「${matchingExpenseCategories.join("」「")}」に充てる使い方に対応付けています。`}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              有効期限・利用できる店舗の範囲・併用の可否などの利用条件は掲載データに含めていません。届いた優待の案内と企業の公式ページで確認してください。
+            </p>
+          </section>
+        )}
 
         {/* 銘柄固有の解説(掲載データから文章化。数値・バッジだけのページにしないため) */}
         <section className="space-y-4" aria-labelledby="commentary-heading">
@@ -353,11 +484,20 @@ export default async function StockDetailPage({
         {yutai.brands && yutai.brands.length > 0 && (
           <section className="space-y-2" aria-labelledby="brands-heading">
             <h2 id="brands-heading" className="text-base font-bold">関連ブランド・サービス</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {yutai.name}の優待に関連するブランド・サービスとして、掲載データでは{yutai.brands.length}件を登録しています。
+              名前を選ぶと、<Link href="/search" className="text-primary underline">商品名・ブランド名検索</Link>でその名前に対応する優待銘柄を一覧できます
+              (同じブランドを扱う他社の優待が見つかることもあります)。
+            </p>
             <div className="flex flex-wrap gap-1.5">
               {yutai.brands.map((brand) => (
-                <span key={brand} className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted text-xs">
+                <Link
+                  key={brand}
+                  href={`/search?q=${encodeURIComponent(brand)}`}
+                  className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted text-xs hover:bg-muted/70"
+                >
                   {brand}
-                </span>
+                </Link>
               ))}
             </div>
           </section>
@@ -367,23 +507,77 @@ export default async function StockDetailPage({
         {!abolished && matchingExpenseCategories.length > 0 && (
           <section className="space-y-2" aria-labelledby="expense-cats-heading">
             <h2 id="expense-cats-heading" className="text-base font-bold">この優待で削減できる出費</h2>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              当サイトの{matchingExpenseCategories.length}つの出費カテゴリに対応付けています。対応付けの根拠(一致した業種ジャンル・生活タグ)とカテゴリ内の位置は次のとおりです。
+            </p>
+            <ul className="space-y-1.5">
               {matchingExpenseCategories.map((expense) => {
                 const slug = EXPENSE_CATEGORY_SLUGS[expense];
-                return slug ? (
-                  <Link
-                    key={expense}
-                    href={`/expense/${slug}`}
-                    className="inline-flex items-center px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-xs font-medium hover:bg-primary/20 transition-colors"
-                  >
-                    {expense}
-                  </Link>
-                ) : (
-                  <span key={expense} className="inline-flex items-center px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-xs font-medium">
-                    {expense}
-                  </span>
+                const pos = commentary.categoryPositions.find((c) => c.expense === expense);
+                const reason = explainExpenseMatch(yutai, expense);
+                return (
+                  <li key={expense} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                    <Link href={`/expense/${slug}`} className="font-medium text-primary underline">
+                      {expense}
+                    </Link>
+                    <span className="block text-xs text-muted-foreground mt-0.5">
+                      {reason}
+                      {pos && pos.stockCount > 1
+                        ? ` / 掲載${pos.stockCount}銘柄中、必要投資額は低い方から${pos.investmentRank}番目${pos.valueRank !== null ? `・年間優待価値は高い方から${pos.valueRank}番目` : ""}`
+                        : pos
+                          ? " / このカテゴリの掲載銘柄はこの銘柄のみ"
+                          : ""}
+                    </span>
+                  </li>
                 );
               })}
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              対応付けのルールは<Link href="/method#expense" className="underline">算出方法</Link>で説明しています。
+            </p>
+          </section>
+        )}
+
+        {/* 同じ出費カテゴリの代替候補: 必要投資額・権利確定月・年間価値の違いを1行で */}
+        {alternatives.length > 0 && (
+          <section className="space-y-2" aria-labelledby="alternatives-heading">
+            <h2 id="alternatives-heading" className="text-base font-bold">
+              {abolished ? "同じ出費に使える、実施中の優待" : `「${alternatives[0].expense}」の他の掲載銘柄との違い`}
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {abolished
+                ? `「${alternatives[0].expense}」カテゴリで、現在優待を実施している掲載銘柄のうち年間優待価値の高い順に${alternatives.length}件です。`
+                : `同じ「${alternatives[0].expense}」カテゴリの掲載銘柄から、必要投資額が近い順に${alternatives.length}件を並べています。`}
+            </p>
+            <ul className="space-y-1.5">
+              {alternatives.map((alt) => (
+                <li key={alt.yutai.code} className="rounded-lg border border-border bg-card px-3 py-2">
+                  <Link href={`/stocks/${alt.yutai.code}`} className="text-sm font-medium text-primary underline">
+                    {alt.yutai.name}({alt.yutai.code})
+                  </Link>
+                  <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">{alt.line}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              比較のための一覧で、特定の銘柄を勧めるものではありません。カテゴリ全体は
+              <Link href={`/expense/${alternatives[0].slug}`} className="underline">{alternatives[0].expense}に使える株主優待</Link>
+              で確認できます。
+            </p>
+          </section>
+        )}
+
+        {/* 銘柄別FAQ(この銘柄のデータで答えられる質問だけ) */}
+        {faq.length > 0 && (
+          <section className="space-y-2" aria-labelledby="faq-heading">
+            <h2 id="faq-heading" className="text-base font-bold">{yutai.name}の優待についてのよくある質問</h2>
+            <div className="space-y-2">
+              {faq.map(({ q, a }) => (
+                <div key={q} className="rounded-lg border border-border bg-card p-3">
+                  <h3 className="text-sm font-semibold">Q. {q}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">A. {a}</p>
+                </div>
+              ))}
             </div>
           </section>
         )}
@@ -443,6 +637,10 @@ export default async function StockDetailPage({
                 <span className="text-xs text-muted-foreground"> — 権利確定月の分布と同カテゴリの全銘柄</span>
               </li>
             ))}
+            <li>
+              <Link href="/guide" className="text-primary underline">株主優待のガイド</Link>
+              <span className="text-xs text-muted-foreground"> — 始め方・権利付最終日・権利月の分散・情報の確かめ方</span>
+            </li>
             <li>
               <Link href="/method#annual-value" className="text-primary underline">年間優待価値の算出方法</Link>
               <span className="text-xs text-muted-foreground"> — 割引券・カタログなど金額の記載がない優待の換算ルール</span>
@@ -504,6 +702,11 @@ export default async function StockDetailPage({
         {showPr && (
           <section className="space-y-2" aria-label="証券口座のご案内">
             <h2 className="text-base font-bold">この銘柄を購入するには証券口座が必要です</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {yutai.name}の優待の対象は{yutai.minShares.toLocaleString()}株以上の保有で、株価基準日の株価では約{formatYen(yutai.approxInvestment)}が必要です。
+              株式の売買には証券口座が必要で、売買手数料は証券会社や取引コースによって異なります。
+              口座開設から初回の優待受け取りまでの流れは<Link href="/guide/getting-started" className="text-primary underline">株主優待の始め方</Link>にまとめています。
+            </p>
             <AffiliateBanner />
           </section>
         )}

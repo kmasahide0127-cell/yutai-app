@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { AdSenseScript } from "@/components/common/AdSenseScript";
 import { ProductSearchForm } from "@/components/search/ProductSearchForm";
 import { ModeTabs } from "@/components/search/ModeTabs";
+import { SearchGuide } from "@/components/search/SearchGuide";
 import {
   StockResultCard,
   FirstReceiptNote,
@@ -240,6 +241,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             <p>・ブランド辞書の最終更新: {BRAND_DATA_LAST_UPDATED}</p>
           </section>
         )}
+
+        <SearchGuide />
 
         <div className="flex flex-wrap gap-3 pt-2 text-sm">
           <Link href="/stocks" className="text-primary hover:underline">

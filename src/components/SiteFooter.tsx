@@ -8,6 +8,7 @@ import { DATA_LAST_UPDATED } from "@/lib/yutai-data";
 const FOOTER_LINKS = [
   { href: "/stocks", label: "銘柄一覧" },
   { href: "/expense", label: "出費カテゴリ" },
+  { href: "/guide", label: "ガイド" },
   { href: "/method", label: "算出方法" },
   { href: "/changelog", label: "更新履歴" },
   { href: "/about", label: "このサイトについて" },

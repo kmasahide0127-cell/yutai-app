@@ -16,6 +16,7 @@ import { AdSenseScript } from "@/components/common/AdSenseScript";
 import { ModeTabs } from "@/components/search/ModeTabs";
 import { ExperienceInterestForm } from "@/components/experience/ExperienceInterestForm";
 import { ExperienceMatchCard } from "@/components/experience/ExperienceMatchCard";
+import { ExperienceGuide } from "@/components/experience/ExperienceGuide";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "体験から株主優待を探す",
@@ -156,6 +157,8 @@ export default async function ExperiencesPage({ searchParams }: { searchParams: 
             </section>
           </>
         )}
+
+        <ExperienceGuide />
 
         <div className="flex flex-wrap gap-3 pt-2 text-sm">
           <Link href="/stocks" className="text-primary hover:underline">

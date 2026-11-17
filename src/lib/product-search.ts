@@ -93,7 +93,7 @@ function isWeekend(d: Date): boolean {
  * 祝日は考慮していないため、月末が祝日に重なる月は実際より1〜2日遅く出る。
  * あくまで「今から買って間に合うか」の目安として使う。
  */
-function rightsLastTradingDay(year: number, month: number): Date {
+export function rightsLastTradingDay(year: number, month: number): Date {
   // 月末から土日を遡って月末営業日を求める
   const cursor = new Date(year, month, 0);
   while (isWeekend(cursor)) cursor.setDate(cursor.getDate() - 1);

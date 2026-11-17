@@ -17,6 +17,7 @@ import AdUnit from "@/components/common/AdUnit";
 import AffiliateBanner from "@/components/AffiliateBanner";
 import { serializeJsonLd } from "@/lib/utils";
 import { buildExpenseCategoryOverview } from "@/lib/category-commentary";
+import { buildCategoryFaq, buildModelCase, buildSelectionPoints } from "@/lib/category-guide";
 
 export async function generateStaticParams() {
   return Object.values(EXPENSE_CATEGORY_SLUGS).map((slug) => ({ slug }));
@@ -79,6 +80,18 @@ export default async function ExpenseCategoryPage({
   const facts = buildExpenseCategoryFacts(expense, YUTAI_LIST);
   const peakText = describePeakMonths(facts);
   const overview = buildExpenseCategoryOverview(expense, YUTAI_LIST);
+  const selectionPoints = buildSelectionPoints(expense, YUTAI_LIST);
+  const modelCase = buildModelCase(expense, YUTAI_LIST);
+  const faq = buildCategoryFaq(expense, YUTAI_LIST);
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map(({ q, a }) => ({
+      "@type": "Question",
+      name: q,
+      acceptedAnswer: { "@type": "Answer", text: a },
+    })),
+  };
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -92,6 +105,9 @@ export default async function ExpenseCategoryPage({
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
+      {faq.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }} />
+      )}
       <div className="mx-auto max-w-2xl min-w-0 space-y-8 px-4 py-8">
 
         {/* パンくず */}
@@ -121,6 +137,30 @@ export default async function ExpenseCategoryPage({
             <p className="text-xs text-muted-foreground">
               年間優待価値・利回りの計算方法は<Link href="/method#annual-value" className="underline">算出方法</Link>、
               出費カテゴリへの対応付けのルールは<Link href="/method#expense" className="underline">出費カテゴリへの対応付け</Link>で説明しています。
+            </p>
+          </section>
+        )}
+
+        {/* 選び方: このカテゴリで目立つ特徴の順に、確認するとよい観点を並べる(category-guide.ts) */}
+        {selectionPoints.length > 0 && (
+          <section className="space-y-3" aria-labelledby="selection-heading">
+            <h2 id="selection-heading" className="font-bold text-base text-foreground">
+              {expense}の優待の選び方
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              このカテゴリの掲載データで特徴が大きい順に、比べるときに確認するとよい点を並べています。
+            </p>
+            <ol className="space-y-2">
+              {selectionPoints.map((pt, i) => (
+                <li key={pt.heading} className="rounded-lg border border-border bg-card p-3">
+                  <h3 className="text-sm font-semibold">{i + 1}. {pt.heading}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{pt.body}</p>
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-muted-foreground">
+              権利確定月の分散の考え方は<Link href="/guide/calendar" className="underline">年間優待カレンダーの組み立て方</Link>、
+              継続保有条件の仕組みは<Link href="/guide/record-date" className="underline">権利付最終日・権利落ち日と継続保有条件の仕組み</Link>で説明しています。
             </p>
           </section>
         )}
@@ -183,6 +223,60 @@ export default async function ExpenseCategoryPage({
           </section>
         )}
 
+        {/* 組み合わせ例: 権利確定月が重ならない銘柄を必要投資額の安い順に選んだ一例(推奨ではない) */}
+        {modelCase && (
+          <section className="space-y-3" aria-labelledby="model-case-heading">
+            <h2 id="model-case-heading" className="font-bold text-base text-foreground">
+              組み合わせ例(権利確定月を分散させた一例)
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {expense}の掲載銘柄から、権利確定月が互いに重ならないように、必要投資額の少ない順に{modelCase.stocks.length}銘柄を選んだ例です。
+              受け取りの時期は{modelCase.months.map((m) => `${m}月`).join("・")}の{modelCase.months.length}ヶ月に分かれます。
+            </p>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[420px] text-left text-xs">
+                <thead className="bg-muted/50 text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-3 py-2 font-medium">銘柄</th>
+                    <th scope="col" className="px-3 py-2 font-medium">権利確定月</th>
+                    <th scope="col" className="px-3 py-2 font-medium">必要投資額</th>
+                    <th scope="col" className="px-3 py-2 font-medium">年間優待価値</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modelCase.stocks.map((y) => (
+                    <tr key={y.code} className="border-t border-border">
+                      <td className="px-3 py-2">
+                        <Link href={`/stocks/${y.code}`} className="text-primary underline">{y.name}</Link>
+                        {y.holdingRequirement && (
+                          <span className="block text-[11px] text-muted-foreground">{y.holdingRequirement}の継続保有が条件</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">{formatMonths(y.rightsMonths)}</td>
+                      <td className="px-3 py-2 tabular-nums">{formatYen(y.approxInvestment)}</td>
+                      <td className="px-3 py-2 tabular-nums">
+                        {formatYen(y.annualValue)}
+                        {y.annualValueIsEstimate ? "(試算)" : ""}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="border-t border-border bg-muted/30 font-semibold">
+                    <td className="px-3 py-2" colSpan={2}>合計</td>
+                    <td className="px-3 py-2 tabular-nums">{formatYen(modelCase.totalInvestment)}</td>
+                    <td className="px-3 py-2 tabular-nums">{formatYen(modelCase.totalAnnualValue)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              ※ 掲載データ(株価基準日時点)から機械的に作った一例であり、購入を推奨するものではありません。
+              合計の年間優待価値は各銘柄の最低株数での値の合計で、試算を含む場合があります。
+              {modelCase.stocks.some((y) => y.holdingRequirement) && "継続保有が条件の銘柄は、条件を満たすまで受け取れません。"}
+              他のカテゴリの例と銘柄が重ならないように選んでいるため、同じ条件で最も安い組み合わせとは限りません。
+            </p>
+          </section>
+        )}
+
         {/* 代表的な優待銘柄 */}
         {topYutai.length > 0 && (
           <section className="space-y-3" aria-labelledby="top-stocks-heading">
@@ -222,6 +316,21 @@ export default async function ExpenseCategoryPage({
                     </div>
                   </div>
                 </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* カテゴリ別FAQ(掲載データで答えられる質問だけ) */}
+        {faq.length > 0 && (
+          <section className="space-y-2" aria-labelledby="faq-heading">
+            <h2 id="faq-heading" className="font-bold text-base text-foreground">{expense}の優待についてのよくある質問</h2>
+            <div className="space-y-2">
+              {faq.map(({ q, a }) => (
+                <div key={q} className="rounded-lg border border-border bg-card p-3">
+                  <h3 className="text-sm font-semibold">Q. {q}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">A. {a}</p>
+                </div>
               ))}
             </div>
           </section>
@@ -290,6 +399,10 @@ export default async function ExpenseCategoryPage({
         {/* アフィリエイトバナー */}
         <section className="space-y-2" aria-label="証券口座のご案内">
           <h2 className="font-bold text-base text-foreground">証券口座をお持ちでない方へ</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            株主優待を受け取るには、証券口座で各銘柄を最低必要株数以上買い付け、基準日の株主名簿に記録される必要があります。
+            口座開設から初回の受け取りまでの流れは<Link href="/guide/getting-started" className="text-primary underline">株主優待の始め方</Link>にまとめています。
+          </p>
           <AffiliateBanner />
         </section>
 
