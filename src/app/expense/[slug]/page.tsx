@@ -16,6 +16,7 @@ import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
 import AffiliateBanner from "@/components/AffiliateBanner";
 import { serializeJsonLd } from "@/lib/utils";
+import { buildExpenseCategoryOverview } from "@/lib/category-commentary";
 
 export async function generateStaticParams() {
   return Object.values(EXPENSE_CATEGORY_SLUGS).map((slug) => ({ slug }));
@@ -77,6 +78,7 @@ export default async function ExpenseCategoryPage({
   const topYutai = allYutai.slice(0, 5);
   const facts = buildExpenseCategoryFacts(expense, YUTAI_LIST);
   const peakText = describePeakMonths(facts);
+  const overview = buildExpenseCategoryOverview(expense, YUTAI_LIST);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -106,6 +108,22 @@ export default async function ExpenseCategoryPage({
             {expense}に活用できる優待銘柄を年間優待価値の高い順に掲載しています（{allYutai.length}銘柄）。
           </p>
         </header>
+
+        {/* カテゴリ固有の傾向(掲載データから文章化。カテゴリごとに値が変わる事実だけで書く) */}
+        {overview.length > 0 && (
+          <section className="space-y-2" aria-labelledby="overview-heading">
+            <h2 id="overview-heading" className="font-bold text-base text-foreground">
+              {expense}の優待の傾向
+            </h2>
+            {overview.map((text) => (
+              <p key={text} className="text-sm leading-relaxed text-muted-foreground">{text}</p>
+            ))}
+            <p className="text-xs text-muted-foreground">
+              年間優待価値・利回りの計算方法は<Link href="/method#annual-value" className="underline">算出方法</Link>、
+              出費カテゴリへの対応付けのルールは<Link href="/method#expense" className="underline">出費カテゴリへの対応付け</Link>で説明しています。
+            </p>
+          </section>
+        )}
 
         {/* 権利確定月の分布(掲載データから自動算出。数値はハードコードしない) */}
         {facts.stockCount > 0 && (
@@ -295,7 +313,10 @@ export default async function ExpenseCategoryPage({
 
         {/* 免責 */}
         <section className="pt-4 border-t border-border text-xs text-muted-foreground space-y-1">
-          <p>※ 優待情報は{formatJapaneseDate(DATA_LAST_UPDATED)}時点のものです。最新情報は各企業のIRページでご確認ください。</p>
+          <p>
+            ※ 優待情報は{formatJapaneseDate(DATA_LAST_UPDATED)}時点のものです。最新情報は各企業のIRページでご確認ください。
+            優待の変更・廃止の記録は<Link href="/changelog" className="underline">更新履歴</Link>にまとめています。
+          </p>
           <p>※ 本サイトの情報は投資勧誘ではありません。投資判断はご自身の責任でお願いします。</p>
         </section>
       </div>

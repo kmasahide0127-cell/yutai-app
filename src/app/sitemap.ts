@@ -7,9 +7,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = siteConfig.url;
   const now = new Date();
 
+  // /onboarding は入力画面で、サーバーが返すHTMLは「読み込み中...」のみ(状態の復元後に描画する)。
+  // 本文のないページを sitemap に載せないため除外する(ページ自体は全ページのヘッダーから辿れる)。
   const corePages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
-    { url: `${baseUrl}/onboarding`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/expense`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${baseUrl}/stocks`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/search`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },

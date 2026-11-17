@@ -25,6 +25,30 @@ function formatYen(value: number): string {
   return value.toLocaleString("ja-JP") + "円相当";
 }
 
+// 「掲載データの作り方」の導線。数字の根拠となる解説ページへ回遊できるようにする
+const GUIDE_LINKS = [
+  {
+    href: "/method#annual-value",
+    title: "年間優待価値の算出方法",
+    body: "金額が書かれた優待券の扱いと、割引券・カタログ・招待券など金額の記載がない優待を円に換算するルール。",
+  },
+  {
+    href: "/method#first-receipt",
+    title: "初回受取見込みの計算",
+    body: "権利付最終日と継続保有条件から、今から購入した場合に最初に受け取れる時期を求める方法。",
+  },
+  {
+    href: "/method#quality",
+    title: "「検証済み」と「参考情報」の区分",
+    body: "企業IR・適時開示で内容を確認した銘柄と、証券会社の優待ページで照合した銘柄の違い。",
+  },
+  {
+    href: "/changelog",
+    title: "更新履歴",
+    body: "優待の新設・変更・廃止、上場廃止、掲載データの照合と更新の記録。",
+  },
+] as const;
+
 const MONTH_LABELS = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
 
 function buildCalendarData() {
@@ -314,6 +338,30 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── 6.5 データの作り方(解説コンテンツへの導線) ── */}
+        <section aria-labelledby="guide-heading">
+          <h2 id="guide-heading" className="text-base font-bold text-foreground mb-2">
+            掲載データの作り方
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+            年間優待価値・利回り・初回受取見込みなどの数字は、決まったルールで掲載データから計算しています。
+            計算方法と、優待の変更・廃止の記録はそれぞれのページで公開しています。
+          </p>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {GUIDE_LINKS.map(({ href, title, body }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  className="block h-full border border-border rounded-xl p-4 bg-card hover:bg-muted/50 transition-colors"
+                >
+                  <p className="font-semibold text-sm text-primary underline mb-1.5">{title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* ── 7. よくある質問 ── */}
         <section aria-labelledby="faq-heading">
           <h2 id="faq-heading" className="text-base font-bold text-foreground mb-4">
@@ -369,26 +417,6 @@ export default function Home() {
         </section>
 
       </div>
-
-      {/* ── 9. フッター ──────────────────────────────────── */}
-      <footer className="mt-4 mb-6 text-center text-xs text-muted-foreground space-y-3 max-w-2xl mx-auto px-4">
-        <p className="leading-relaxed">
-          ご利用にあたっては<Link href="/terms" className="underline">利用規約</Link>をご確認ください。
-        </p>
-        <nav aria-label="フッターナビゲーション">
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-            <Link href="/stocks" className="hover:underline">銘柄一覧</Link>
-            <Link href="/method" className="hover:underline">算出方法</Link>
-            <Link href="/changelog" className="hover:underline">更新履歴</Link>
-            <Link href="/about" className="hover:underline">このサイトについて</Link>
-            <Link href="/contact" className="hover:underline">お問い合わせ</Link>
-            <Link href="/terms" className="hover:underline">利用規約</Link>
-            <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
-          </div>
-        </nav>
-        <p>© 2026 優待マッチ | データ取得日: {formatDate(DATA_LAST_UPDATED)}</p>
-      </footer>
-
     </div>
   );
 }

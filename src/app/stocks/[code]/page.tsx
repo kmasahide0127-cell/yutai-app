@@ -22,6 +22,7 @@ import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
 import AffiliateBanner from "@/components/AffiliateBanner";
 import { serializeJsonLd } from "@/lib/utils";
+import { buildStockCommentary } from "@/lib/stock-commentary";
 
 export async function generateStaticParams() {
   return YUTAI_LIST.filter((y) => hasActiveYutai(y) || isAbolished(y)).map((yutai) => ({
@@ -112,6 +113,7 @@ export default async function StockDetailPage({
   const matchingExpenseCategories = getMatchingExpenseCategoriesForYutai(yutai);
   const relatedYutai = getRelatedYutai(yutai, YUTAI_LIST);
   const calendarPosition = abolished ? null : describeCalendarPosition(yutai, YUTAI_LIST);
+  const commentary = buildStockCommentary(yutai, YUTAI_LIST);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -295,6 +297,23 @@ export default async function StockDetailPage({
           <p className="text-sm leading-relaxed">{yutai.description}</p>
         </section>
 
+        {/* 銘柄固有の解説(掲載データから文章化。数値・バッジだけのページにしないため) */}
+        <section className="space-y-4" aria-labelledby="commentary-heading">
+          <h2 id="commentary-heading" className="text-base font-bold">
+            {abolished ? "この銘柄の優待の記録" : "この銘柄の優待のポイント"}
+          </h2>
+          {commentary.paragraphs.map((p) => (
+            <div key={p.heading} className="space-y-1">
+              <h3 className="text-sm font-semibold">{p.heading}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{p.sentences.join("")}</p>
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">
+            掲載データ(基準日 {yutai.priceUpdatedAt ?? yutai.lastVerified})から自動で算出した説明です。順位・中央値は当サイト掲載銘柄の中での値で、
+            投資判断の材料の一つとしてご利用ください。
+          </p>
+        </section>
+
         {/* 権利確定月 */}
         <section className="space-y-2" aria-labelledby="rights-months-heading">
           <h2 id="rights-months-heading" className="text-base font-bold">
@@ -411,6 +430,36 @@ export default async function StockDetailPage({
             </div>
           </section>
         )}
+
+        {/* 解説コンテンツへの導線: 数値の根拠・カテゴリの全体像・データ更新の記録 */}
+        <section className="space-y-2" aria-labelledby="guide-links-heading">
+          <h2 id="guide-links-heading" className="text-base font-bold">このページの数値と関連する解説</h2>
+          <ul className="space-y-1.5 text-sm">
+            {commentary.categoryPositions.map((c) => (
+              <li key={c.slug}>
+                <Link href={`/expense/${c.slug}`} className="text-primary underline">
+                  {c.expense}に使える株主優待({c.stockCount}銘柄)
+                </Link>
+                <span className="text-xs text-muted-foreground"> — 権利確定月の分布と同カテゴリの全銘柄</span>
+              </li>
+            ))}
+            <li>
+              <Link href="/method#annual-value" className="text-primary underline">年間優待価値の算出方法</Link>
+              <span className="text-xs text-muted-foreground"> — 割引券・カタログなど金額の記載がない優待の換算ルール</span>
+            </li>
+            <li>
+              <Link href="/method#yield" className="text-primary underline">必要投資額・優待利回りの計算</Link>
+              <span className="text-xs text-muted-foreground"> — 株価基準日と計算式</span>
+            </li>
+            <li>
+              <Link href="/method#quality" className="text-primary underline">「検証済み」と「参考情報」の区分</Link>
+            </li>
+            <li>
+              <Link href="/changelog" className="text-primary underline">更新履歴</Link>
+              <span className="text-xs text-muted-foreground"> — 優待の変更・廃止とデータ更新の記録</span>
+            </li>
+          </ul>
+        </section>
 
         {/* 掲載データ情報 */}
         <section className="pt-4 border-t border-border text-xs text-muted-foreground space-y-1" aria-label="掲載データ情報">

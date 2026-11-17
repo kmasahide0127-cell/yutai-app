@@ -4,6 +4,7 @@ import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { DATA_LAST_UPDATED } from "@/lib/yutai-data";
 import { serializeJsonLd } from "@/lib/utils";
+import { SiteFooter } from "@/components/SiteFooter";
 
 function formatJapaneseDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-");
@@ -134,6 +135,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <SiteFooter />
       </body>
     </html>
   );

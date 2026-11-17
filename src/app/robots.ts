@@ -7,10 +7,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: [
-          "/api/",
-          "/_next/",
-        ],
+        // /_next/ はブロックしない。ページの描画に使う JS/CSS がここから配信されるため、
+        // ブロックすると Google のクローラがページを正しくレンダリングできない。
+        disallow: ["/api/"],
       },
     ],
     sitemap: `${siteConfig.url}/sitemap.xml`,

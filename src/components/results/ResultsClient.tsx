@@ -958,17 +958,6 @@ export function ResultsClient({
           <ResetLink />
         </div>
       </div>
-
-      <footer className="mb-6 text-center text-xs text-muted-foreground">
-        <div className="space-x-4">
-          <Link href="/terms" className="hover:underline">利用規約</Link>
-          <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
-          <Link href="/contact" className="hover:underline">お問い合わせ</Link>
-          <Link href="/about" className="hover:underline">このサイトについて</Link>
-          <Link href="/method" className="hover:underline">算出方法</Link>
-        </div>
-        <p className="mt-2">© 2026 優待マッチ | データ取得日: {DATA_LAST_UPDATED_JP}</p>
-      </footer>
     </div>
   );
 }
