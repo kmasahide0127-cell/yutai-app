@@ -51,7 +51,7 @@ export function ProductSearchForm({
             <Link
               key={example}
               href={`/search?q=${encodeURIComponent(example)}`}
-              className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/50"
+              className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground whitespace-nowrap transition-colors hover:bg-muted/50"
             >
               {example}
             </Link>

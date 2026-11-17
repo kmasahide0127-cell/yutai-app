@@ -90,10 +90,6 @@ const FEATURES = [
     body: `優待を実施中の${DATA_STATS.active}銘柄を掲載。うち${DATA_STATS.activeVerified}銘柄は企業IR・適時開示で内容を確認した「検証済み」、${DATA_STATS.activeReference}銘柄は証券会社の優待ページでの照合などによる「参考情報」です。`,
   },
   {
-    title: "登録不要・ブラウザ完結",
-    body: "メール登録・ログイン不要。入力データはすべてブラウザ内に保存され、サーバーに個人情報は送信されません。",
-  },
-  {
     title: "5年・10年プランで無理なく完成",
     body: "資産に余裕がある方は急いで揃える必要はありません。株式に使ってもよい総額を入力すると、5年・10年かけて優待カレンダーを完成させる年ごとの投資計画を提案します。",
   },
@@ -135,44 +131,36 @@ export default function Home() {
           <h1 className="text-4xl font-bold tracking-tight">優待マッチ</h1>
           <p className="text-base text-muted-foreground mt-2">生活逆引き型 株主優待マッチング</p>
         </header>
-        <p className="text-xl text-muted-foreground max-w-sm">
+        <p className="text-xl text-muted-foreground max-w-md">
           あなたの生活に合う株主優待を見つけます
         </p>
-        <p className="text-sm text-muted-foreground max-w-sm mt-2">
-          今年度の予算で組めるところから始めて、来年以降も少しずつ買い足しながら年間優待カレンダーを完成させていけます
+        {/* 日本語が単語・助詞の途中で折れないよう、文節ごとに inline-block で区切る */}
+        <p className="text-sm text-muted-foreground max-w-xl mt-2 leading-relaxed">
+          <span className="inline-block">今年度の予算で組めるところから始めて、</span>
+          <span className="inline-block">来年以降も少しずつ買い足しながら</span>
+          <span className="inline-block">年間優待カレンダーを完成させていけます</span>
         </p>
-        <div className="flex flex-col items-center gap-3 mt-8">
+        <div className="flex flex-col items-center gap-3 mt-8 w-full">
           <Link href="/onboarding" className={buttonVariants({ size: "lg" })}>
             始める(無料・1分)
           </Link>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            データ最終更新: {formatDate(DATA_LAST_UPDATED)}<br />
-            優待実施中 {DATA_STATS.active}銘柄（検証済み {DATA_STATS.activeVerified}銘柄）
+            データ最終更新: {formatDate(DATA_LAST_UPDATED)}
           </p>
-        </div>
-      </section>
-
-      {/* ── 1.5 商品名からの逆引き・体験からの提案(欲しい物/したい体験が決まっている人の入口) ── */}
-      <section className="w-full px-4 pb-10">
-        <div className="mx-auto max-w-md space-y-4 text-left">
-          <div className="space-y-2">
-            <h2 className="text-sm font-bold">欲しい商品が決まっている場合</h2>
-            <p className="text-xs text-muted-foreground">
-              商品名・ブランド名から、関係する優待銘柄の候補を逆引きできます。
-            </p>
-            <ProductSearchForm />
-          </div>
-          <div className="space-y-2 border-t border-border pt-4">
-            <h2 className="text-sm font-bold">したい体験が決まっている場合</h2>
-            <p className="text-xs text-muted-foreground">
-              クルーズ・温泉旅館・レストラン・ゴルフなど、したい体験から優待銘柄の候補を提案します。
-            </p>
-            <Link
-              href="/experiences"
-              className={buttonVariants({ variant: "outline", className: "w-full" })}
-            >
-              🎐 体験から探す
-            </Link>
+          {/* 掲載数・検証済み数の表示はここ(ヒーロー)と「サイトの特徴」の詳細説明の2か所に集約する */}
+          <div className="grid grid-cols-3 gap-3 w-full max-w-lg mt-2">
+            {(
+              [
+                { value: `${DATA_STATS.active}`, unit: "銘柄", label: "優待実施中" },
+                { value: `${DATA_STATS.activeVerified}`, unit: "銘柄", label: "検証済み" },
+                { value: `${EXPENSE_CATEGORIES.length}`, unit: "カテゴリ", label: "出費カテゴリ数" },
+              ] as const
+            ).map(({ value, unit, label }) => (
+              <div key={label} className="text-center py-3 rounded-lg bg-muted/30">
+                <div className="text-xl font-bold text-foreground">{value}<span className="text-xs font-normal">{unit}</span></div>
+                <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -189,28 +177,13 @@ export default function Home() {
             <p className="text-sm leading-relaxed text-muted-foreground">
               優待マッチは、毎月の生活費からそれを削減できる株主優待を
               <strong className="text-foreground">逆引きで探せる</strong>情報提供サービスです。
-              外食、日用品、通信、旅行、美容、趣味など
-              <strong className="text-foreground">{EXPENSE_CATEGORIES.length}カテゴリ</strong>から検索でき、
-              優待実施中の<strong className="text-foreground">{DATA_STATS.active}銘柄</strong>を掲載
-              （うち<strong className="text-foreground">{DATA_STATS.activeVerified}銘柄</strong>は企業IR・適時開示で内容を確認した「検証済み」）。
+              外食、日用品、通信、旅行、美容、趣味など、日常生活の出費カテゴリから検索でき、
+              優待実施中の銘柄を掲載しています。掲載銘柄の一部は、企業IR・適時開示で内容を確認した「検証済み」です
+              （掲載数・検証済み数はページ上部の表示をご覧ください）。
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
               本サービスは個人開発で運営しています。
             </p>
-            <div className="grid grid-cols-3 gap-3 pt-2">
-              {(
-                [
-                  { value: `${DATA_STATS.active}`, unit: "銘柄", label: "優待実施中" },
-                  { value: `${DATA_STATS.activeVerified}`, unit: "銘柄", label: "検証済み" },
-                  { value: `${EXPENSE_CATEGORIES.length}`, unit: "カテゴリ", label: "出費カテゴリ数" },
-                ] as const
-              ).map(({ value, unit, label }) => (
-                <div key={label} className="text-center py-3 rounded-lg bg-muted/30">
-                  <div className="text-xl font-bold text-foreground">{value}<span className="text-xs font-normal">{unit}</span></div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
@@ -255,6 +228,45 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── 3.5 商品名からの逆引き・体験からの提案(目的が決まっている人向けの補助導線) ── */}
+        <section aria-labelledby="direct-search-heading">
+          <h2 id="direct-search-heading" className="text-base font-bold text-foreground mb-4">
+            目的が決まっている方はこちら
+          </h2>
+          <div className="space-y-4 text-left">
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold">欲しい商品が決まっている場合</h3>
+              <p className="text-xs text-muted-foreground">
+                商品名・ブランド名から、関係する優待銘柄の候補を逆引きできます。
+              </p>
+              <ProductSearchForm />
+            </div>
+            <div className="space-y-2 border-t border-border pt-4">
+              <h3 className="text-sm font-bold">したい体験が決まっている場合</h3>
+              <p className="text-xs text-muted-foreground">
+                クルーズ・温泉旅館・レストラン・ゴルフなど、したい体験から優待銘柄の候補を提案します。
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">例:</span>
+                {["クルーズ", "温泉旅館", "レストラン", "ゴルフ"].map((example) => (
+                  <span
+                    key={example}
+                    className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground whitespace-nowrap"
+                  >
+                    {example}
+                  </span>
+                ))}
+              </div>
+              <Link
+                href="/experiences"
+                className={buttonVariants({ variant: "outline", className: "w-full" })}
+              >
+                🎐 体験から探す
+              </Link>
+            </div>
+          </div>
+        </section>
+
         <AdUnit format="horizontal" className="py-2" />
 
         {/* ── 4. 年間優待カレンダー例 ── */}
@@ -263,7 +275,8 @@ export default function Home() {
             年間優待カレンダー例
           </h2>
           <p className="text-xs text-muted-foreground mb-4">
-            株主優待は権利確定月に保有していると受け取れます。月ごとの掲載銘柄数と代表例を示します（参考情報）。
+            株主優待は権利確定月に保有していると受け取れます。月ごとの掲載銘柄数と、その月の代表例（各月2銘柄まで）を示します（参考情報）。
+            権利確定月は3月に集中する企業が多いため、月ごとの銘柄数には偏りがあります。
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {calendarData.map(({ label, count, examples }) => (
@@ -316,8 +329,8 @@ export default function Home() {
               </Link>
             ))}
           </div>
-          <div className="mt-3 text-right">
-            <Link href="/stocks" className="text-primary underline text-xs hover:opacity-80">
+          <div className="mt-4 text-center">
+            <Link href="/stocks" className={buttonVariants({ variant: "outline", size: "sm" })}>
               優待実施中{DATA_STATS.active}銘柄の一覧を見る →
             </Link>
           </div>
