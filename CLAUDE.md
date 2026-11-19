@@ -17,46 +17,54 @@
 
 ## 技術スタック
 
+導入済みのものだけを書く。バージョンの正は package.json / scripts/requirements.txt。
+
 ### フロントエンド
-- Next.js 15 (App Router)
+- Next.js 15 (App Router、Turbopack でビルド) / React 19
 - TypeScript (strict mode)
-- Tailwind CSS
-- shadcn/ui (UIコンポーネント)
-- Recharts (グラフ・チャート)
+- Tailwind CSS v4
+- shadcn/ui (Base UI ベース。`src/components/ui/` に button / card / checkbox / radio-group)
 - Zustand + persist middleware (状態管理 + localStorage永続化)
-- Dexie.js (IndexedDBのラッパー、大容量データ用)
-- Lucide Icons
+- Lucide Icons (lucide-react)
 
 ### データ永続化(クライアントサイド完結)
-- **localStorage**: 設定、ウォッチリスト等の軽量データ
-- **IndexedDB (Dexie.js)**: 保有履歴、優待受領記録等の大容量データ
+- **localStorage**: Zustand persist で保存(オンボーディング入力、非表示にした項目など)
 - サーバーサイドDBは使用しない(運用コストゼロ、プライバシー設計)
 
-### 外部データ取得
-- GitHub Actions で定期実行(無料枠で十分)
-- 株価・優待データをJSONとしてビルド時またはVercel上に静的配信
-- ユーザー側はfetchで取得するだけ(読み取り専用)
+### 優待・株価データ
+- 銘柄データは `src/lib/yutai-data.ts` の TypeScript 定数(`YUTAI_LIST`)としてリポジトリに含め、ビルド時に取り込む
+- 商品名検索用のブランド辞書は `src/lib/brand-data.ts`
+- 優待の「内容」は手動で照合・更新する(手順は WEEKLY_MAINTENANCE.md)
 
-### データ処理(Pythonバッチ)
-- pandas, requests, BeautifulSoup
-- yfinance / EDINET API
-- GitHub Actions (スケジューリング)
+### データ処理(Pythonバッチ、`scripts/`)
+- yfinance: 株価を取得して `yutai-data.ts` の投資額・利回りを更新(週次)
+- やのしんTDnet WEB-API(標準ライブラリの urllib で取得): 優待関連の適時開示を検出して報告(週次)
+- J-Quants API(jquants-api-client)/ pandas: 銘柄一覧・株価・財務の取得スクリプト(手動実行)
+- GitHub Actions (`.github/workflows/weekly-data-update.yml`): 週次実行し、変更をPRとして作成
+
+### テスト
+- Vitest(`npm run test`、監視実行は `npm run test:watch`)
+- テストは `src/lib/__tests__/` に置く。対象は `src/lib` の純粋ロジック(DOM を使うテストは未導入)
 
 ### インフラ
-- Vercel (Next.jsホスティング + 静的JSON配信)
-- Sentry (エラー監視)
+- Vercel (Next.jsホスティング。main ブランチのみ自動デプロイ)
+- Google AdSense(`src/components/common/AdSenseScript.tsx` / `AdUnit.tsx`、`public/ads.txt`)
+
+### 未導入(必要になった時点で導入を検討)
+- Recharts(グラフ)、Dexie.js / IndexedDB(大容量データ)、React Hook Form(フォーム)、Sentry(エラー監視)
 
 ## ファイル構成
 
 - `src/app/`: ページ(App Router)
 - `src/components/`: 共通コンポーネント
 - `src/components/ui/`: shadcn/ui コンポーネント
-- `src/lib/`: ロジック、ユーティリティ
+- `src/config/`: サイト名・URLなどの設定
+- `src/lib/`: ロジック、ユーティリティ、静的データ(yutai-data.ts / brand-data.ts など)
+- `src/lib/__tests__/`: ユニットテスト
 - `src/store/`: Zustandストア(+ persist設定)
 - `src/types/`: TypeScript型定義
-- `src/hooks/`: カスタムフック
-- `python/`: 外部データ収集バッチ(GitHub Actions実行)
-- `public/data/`: 静的配信する優待・株価JSONデータ
+- `scripts/`: 外部データ収集バッチ(Python、GitHub Actions実行)と補助スクリプト
+- `docs/`: 生成した下書きなどの資料
 
 ## コーディングルール
 
@@ -75,7 +83,7 @@
 ### React/Next.js
 - ユーザーデータはクライアント側で完結するため、ストア操作は "use client" コンポーネントで行う
 - 静的データ(優待マスタ等)の取得はServer Componentsで実施
-- フォームはuseState + Server Action または React Hook Form
+- フォームは useState で状態を持つ(React Hook Form は未導入)
 - エラーバウンダリを適切に配置
 
 ### コメント
@@ -139,7 +147,7 @@
 
 - 開発者は本業との両立で副業として進行
 - 週末数時間のペース
-- 1機能完結ごとにコミット、デプロイ可能な状態を維持
+- 1機能完結ごとにコミット、デプロイ可能な状態を維持(コミット前に `npm run lint` / `npm run test` / `npm run build` を通す)
 - ドキュメント・テストも徐々に整備
 
 ## ステージング戦略
