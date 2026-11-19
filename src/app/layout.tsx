@@ -5,6 +5,12 @@ import { siteConfig } from "@/config/site";
 import { DATA_LAST_UPDATED } from "@/lib/yutai-data";
 import { serializeJsonLd } from "@/lib/utils";
 import { SiteFooter } from "@/components/SiteFooter";
+import { GoogleAnalytics } from "@/components/common/GoogleAnalytics";
+
+// 測定IDは公開情報(HTMLに出る)なので秘密ではない。Vercel の環境変数設定が漏れても
+// 計測が止まらないよう、未設定時は本番の測定IDにフォールバックする。
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-TZ0T0ZNTHP";
 
 function formatJapaneseDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-");
@@ -136,6 +142,10 @@ export default function RootLayout({
         />
         {children}
         <SiteFooter />
+        {/* 開発中のアクセスで計測を汚さないよう、本番ビルドでのみ読み込む */}
+        {process.env.NODE_ENV === "production" && (
+          <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
+        )}
       </body>
     </html>
   );

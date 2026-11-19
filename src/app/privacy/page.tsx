@@ -20,6 +20,7 @@ export default function PrivacyPage() {
           <div>
             <h2 className="font-semibold text-base mb-2">1. 個人情報の取扱方針</h2>
             <p>本サービスは、ユーザーのプライバシー保護を最優先に設計されています。ユーザーが本サービスで入力した情報(興味、出費カテゴリ、ブランド選択など)は、すべてユーザーのブラウザ内(localStorage)にのみ保存され、運営者のサーバーには一切送信されません。</p>
+            <p className="mt-2">なお、入力した情報は運営者のサーバーに送信・保存されません。アクセス解析のため、Google Analytics がページのURL(パス部分)などを Google に送信しますが、URLのクエリ部分に含まれる入力条件は解析に送信しないよう処理しています(詳しくは「4. アクセス解析」をご覧ください)。</p>
           </div>
 
           <div>
@@ -34,12 +35,16 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="font-semibold text-base mb-2">3. Cookie の使用</h2>
-            <p>本サービス自体はトラッキング目的のCookieを設置しません。ただし、後述の第三者広告配信サービス(Google AdSense)がCookieを使用することがあります。</p>
+            <p>本サービス自体はトラッキング目的のCookieを設置しません。ただし、後述のアクセス解析ツール(Google Analytics)および第三者広告配信サービス(Google AdSense)がCookieを使用することがあります。</p>
           </div>
 
           <div>
             <h2 className="font-semibold text-base mb-2">4. アクセス解析</h2>
-            <p>本サービスは、現在はアクセス解析ツール(Google Analytics 等)を使用していません。将来導入する場合は、本ポリシーを更新の上、ユーザーに通知します。</p>
+            <p>本サービスでは、Google LLC が提供するアクセス解析ツール「Google Analytics 4」を利用しています。Google Analytics は Cookie を使用して、閲覧したページのURL(パス部分。検索・絞り込み条件などのクエリ部分は送信前に除去しています)・滞在時間・参照元・おおよその地域・利用端末やブラウザの種類などのアクセス情報を収集します。収集される情報には氏名・メールアドレスなど個人を特定する情報は含まれず、サイトの利用状況の把握と改善(アクセス解析)のためにのみ利用します。</p>
+            <ul className="list-disc list-inside mt-2 ml-2 space-y-1">
+              <li>Google によるデータの取り扱いについては、<a href="https://policies.google.com/technologies/partner-sites" className="text-primary underline" target="_blank" rel="noopener noreferrer">Google のサービスを使用するサイトやアプリから収集した情報の Google による使用</a>および<a href="https://policies.google.com/privacy" className="text-primary underline" target="_blank" rel="noopener noreferrer">Google プライバシーポリシー</a>をご参照ください。</li>
+              <li>ブラウザの設定で Cookie を無効にするか、<a href="https://tools.google.com/dlpage/gaoptout?hl=ja" className="text-primary underline" target="_blank" rel="noopener noreferrer">Google アナリティクス オプトアウト アドオン</a>を利用することで、Google Analytics による収集を無効にできます。</li>
+            </ul>
           </div>
 
           <div>
@@ -74,7 +79,7 @@ export default function PrivacyPage() {
 
           <p className="text-xs text-muted-foreground mt-8">
             ポリシー制定日: 2026年5月27日<br />
-            最終更新日: 2026年11月3日
+            最終更新日: 2026年11月19日
           </p>
         </section>
       </div>
