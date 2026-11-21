@@ -74,7 +74,7 @@ export default function ContactPage() {
                 <div className="px-4 pb-4 pt-2 border-t border-border space-y-2">
                   <p className="text-xs text-muted-foreground leading-relaxed">{a}</p>
                   {link && (
-                    <Link href={link.href} className="inline-block text-xs text-primary underline">
+                    <Link prefetch={false} href={link.href} className="inline-block text-xs text-primary underline">
                       {link.label} →
                     </Link>
                   )}

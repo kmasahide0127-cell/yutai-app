@@ -62,7 +62,7 @@ export default function ExpenseIndexPage() {
         <ul className="space-y-2">
           {rows.map((f) => (
             <li key={f.expense}>
-              <Link
+              <Link prefetch={false}
                 href={`/expense/${EXPENSE_CATEGORY_SLUGS[f.expense]}`}
                 className="block rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50"
               >

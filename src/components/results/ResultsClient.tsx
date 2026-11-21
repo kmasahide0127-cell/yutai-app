@@ -481,7 +481,7 @@ export function ResultsClient({
                             />
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-baseline gap-x-1.5">
-                                <Link
+                                <Link prefetch={false}
                                   href={`/stocks/${y.code}`}
                                   className="text-sm text-muted-foreground hover:underline"
                                 >
@@ -517,7 +517,7 @@ export function ResultsClient({
                             />
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-baseline gap-x-1.5">
-                                <Link
+                                <Link prefetch={false}
                                   href={`/stocks/${entry.yutai.code}`}
                                   className="text-sm font-medium hover:underline"
                                 >
@@ -568,7 +568,7 @@ export function ResultsClient({
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-baseline gap-x-1.5">
-                                  <Link
+                                  <Link prefetch={false}
                                     href={`/stocks/${entry.yutai.code}`}
                                     className="text-xs text-muted-foreground/60 hover:underline"
                                   >

@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 /**
  * 商品名・ブランド名からの逆引き検索フォーム。
  *
- * 素の GET フォームにしているのは、JS が無効でも動き Server Component から
- * そのまま置けるため。検索結果は /search?q= の Server Component 側で組み立てる。
+ * 素の GET フォームにしているのは、Server Component からもそのまま置けるため。
+ * /search は静的ページで、?q= を読んだ検索結果はブラウザ側(SearchView)で組み立てる。
  */
 export function ProductSearchForm({
   defaultValue = "",
@@ -48,7 +48,7 @@ export function ProductSearchForm({
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground">例:</span>
           {SEARCH_EXAMPLES.map((example) => (
-            <Link
+            <Link prefetch={false}
               key={example}
               href={`/search?q=${encodeURIComponent(example)}`}
               className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground whitespace-nowrap transition-colors hover:bg-muted/50"

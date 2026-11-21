@@ -16,7 +16,7 @@ import {
   isAbolished,
 } from "@/lib/product-search";
 import { AppHeader } from "@/components/AppHeader";
-import { FirstReceiptNote } from "@/components/search/StockResultCard";
+import { FirstReceiptSection, ReceiptFlowSection, StockFaqSection } from "@/components/stock/StockDateSections";
 import { buttonVariants } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import AdUnit from "@/components/common/AdUnit";
@@ -38,9 +38,9 @@ export async function generateStaticParams() {
   }));
 }
 
-// 「初回受取見込み」は今日の日付に依存する(権利付最終日を過ぎると1サイクル先にずれる)。
-// 週次のデータ更新ビルドだけに任せると最大1週間ずれるため、12時間ごとに再生成する。
-export const revalidate = 43200;
+// 「初回受取見込み」など今日の日付で変わる部分は、ブラウザで閲覧日を起点に計算し直す
+// (StockDateSections)。そのためページ自体はビルド時にだけ生成し、定期的な再生成はしない。
+export const dynamicParams = false;
 
 export async function generateMetadata({
   params,
@@ -293,28 +293,7 @@ export default async function StockDetailPage({
         )}
 
         {/* 取得可能最短日: 今から買った場合に初回の優待を受け取れる見込み時期 */}
-        {firstReceipt && (
-          <section
-            className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2"
-            aria-labelledby="first-receipt-heading"
-          >
-            <h2 id="first-receipt-heading" className="text-base font-bold">
-              今から購入した場合の初回受取見込み
-            </h2>
-            <FirstReceiptNote estimate={firstReceipt} yutai={yutai} />
-            <p className="text-xs text-muted-foreground">
-              基準日の月末と権利付最終日(基準日の2営業日前)をもとにした概算で、祝日の並びは考慮していません。
-              優待の発送・付与時期は企業ごとに異なります。参考情報としてご利用ください。
-            </p>
-          </section>
-        )}
-
-        {!firstReceipt && holdingNotice && (
-          <section className="rounded-xl border border-border bg-muted/30 p-4 space-y-1" aria-label="初回受取見込み">
-            <h2 className="text-base font-bold">今から購入した場合の初回受取見込み</h2>
-            <p className="text-xs text-muted-foreground">{holdingNotice}</p>
-          </section>
-        )}
+        <FirstReceiptSection yutai={yutai} initialEstimate={firstReceipt} holdingNotice={holdingNotice} />
 
         {/* 優待内容 */}
         <section className="space-y-2" aria-labelledby="yutai-detail-heading">
@@ -377,24 +356,7 @@ export default async function StockDetailPage({
         )}
 
         {/* 受け取るまでの流れ: 次の基準日・権利付最終日・名簿記録の日程を、この銘柄の条件から算出 */}
-        {receiptFlow.length > 0 && (
-          <section className="space-y-3" aria-labelledby="flow-heading">
-            <h2 id="flow-heading" className="text-base font-bold">受け取るまでの流れと注意点</h2>
-            <ol className="space-y-2">
-              {receiptFlow.map((step) => (
-                <li key={step.title} className="rounded-lg border border-border bg-card p-3">
-                  <p className="text-sm font-semibold">{step.title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-                </li>
-              ))}
-            </ol>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              日付は今日を起点に、権利付最終日 = 基準日の2営業日前(土日のみ除外・祝日は考慮しない)として計算した概算です。
-              仕組みは<Link href="/guide/record-date" className="text-primary underline">権利付最終日・権利落ち日と継続保有条件の仕組み</Link>、
-              計算方法は<Link href="/method#first-receipt" className="text-primary underline">算出方法</Link>で説明しています。
-            </p>
-          </section>
-        )}
+        <ReceiptFlowSection yutai={yutai} initialSteps={receiptFlow} />
 
         {/* 使い方: 優待内容の記載から読み取れる受け取り形式と、掲載データ上の利用先 */}
         {!abolished && (
@@ -491,7 +453,7 @@ export default async function StockDetailPage({
             </p>
             <div className="flex flex-wrap gap-1.5">
               {yutai.brands.map((brand) => (
-                <Link
+                <Link prefetch={false}
                   key={brand}
                   href={`/search?q=${encodeURIComponent(brand)}`}
                   className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted text-xs hover:bg-muted/70"
@@ -517,7 +479,7 @@ export default async function StockDetailPage({
                 const reason = explainExpenseMatch(yutai, expense);
                 return (
                   <li key={expense} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
-                    <Link href={`/expense/${slug}`} className="font-medium text-primary underline">
+                    <Link prefetch={false} href={`/expense/${slug}`} className="font-medium text-primary underline">
                       {expense}
                     </Link>
                     <span className="block text-xs text-muted-foreground mt-0.5">
@@ -552,7 +514,7 @@ export default async function StockDetailPage({
             <ul className="space-y-1.5">
               {alternatives.map((alt) => (
                 <li key={alt.yutai.code} className="rounded-lg border border-border bg-card px-3 py-2">
-                  <Link href={`/stocks/${alt.yutai.code}`} className="text-sm font-medium text-primary underline">
+                  <Link prefetch={false} href={`/stocks/${alt.yutai.code}`} className="text-sm font-medium text-primary underline">
                     {alt.yutai.name}({alt.yutai.code})
                   </Link>
                   <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">{alt.line}</p>
@@ -561,26 +523,14 @@ export default async function StockDetailPage({
             </ul>
             <p className="text-xs text-muted-foreground">
               比較のための一覧で、特定の銘柄を勧めるものではありません。カテゴリ全体は
-              <Link href={`/expense/${alternatives[0].slug}`} className="underline">{alternatives[0].expense}に使える株主優待</Link>
+              <Link prefetch={false} href={`/expense/${alternatives[0].slug}`} className="underline">{alternatives[0].expense}に使える株主優待</Link>
               で確認できます。
             </p>
           </section>
         )}
 
         {/* 銘柄別FAQ(この銘柄のデータで答えられる質問だけ) */}
-        {faq.length > 0 && (
-          <section className="space-y-2" aria-labelledby="faq-heading">
-            <h2 id="faq-heading" className="text-base font-bold">{yutai.name}の優待についてのよくある質問</h2>
-            <div className="space-y-2">
-              {faq.map(({ q, a }) => (
-                <div key={q} className="rounded-lg border border-border bg-card p-3">
-                  <h3 className="text-sm font-semibold">Q. {q}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">A. {a}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        <StockFaqSection yutai={yutai} initialFaq={faq} />
 
         {/* CTA */}
         <section className="rounded-xl border-2 border-primary bg-primary text-primary-foreground p-5 text-center space-y-3">
@@ -605,7 +555,7 @@ export default async function StockDetailPage({
             <h2 id="related-heading" className="text-base font-bold">関連する優待銘柄</h2>
             <div className="space-y-2">
               {relatedYutai.map((related) => (
-                <Link
+                <Link prefetch={false}
                   key={related.id}
                   href={`/stocks/${related.code}`}
                   className="block rounded-lg border border-border bg-card p-3 hover:bg-muted/50 transition-colors"
@@ -631,7 +581,7 @@ export default async function StockDetailPage({
           <ul className="space-y-1.5 text-sm">
             {commentary.categoryPositions.map((c) => (
               <li key={c.slug}>
-                <Link href={`/expense/${c.slug}`} className="text-primary underline">
+                <Link prefetch={false} href={`/expense/${c.slug}`} className="text-primary underline">
                   {c.expense}に使える株主優待({c.stockCount}銘柄)
                 </Link>
                 <span className="text-xs text-muted-foreground"> — 権利確定月の分布と同カテゴリの全銘柄</span>

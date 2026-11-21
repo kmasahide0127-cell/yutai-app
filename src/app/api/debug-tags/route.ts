@@ -4,6 +4,9 @@ import { debugTagDistribution } from "@/lib/matching";
 import { debugExperienceTagCoverage } from "@/lib/experience-matching";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 
+// 本番ではビルド時に 404 応答として静的に確定させ、アクセスのたびにサーバーで処理しない
+export const dynamic = "force-static";
+
 export function GET() {
   if (process.env.NODE_ENV === "production") {
     return new Response("Not Found", { status: 404 });

@@ -54,7 +54,7 @@ export default function ModelCasesPage() {
             <ul className="space-y-1.5">
               {r.picks.map(({ yutai, months }) => (
                 <li key={yutai.code} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-xs">
-                  <Link href={`/stocks/${yutai.code}`} className="min-w-0 truncate font-medium underline">
+                  <Link prefetch={false} href={`/stocks/${yutai.code}`} className="min-w-0 truncate font-medium underline">
                     {yutai.name}({yutai.code})
                   </Link>
                   <span className="shrink-0 tabular-nums text-muted-foreground">

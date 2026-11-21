@@ -292,7 +292,7 @@ export default function Home() {
                   <ul className="space-y-1.5">
                     {examples.map((ex) => (
                       <li key={ex.code}>
-                        <Link
+                        <Link prefetch={false}
                           href={`/stocks/${ex.code}`}
                           className="block text-xs hover:opacity-80 transition-opacity"
                         >
@@ -321,7 +321,7 @@ export default function Home() {
           </h2>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(EXPENSE_CATEGORY_SLUGS).map(([cat, slug]) => (
-              <Link
+              <Link prefetch={false}
                 key={slug}
                 href={`/expense/${slug}`}
                 className="inline-flex items-center px-2.5 py-1 rounded-md border border-border bg-card text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
@@ -363,7 +363,7 @@ export default function Home() {
           <ul className="space-y-2">
             {GUIDES.map((g) => (
               <li key={g.slug}>
-                <Link
+                <Link prefetch={false}
                   href={`/guide/${g.slug}`}
                   className="block border border-border rounded-xl p-4 bg-card hover:bg-muted/50 transition-colors"
                 >
@@ -390,7 +390,7 @@ export default function Home() {
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {GUIDE_LINKS.map(({ href, title, body }) => (
               <li key={href}>
-                <Link
+                <Link prefetch={false}
                   href={href}
                   className="block h-full border border-border rounded-xl p-4 bg-card hover:bg-muted/50 transition-colors"
                 >

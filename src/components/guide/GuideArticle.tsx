@@ -55,7 +55,7 @@ export function GuideArticle({ slug, children }: { slug: string; children: React
           <ul className="space-y-1.5 text-sm">
             {others.map((g) => (
               <li key={g.slug}>
-                <Link href={`/guide/${g.slug}`} className="text-primary underline">{g.title}</Link>
+                <Link prefetch={false} href={`/guide/${g.slug}`} className="text-primary underline">{g.title}</Link>
               </li>
             ))}
           </ul>
@@ -104,7 +104,7 @@ export function Note({ children }: { children: React.ReactNode }) {
 
 export function StockLink({ code, name }: { code: string; name: string }) {
   return (
-    <Link href={`/stocks/${code}`} className="text-primary underline">
+    <Link prefetch={false} href={`/stocks/${code}`} className="text-primary underline">
       {name}({code})
     </Link>
   );

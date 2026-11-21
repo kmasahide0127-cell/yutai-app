@@ -1,18 +1,19 @@
 import { ImageResponse } from "next/og";
-import { NextRequest } from "next/server";
 import {
   filterCandidatesForBudget,
   buildBudgetAwareCalendarPackage,
   type UserExpenseLifestyle,
 } from "@/lib/matching";
-import { parseResultParams, buildShareQuery } from "@/lib/result-params";
+import { parseResultParams } from "@/lib/result-params";
 import { YUTAI_LIST } from "@/lib/yutai-data";
 
-export const dynamic = "force-dynamic";
+// 画像はビルド時に1枚だけ生成し、静的ファイルとして配信する。
+// 以前は診断条件(クエリ)ごとにアクセス時に生成していたが、組み合わせが無数にあり
+// ボットのアクセスでも生成と転送(Vercel の Fast Origin Transfer)が増えるため、固定の1枚にした。
+// クエリ付きでアクセスされても、この静的画像がそのまま返る。
+export const dynamic = "force-static";
 
-// 画像はクエリが同じなら常に同じ内容。CDN にキャッシュさせ、ボットの大量アクセスで
-// 画像生成(CPU)と Google Fonts への外部取得が毎回走らないようにする
-const CACHE_CONTROL = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800";
+const CACHE_CONTROL = "public, max-age=86400, s-maxage=31536000";
 
 // フォントはインスタンス内で使い回す(取得失敗時は次回リクエストで再試行)
 let fontCache: Promise<ArrayBuffer | null> | null = null;
@@ -61,25 +62,9 @@ async function fetchJapaneseFont(): Promise<ArrayBuffer | null> {
 // Satori 制約:
 //   - 複数の子を持つ要素は必ず display:"flex"
 //   - テキストと変数の混在は文字列テンプレートで結合
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const { searchParams } = url;
-
-  const params = parseResultParams({
-    expenses: searchParams.get("expenses") ?? undefined,
-    maxInvestment: searchParams.get("maxInvestment") ?? undefined,
-    vehicleType: searchParams.get("vehicleType") ?? undefined,
-    preferenceTags: searchParams.get("preferenceTags") ?? undefined,
-  });
-
-  // 余計なパラメータや並び順の違いで URL を無限に変えれば CDN キャッシュを素通りして
-  // 毎回画像生成させられる。正規化した URL と異なる場合は正規 URL へ寄せる
-  const canonicalQuery = buildShareQuery({ ...params, householdSize: 1 });
-  if (url.search.replace(/^\?/, "") !== canonicalQuery) {
-    const canonical = new URL(url.pathname, url.origin);
-    canonical.search = canonicalQuery;
-    return Response.redirect(canonical, 308);
-  }
+export async function GET() {
+  // 静的生成のため診断条件は受け取らない(条件なし = 「診断中」の画像になる)
+  const params = parseResultParams({});
 
   const { expenseCategories, maxInvestment, vehicleType, preferenceTags } = params;
   const budget = maxInvestment ?? 500000;

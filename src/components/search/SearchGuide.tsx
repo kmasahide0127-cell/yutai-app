@@ -41,7 +41,7 @@ export function SearchGuide() {
           {SEARCH_EXAMPLES.map((ex, i) => (
             <span key={ex}>
               {i > 0 && "、"}
-              <Link href={`/search?q=${encodeURIComponent(ex)}`} className="text-primary underline">{ex}</Link>
+              <Link prefetch={false} href={`/search?q=${encodeURIComponent(ex)}`} className="text-primary underline">{ex}</Link>
             </span>
           ))}
           。カタカナ・英字のどちらでも検索でき、大文字・小文字や全角・半角の違いは区別しません。

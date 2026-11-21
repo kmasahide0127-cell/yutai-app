@@ -65,7 +65,7 @@ export default function ChangelogPage() {
                       {e.kind}
                     </span>
                     {e.hasPage ? (
-                      <Link href={`/stocks/${e.code}`} className="text-sm font-medium underline">
+                      <Link prefetch={false} href={`/stocks/${e.code}`} className="text-sm font-medium underline">
                         {e.name}
                       </Link>
                     ) : (

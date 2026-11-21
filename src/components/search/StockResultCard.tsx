@@ -70,7 +70,7 @@ export function StockResultCard({
   const abolishedNotice = getAbolishedNotice(yutai);
 
   return (
-    <Link
+    <Link prefetch={false}
       href={`/stocks/${yutai.code}`}
       className={cn(
         "block rounded-lg border p-3 transition-colors",

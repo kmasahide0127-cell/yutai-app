@@ -19,6 +19,9 @@ import { serializeJsonLd } from "@/lib/utils";
 import { buildExpenseCategoryOverview } from "@/lib/category-commentary";
 import { buildCategoryFaq, buildModelCase, buildSelectionPoints } from "@/lib/category-guide";
 
+// 収録外の slug はビルド時に 404 として確定させ、アクセスのたびにサーバーで生成しない
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   return Object.values(EXPENSE_CATEGORY_SLUGS).map((slug) => ({ slug }));
 }
@@ -205,7 +208,7 @@ export default async function ExpenseCategoryPage({
                         ? alternatives.map((alt, idx) => (
                             <span key={alt.expense}>
                               {idx > 0 && "、"}
-                              <Link href={`/expense/${EXPENSE_CATEGORY_SLUGS[alt.expense]}`} className="underline">
+                              <Link prefetch={false} href={`/expense/${EXPENSE_CATEGORY_SLUGS[alt.expense]}`} className="underline">
                                 {alt.expense}
                               </Link>
                               ({alt.count}銘柄)
@@ -247,7 +250,7 @@ export default async function ExpenseCategoryPage({
                   {modelCase.stocks.map((y) => (
                     <tr key={y.code} className="border-t border-border">
                       <td className="px-3 py-2">
-                        <Link href={`/stocks/${y.code}`} className="text-primary underline">{y.name}</Link>
+                        <Link prefetch={false} href={`/stocks/${y.code}`} className="text-primary underline">{y.name}</Link>
                         {y.holdingRequirement && (
                           <span className="block text-[11px] text-muted-foreground">{y.holdingRequirement}の継続保有が条件</span>
                         )}
@@ -285,7 +288,7 @@ export default async function ExpenseCategoryPage({
             </h2>
             <div className="space-y-2">
               {topYutai.map((yutai, idx) => (
-                <Link
+                <Link prefetch={false}
                   key={yutai.id}
                   href={`/stocks/${yutai.code}`}
                   className="block rounded-xl border border-border bg-card p-4 hover:bg-muted/50 transition-colors"
@@ -357,7 +360,7 @@ export default async function ExpenseCategoryPage({
             </h2>
             <div className="space-y-1.5">
               {allYutai.map((yutai) => (
-                <Link
+                <Link prefetch={false}
                   key={yutai.id}
                   href={`/stocks/${yutai.code}`}
                   className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors min-w-0"
@@ -413,7 +416,7 @@ export default async function ExpenseCategoryPage({
             {Object.entries(EXPENSE_CATEGORY_SLUGS)
               .filter(([cat]) => cat !== expense)
               .map(([cat, s]) => (
-                <Link
+                <Link prefetch={false}
                   key={s}
                   href={`/expense/${s}`}
                   className="inline-flex items-center px-3 py-1.5 rounded-lg border border-border bg-card text-xs hover:bg-muted/50 transition-colors"

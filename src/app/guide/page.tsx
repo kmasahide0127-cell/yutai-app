@@ -34,7 +34,7 @@ export default function GuideIndexPage() {
         <ol className="space-y-3">
           {GUIDES.map((g, i) => (
             <li key={g.slug}>
-              <Link
+              <Link prefetch={false}
                 href={`/guide/${g.slug}`}
                 className="block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50"
               >

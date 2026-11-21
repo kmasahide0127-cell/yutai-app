@@ -10,7 +10,7 @@ export function ExperienceMatchCard({ match }: { match: ExperienceMatch }) {
   const { yutai, discountAmount, discountRate, efficiency, reachable } = match;
 
   return (
-    <Link
+    <Link prefetch={false}
       href={`/stocks/${yutai.code}`}
       className={cn(
         "block rounded-lg border p-3 transition-colors",

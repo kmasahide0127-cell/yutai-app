@@ -42,7 +42,7 @@ export function ExperienceGuide() {
                       ? samples.map((y, i) => (
                           <span key={y.code}>
                             {i > 0 && "、"}
-                            <Link href={`/stocks/${y.code}`} className="text-primary underline">{y.name}</Link>
+                            <Link prefetch={false} href={`/stocks/${y.code}`} className="text-primary underline">{y.name}</Link>
                           </span>
                         ))
                       : "—"}

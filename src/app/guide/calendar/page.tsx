@@ -120,7 +120,7 @@ export default function CalendarGuide() {
         <ul className="grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
           {coverage.map(({ e, facts }) => (
             <li key={e} className="rounded-md border border-border bg-card px-3 py-1.5">
-              <Link href={`/expense/${EXPENSE_CATEGORY_SLUGS[e]}`} className="text-primary underline">{e}</Link>
+              <Link prefetch={false} href={`/expense/${EXPENSE_CATEGORY_SLUGS[e]}`} className="text-primary underline">{e}</Link>
               <span className="text-xs text-muted-foreground"> — {facts.stockCount}銘柄で{facts.coverableMonthCount}ヶ月</span>
             </li>
           ))}

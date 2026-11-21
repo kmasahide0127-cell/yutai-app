@@ -33,7 +33,7 @@ export function SiteFooter() {
         <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1">
           {FOOTER_LINKS.map(({ href, label }) => (
             <li key={href}>
-              <Link href={href} className="hover:underline">{label}</Link>
+              <Link prefetch={false} href={href} className="hover:underline">{label}</Link>
             </li>
           ))}
         </ul>
