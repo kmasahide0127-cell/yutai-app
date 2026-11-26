@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
+    "build:pages": "STATIC_EXPORT=1 next build --turbopack && rm -f out/api/debug-tags",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

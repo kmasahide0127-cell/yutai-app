@@ -49,3 +49,6 @@ export default function robots(): MetadataRoute.Robots {
     host: siteConfig.url,
   };
 }
+
+// output: "export"(Cloudflare Pages 向け静的書き出し)ではメタデータルートの静的指定が必須
+export const dynamic = "force-static";

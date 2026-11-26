@@ -19,15 +19,25 @@ const SECURITY_HEADERS = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
 ];
 
+// Cloudflare Pages 移行用: STATIC_EXPORT=1 のときだけ静的書き出し(out/)にする。
+// Vercel のビルドは従来どおり(未設定)で、セキュリティヘッダーも next.config から付与する。
+// 静的書き出しでは headers() が効かないため、同じ値を public/_headers に置いている(変更時は両方を揃える)。
+const IS_STATIC_EXPORT = process.env.STATIC_EXPORT === "1";
+
 const nextConfig: NextConfig = {
+  ...(IS_STATIC_EXPORT ? { output: "export" as const } : {}),
   poweredByHeader: false,
   // Next.js 15.2+ は searchParams を使う動的ページの metadata を、ボット判定されない UA には
   // ストリーミングで <body> 末尾に出す。<head> に title/description/canonical が出ないと
   // 検索エンジン・広告審査で正しく読まれない場合があるため、全 UA でブロッキング出力にする。
   htmlLimitedBots: /.*/,
-  async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
-  },
+  ...(IS_STATIC_EXPORT
+    ? {}
+    : {
+        async headers() {
+          return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+        },
+      }),
 };
 
 export default nextConfig;

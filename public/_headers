@@ -1,0 +1,13 @@
+# Cloudflare Pages 用のレスポンスヘッダー(静的書き出しでは next.config.ts の headers() が効かないため)。
+# 値は next.config.ts の SECURITY_HEADERS と揃える。Vercel では使われない。
+/*
+  Content-Security-Policy: frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+
+# 拡張子なしで書き出されるため、種類とキャッシュを Vercel と同じにする
+/api/og
+  Content-Type: image/png
+  Cache-Control: public, max-age=86400, s-maxage=31536000
